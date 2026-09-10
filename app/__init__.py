@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, render_template
 from flask_login import LoginManager
 from .database import init_db
 import os
@@ -14,6 +14,19 @@ def create_app():
     def inject_globals():
         from flask_login import current_user
         return dict(current_user=current_user)
+
+    # ── Global error handlers ─────────────────────────────────────────────────
+    @app.errorhandler(500)
+    def internal_error(e):
+        return render_template('errors/500.html'), 500
+
+    @app.errorhandler(404)
+    def not_found(e):
+        return render_template('errors/404.html'), 404
+
+    @app.errorhandler(403)
+    def forbidden(e):
+        return render_template('errors/403.html'), 403
 
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
