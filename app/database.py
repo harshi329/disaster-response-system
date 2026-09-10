@@ -14,15 +14,16 @@ def get_mongo_db():
     if _mongo_client is None:
         uri = os.environ.get('MONGO_URI', 'mongodb://localhost:27017/disaster_response')
         if 'mongodb.net' in uri or 'mongodb+srv' in uri:
+            # Strip any invalid params from URI before passing to MongoClient
+            clean_uri = uri.replace('&tlsInsecure=true', '').replace('?tlsInsecure=true', '')
             _mongo_client = MongoClient(
-                uri,
+                clean_uri,
                 serverSelectionTimeoutMS=20000,
                 connectTimeoutMS=20000,
                 socketTimeoutMS=20000,
                 tls=True,
                 tlsAllowInvalidCertificates=True,
                 tlsAllowInvalidHostnames=True,
-                retryWrites=True,
             )
         else:
             _mongo_client = MongoClient(uri, serverSelectionTimeoutMS=5000)
