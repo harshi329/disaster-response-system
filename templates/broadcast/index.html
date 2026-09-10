@@ -111,7 +111,7 @@
           <div class="d-flex gap-3 text-muted small flex-wrap">
             <span><i class="bi bi-geo-alt me-1"></i>{{ b.area }}</span>
             <span><i class="bi bi-person me-1"></i>{{ b.sent_by }}</span>
-            <span><i class="bi bi-clock me-1"></i>{{ b.created_at[:16] }}</span>
+            <span><i class="bi bi-clock me-1"></i>{{ b.created_at | format_dt(16) }}</span>
             <span><i class="bi bi-eye me-1"></i>{{ b.read_by|length }} read</span>
           </div>
         </div>

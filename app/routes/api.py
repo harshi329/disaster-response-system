@@ -11,7 +11,7 @@ api_bp = Blueprint('api', __name__)
 @api_bp.route('/stats')
 @login_required
 def stats():
-    data = {'rescue_teams': 25, 'ambulances': 8, 'food_packets': 3250, 'active_reports': 0}
+    data = {'rescue_teams': 25, 'ambulances': 8, 'food_packets': 3250, 'active_reports': 0, 'active_users': 1}
     try:
         db = get_mongo_db()
         inv = db.resources.find_one({'_id': 'inventory'}) or {}
@@ -19,6 +19,7 @@ def stats():
         data['ambulances']   = inv.get('ambulances', data['ambulances'])
         data['food_packets'] = inv.get('food_packets', data['food_packets'])
         data['active_reports'] = db.disaster_reports.count_documents({'status': 'Active'})
+        data['active_users']   = max(1, db.users.count_documents({}))
     except Exception:
         pass
     return jsonify(data)

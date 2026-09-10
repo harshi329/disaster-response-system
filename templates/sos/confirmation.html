@@ -52,7 +52,7 @@
           <tr><th>People</th><td>{{ sos.people }}</td></tr>
           <tr><th>Message</th><td>{{ sos.message }}</td></tr>
           <tr><th>Status</th><td><span class="badge bg-warning text-dark">{{ sos.status }}</span></td></tr>
-          <tr><th>Sent At</th><td class="text-muted small">{{ sos.created_at[:19] }}</td></tr>
+          <tr><th>Sent At</th><td class="text-muted small">{{ sos.created_at | format_dt(19) }}</td></tr>
           <tr><th>Reference</th><td class="text-muted small font-monospace">{{ sos._id }}</td></tr>
         </table>
       </div>

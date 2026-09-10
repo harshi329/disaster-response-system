@@ -33,15 +33,19 @@ def generate_alert(location: str, disaster_type: str, severity: str, report_id: 
     """
     Creates and stores an emergency alert. Returns alert details.
     """
+    sev = (severity or 'Low').capitalize()
+    if sev not in ('High', 'Medium', 'Low'):
+        sev = 'Low'
+
     templates = ALERT_TEMPLATES.get(disaster_type, ALERT_TEMPLATES['default'])
-    template = templates.get(severity, templates.get('Medium', ''))
+    template = templates.get(sev, ALERT_TEMPLATES['default'].get(sev, 'EMERGENCY NOTICE: {disaster_type} at {location}. Monitor situation.'))
     message = template.format(location=location, disaster_type=disaster_type)
 
     alert = {
         'report_id': report_id,
         'location': location,
         'disaster_type': disaster_type,
-        'severity': severity,
+        'severity': sev,
         'message': message,
         'created_at': datetime.utcnow().isoformat(),
         'status': 'Active',

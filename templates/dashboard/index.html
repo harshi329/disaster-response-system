@@ -94,7 +94,7 @@
                   </span>
                 </td>
                 <td><span class="badge bg-secondary">{{ r.status }}</span></td>
-                <td class="text-muted small">{{ r.timestamp[:16] if r.timestamp else '—' }}</td>
+                <td class="text-muted small">{{ r.timestamp | format_dt(16) }}</td>
               </tr>
               {% else %}
               <tr><td colspan="5" class="text-center text-muted py-4">No reports yet.</td></tr>
@@ -109,12 +109,19 @@
 
 <!-- ── Latest Alert ───────────────────────────────────────────────────── -->
 {% if latest_alert %}
-<div class="alert alert-danger d-flex align-items-start gap-3 shadow-sm" role="alert">
-  <i class="bi bi-exclamation-triangle-fill fs-4 mt-1"></i>
-  <div>
-    <strong>{{ latest_alert.disaster_type }} Alert</strong><br />
-    {{ latest_alert.message }}<br />
-    <small class="text-muted">{{ latest_alert.created_at[:16] if latest_alert.created_at else '' }}</small>
+{% set alert_class = 'alert-danger' if latest_alert.severity == 'High' else ('alert-warning' if latest_alert.severity == 'Medium' else 'alert-info') %}
+{% set icon_class = 'text-danger bi-exclamation-octagon-fill' if latest_alert.severity == 'High' else ('text-warning bi-exclamation-triangle-fill' if latest_alert.severity == 'Medium' else 'text-info bi-info-circle-fill') %}
+<div class="alert {{ alert_class }} d-flex align-items-start gap-3 shadow-sm" role="alert">
+  <i class="bi {{ icon_class }} fs-4 mt-1"></i>
+  <div class="flex-grow-1">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <strong>{{ latest_alert.disaster_type }} Alert</strong>
+      <span class="badge {% if latest_alert.severity == 'High' %}bg-danger{% elif latest_alert.severity == 'Medium' %}bg-warning text-dark{% else %}bg-info text-dark{% endif %}">
+        {{ latest_alert.severity or 'Notice' }}
+      </span>
+    </div>
+    <div class="mt-1">{{ latest_alert.message }}</div>
+    <small class="text-muted">{{ latest_alert.created_at | format_dt(16) }}</small>
   </div>
 </div>
 {% endif %}
@@ -127,6 +134,9 @@
     try {
       const res = await fetch('/api/stats');
       const d = await res.json();
+      if (document.getElementById('stat-active-users') && d.active_users) {
+        document.getElementById('stat-active-users').textContent = d.active_users;
+      }
       document.getElementById('stat-rescue-teams').textContent = d.rescue_teams;
       document.getElementById('stat-ambulances').textContent   = d.ambulances;
       document.getElementById('stat-food-packets').textContent = d.food_packets;
