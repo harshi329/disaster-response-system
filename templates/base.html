@@ -133,17 +133,19 @@
     </a>
 
     <div class="mt-2 pt-2 border-top border-secondary">
-      <div class="d-flex align-items-center gap-2 mb-1">
-        <i class="bi bi-person-circle text-secondary"></i>
-        <span class="text-secondary small">{{ current_user.username }}</span>
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <div class="d-flex align-items-center gap-2 text-truncate" style="max-width:140px;">
+          <i class="bi bi-person-circle text-secondary"></i>
+          <span class="text-secondary small text-truncate">{{ current_user.username }}</span>
+        </div>
         {% if current_user.role == 'admin' %}
           <span class="badge bg-danger" style="font-size:.65rem;">admin</span>
         {% else %}
           <span class="badge bg-secondary" style="font-size:.65rem;">citizen</span>
         {% endif %}
       </div>
-      <a href="{{ url_for('auth.logout') }}" class="nav-link text-danger mt-1" style="font-size:.85rem;">
-        <i class="bi bi-box-arrow-left me-2"></i>Logout
+      <a href="{{ url_for('auth.logout') }}" class="btn btn-sm btn-outline-danger w-100 d-flex align-items-center justify-content-center gap-1 fw-bold">
+        <i class="bi bi-box-arrow-right"></i>Logout
       </a>
     </div>
   </nav>
@@ -152,23 +154,48 @@
   <div id="page-content" class="flex-grow-1 bg-light" style="min-width:0;">
 
     <!-- Top bar -->
-    <div class="topbar bg-white border-bottom px-4 py-2 d-flex align-items-center justify-content-end gap-3">
-      <!-- Broadcast bell -->
-      <div class="dropdown">
-        <button class="btn btn-sm btn-light position-relative" id="bc-bell" data-bs-toggle="dropdown">
-          <i class="bi bi-megaphone fs-5"></i>
-          <span id="bc-bell-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark" style="display:none;font-size:.65rem;"></span>
-        </button>
-        <div class="dropdown-menu dropdown-menu-end shadow" style="width:320px;max-height:360px;overflow-y:auto;" id="bc-dropdown">
-          <div class="dropdown-header fw-semibold">📢 Broadcasts</div>
-          <div id="bc-items"><div class="dropdown-item text-muted small">No new broadcasts.</div></div>
-          <div class="dropdown-divider"></div>
-          <a class="dropdown-item small text-center" href="{{ url_for('broadcast.index') }}">View all broadcasts</a>
+    <div class="topbar bg-white border-bottom px-4 py-2 d-flex align-items-center justify-content-between gap-3">
+      <div class="d-flex align-items-center gap-2">
+        {% if current_user.role == 'admin' %}
+          <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">
+            <i class="bi bi-shield-lock-fill me-1"></i>Admin Console
+          </span>
+        {% else %}
+          <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
+            <i class="bi bi-person-fill me-1"></i>Citizen Portal
+          </span>
+        {% endif %}
+      </div>
+
+      <div class="d-flex align-items-center gap-3">
+        <!-- Broadcast bell -->
+        <div class="dropdown">
+          <button class="btn btn-sm btn-light position-relative" id="bc-bell" data-bs-toggle="dropdown">
+            <i class="bi bi-megaphone fs-5"></i>
+            <span id="bc-bell-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark" style="display:none;font-size:.65rem;"></span>
+          </button>
+          <div class="dropdown-menu dropdown-menu-end shadow" style="width:320px;max-height:360px;overflow-y:auto;" id="bc-dropdown">
+            <div class="dropdown-header fw-semibold">📢 Broadcasts</div>
+            <div id="bc-items"><div class="dropdown-item text-muted small">No new broadcasts.</div></div>
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item small text-center" href="{{ url_for('broadcast.index') }}">View all broadcasts</a>
+          </div>
+        </div>
+        <small class="text-muted d-none d-md-block">
+          <i class="bi bi-clock me-1"></i><span id="live-clock"></span>
+        </small>
+
+        <!-- User profile & Topbar Logout button -->
+        <div class="d-flex align-items-center gap-2 ps-2 border-start">
+          <span class="small d-none d-sm-inline text-secondary">
+            <i class="bi bi-person-circle me-1"></i><strong>{{ current_user.username }}</strong>
+          </span>
+          <a href="{{ url_for('auth.logout') }}" class="btn btn-sm btn-outline-danger d-flex align-items-center gap-1" title="Log out">
+            <i class="bi bi-box-arrow-right"></i>
+            <span>Logout</span>
+          </a>
         </div>
       </div>
-      <small class="text-muted d-none d-md-block">
-        <i class="bi bi-clock me-1"></i><span id="live-clock"></span>
-      </small>
     </div>
 
     <div class="p-4">
