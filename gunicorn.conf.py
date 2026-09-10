@@ -4,9 +4,11 @@ Adjust workers/threads based on your server's CPU count.
 Rule of thumb: workers = (2 x CPU cores) + 1
 """
 import multiprocessing
+import os
 
 # ── Binding ───────────────────────────────────────────────────────────────────
-bind    = '0.0.0.0:5000'
+port    = os.environ.get('PORT', '5000')
+bind    = f'0.0.0.0:{port}'
 workers = multiprocessing.cpu_count() * 2 + 1
 
 # ── Worker class ──────────────────────────────────────────────────────────────
