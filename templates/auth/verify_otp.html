@@ -1,57 +1,28 @@
 {% extends 'base.html' %}
 {% block title %}Verify OTP – Disaster Response{% endblock %}
 {% block auth_content %}
-<div class="card shadow-lg border-0 auth-card" style="max-width:440px; width:100%;">
+<div class="card shadow-lg border-0 auth-card" style="max-width:420px; width:100%;">
   <div class="card-body p-4 p-sm-5">
     <div class="text-center mb-4">
-      <i class="bi bi-shield-check text-danger" style="font-size:2.8rem;"></i>
+      <i class="bi bi-envelope-check-fill text-danger" style="font-size:2.8rem;"></i>
       <h4 class="fw-bold mt-2 mb-1">Two-Factor Authentication</h4>
-      {% if fallback_otp %}
-        <p class="text-muted small mb-0">Use the instant verification code below to log in</p>
-      {% else %}
-        <p class="text-muted small mb-0">Enter the 6-digit OTP sent to your registered email</p>
-      {% endif %}
+      <p class="text-muted small mb-0">Enter the 6-digit OTP sent to your registered email</p>
       <small class="text-muted" style="font-size:.75rem;">Valid for 10 minutes</small>
     </div>
 
     <!-- Flash messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% for cat, msg in messages %}
-        <div class="alert alert-{{ cat }} py-2 px-3 small rounded-3" role="alert">{{ msg | safe }}</div>
+        <div class="alert alert-{{ cat }} py-2 px-3 small rounded-3 mb-3" role="alert">{{ msg | safe }}</div>
       {% endfor %}
     {% endwith %}
 
-    <!-- Instant Verification Fallback Box -->
-    {% if fallback_otp %}
-    <div class="card border-0 mb-4 text-center" style="background: linear-gradient(135deg, #fff8e6 0%, #ffecb5 100%); border: 1px solid #ffe69c !important; border-radius: 12px;">
-      <div class="card-body p-3">
-        <div class="d-flex align-items-center justify-content-center gap-1 mb-1">
-          <span class="badge bg-warning text-dark fw-bold px-2 py-1" style="font-size:.72rem;">
-            <i class="bi bi-lightning-charge-fill me-1"></i>Instant Verification Code
-          </span>
-        </div>
-        <p class="text-muted mb-2" style="font-size:.78rem;">
-          Email delivery is currently offline. Your login OTP is:
-        </p>
-        <div class="d-inline-block px-3 py-1 bg-white rounded-3 shadow-sm border border-warning-subtle mb-2">
-          <span class="fs-2 fw-bold text-danger font-monospace" style="letter-spacing: 6px;">{{ fallback_otp }}</span>
-        </div>
-        <div>
-          <button type="button" class="btn btn-warning btn-sm fw-bold px-3 shadow-sm" onclick="autoFillOtp('{{ fallback_otp }}')">
-            <i class="bi bi-box-arrow-in-right me-1"></i>Auto-Fill &amp; Verify
-          </button>
-        </div>
-      </div>
-    </div>
-    {% endif %}
-
     <form method="POST" id="otp-form">
       <div class="mb-4">
-        <label class="form-label small fw-semibold">6-Digit OTP Code</label>
+        <label class="form-label small fw-semibold">6-Digit Verification Code</label>
         <input type="text" name="otp" id="otp-input"
                class="form-control form-control-lg text-center fw-bold letter-spacing-wide font-monospace"
                maxlength="6" placeholder="• • • • • •"
-               value="{{ fallback_otp if fallback_otp else '' }}"
                inputmode="numeric" pattern="[0-9]{6}"
                required autofocus />
       </div>
@@ -64,7 +35,7 @@
 
     <!-- Resend OTP -->
     <div class="text-center">
-      <p class="text-muted small mb-2">Didn't receive the OTP?</p>
+      <p class="text-muted small mb-2">Didn't receive the OTP email?</p>
       <form method="POST" action="{{ url_for('auth.resend_otp') }}" class="d-inline">
         <button type="submit" class="btn btn-outline-secondary btn-sm">
           <i class="bi bi-arrow-clockwise me-1"></i>Resend OTP
@@ -79,14 +50,4 @@
     </p>
   </div>
 </div>
-
-<script>
-function autoFillOtp(code) {
-  const input = document.getElementById('otp-input');
-  if (input) {
-    input.value = code;
-    document.getElementById('otp-form').submit();
-  }
-}
-</script>
 {% endblock %}

@@ -32,13 +32,10 @@ def load_user(user_id):
     return User.get_by_id(user_id)
 
 
-def _flash_otp_result(result: dict, email: str):
-    if result['method'] == 'email':
-        parts  = email.split('@')
-        masked = parts[0][:2] + '***@' + parts[1] if len(parts) == 2 else '***'
-        flash(f'OTP sent to your email <strong>{masked}</strong>. Please check your inbox and spam folder.', 'success')
-    else:
-        flash('Email delivery is offline. Use the instant verification code shown below.', 'info')
+def _flash_otp_sent(email: str):
+    parts  = email.split('@')
+    masked = parts[0][:2] + '***@' + parts[1] if len(parts) == 2 else '***'
+    flash(f'A 6-digit verification code has been sent to your email <strong>{masked}</strong>.', 'success')
 
 
 @auth_bp.route('/', methods=['GET', 'POST'])
@@ -69,18 +66,21 @@ def login():
             flash(f'Admin login successful. Welcome back, {user.username}!', 'success')
             return redirect(url_for('dashboard.index'))
 
-        # Citizens & volunteers proceed with OTP verification
+        # Citizens & volunteers proceed with email OTP verification
         canonical_username = row['username']
-        email  = row.get('email', '')
+        email = row.get('email', '').strip()
+
+        if not email:
+            flash('No email address is linked with this account. Please contact an administrator.', 'danger')
+            return render_template('auth/login.html')
+
         result = generate_and_send_otp(canonical_username, email=email)
+        if not result.get('sent'):
+            flash('Could not send OTP to your email. Please try again in a few moments.', 'danger')
+            return render_template('auth/login.html')
 
         session['pending_user'] = canonical_username
-        if not result['sent']:
-            session['fallback_otp'] = result['otp']
-        else:
-            session.pop('fallback_otp', None)
-
-        _flash_otp_result(result, email)
+        _flash_otp_sent(email)
         return redirect(url_for('auth.verify_otp_view'))
 
     return render_template('auth/login.html')
@@ -91,8 +91,6 @@ def verify_otp_view():
     if 'pending_user' not in session:
         return redirect(url_for('auth.login'))
 
-    fallback_otp = session.get('fallback_otp')
-
     if request.method == 'POST':
         otp      = request.form.get('otp', '').strip()
         username = session['pending_user']
@@ -102,13 +100,12 @@ def verify_otp_view():
             user = User(row['_id'], row['username'], row['email'], row.get('phone'), row.get('role', 'citizen'))
             login_user(user)
             session.pop('pending_user', None)
-            session.pop('fallback_otp', None)
             flash('Login successful. Welcome back!', 'success')
             return redirect(url_for('dashboard.index'))
         else:
-            flash('Invalid or expired OTP. Please try again.', 'danger')
+            flash('Invalid or expired OTP code. Please check your email and try again.', 'danger')
 
-    return render_template('auth/verify_otp.html', fallback_otp=fallback_otp)
+    return render_template('auth/verify_otp.html')
 
 
 @auth_bp.route('/resend-otp', methods=['POST'])
@@ -123,12 +120,11 @@ def resend_otp():
 
     email  = row.get('email', '')
     result = generate_and_send_otp(username, email=email)
-    if not result['sent']:
-        session['fallback_otp'] = result['otp']
+    if result.get('sent'):
+        _flash_otp_sent(email)
     else:
-        session.pop('fallback_otp', None)
+        flash('Failed to resend OTP email. Please try again shortly.', 'danger')
 
-    _flash_otp_result(result, email)
     return redirect(url_for('auth.verify_otp_view'))
 
 
