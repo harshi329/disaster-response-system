@@ -36,23 +36,29 @@ def _flash_otp_result(result: dict, email: str):
     if result['method'] == 'email':
         parts  = email.split('@')
         masked = parts[0][:2] + '***@' + parts[1] if len(parts) == 2 else '***'
-        flash(f'OTP sent to your email <strong>{masked}</strong>.', 'success')
+        flash(f'OTP sent to your email <strong>{masked}</strong>. Please check your inbox and spam folder.', 'success')
     else:
-        flash(
-            f'Email not configured. Your OTP is: <strong>{result["otp"]}</strong>',
-            'warning'
-        )
+        flash('Email delivery is offline. Use the instant verification code shown below.', 'info')
 
 
 @auth_bp.route('/', methods=['GET', 'POST'])
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form.get('username', '').strip()
-        password = request.form.get('password', '').strip()
+        identifier = request.form.get('username', '').strip()
+        password   = request.form.get('password', '').strip()
 
-        row = User.get_by_username(username)
-        if not row or not check_password_hash(row['password'], password):
+        row = User.get_by_identifier(identifier)
+        if not row:
+            flash('Invalid username or password.', 'danger')
+            return render_template('auth/login.html')
+
+        # Inform users who registered via Google OAuth that they should use Google login
+        if row.get('google_id') and not row.get('password'):
+            flash('This account was created with Google. Please click "Continue with Google" above.', 'info')
+            return render_template('auth/login.html')
+
+        if not check_password_hash(row.get('password', ''), password):
             flash('Invalid username or password.', 'danger')
             return render_template('auth/login.html')
 
@@ -63,11 +69,17 @@ def login():
             flash(f'Admin login successful. Welcome back, {user.username}!', 'success')
             return redirect(url_for('dashboard.index'))
 
-        # Citizens proceed with OTP verification
+        # Citizens & volunteers proceed with OTP verification
+        canonical_username = row['username']
         email  = row.get('email', '')
-        result = generate_and_send_otp(username, email=email)
+        result = generate_and_send_otp(canonical_username, email=email)
 
-        session['pending_user'] = username
+        session['pending_user'] = canonical_username
+        if not result['sent']:
+            session['fallback_otp'] = result['otp']
+        else:
+            session.pop('fallback_otp', None)
+
         _flash_otp_result(result, email)
         return redirect(url_for('auth.verify_otp_view'))
 
@@ -79,6 +91,8 @@ def verify_otp_view():
     if 'pending_user' not in session:
         return redirect(url_for('auth.login'))
 
+    fallback_otp = session.get('fallback_otp')
+
     if request.method == 'POST':
         otp      = request.form.get('otp', '').strip()
         username = session['pending_user']
@@ -88,12 +102,13 @@ def verify_otp_view():
             user = User(row['_id'], row['username'], row['email'], row.get('phone'), row.get('role', 'citizen'))
             login_user(user)
             session.pop('pending_user', None)
+            session.pop('fallback_otp', None)
             flash('Login successful. Welcome back!', 'success')
             return redirect(url_for('dashboard.index'))
         else:
             flash('Invalid or expired OTP. Please try again.', 'danger')
 
-    return render_template('auth/verify_otp.html')
+    return render_template('auth/verify_otp.html', fallback_otp=fallback_otp)
 
 
 @auth_bp.route('/resend-otp', methods=['POST'])
@@ -108,6 +123,11 @@ def resend_otp():
 
     email  = row.get('email', '')
     result = generate_and_send_otp(username, email=email)
+    if not result['sent']:
+        session['fallback_otp'] = result['otp']
+    else:
+        session.pop('fallback_otp', None)
+
     _flash_otp_result(result, email)
     return redirect(url_for('auth.verify_otp_view'))
 

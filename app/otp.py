@@ -93,13 +93,25 @@ def verify_otp(username: str, otp: str) -> bool:
     return False
 
 
-# ── Email delivery ────────────────────────────────────────────────────────────
+# ── Email delivery with resilience & circuit breaker ─────────────────────────
+_smtp_auth_failed_until: float = 0.0
+
+
 def _send_email(to_email: str, otp: str, username: str) -> bool:
+    global _smtp_auth_failed_until
+
     sender   = os.environ.get('MAIL_EMAIL', '').strip()
     password = os.environ.get('MAIL_PASSWORD', '').strip()
     if not sender or not password:
         logger.warning('MAIL_EMAIL or MAIL_PASSWORD not set in .env')
         return False
+
+    # Circuit breaker: if Gmail authentication previously failed, do not block login
+    # attempts repeatedly with 15s delays. Retry only after 5 minutes.
+    if time.time() < _smtp_auth_failed_until:
+        logger.warning('SMTP authentication is currently cached as failing; skipping email attempt.')
+        return False
+
     try:
         msg            = MIMEMultipart('alternative')
         msg['Subject'] = f'Your OTP: {otp} – Disaster Response System'
@@ -136,16 +148,23 @@ def _send_email(to_email: str, otp: str, username: str) -> bool:
 
         msg.attach(MIMEText(text, 'plain'))
         msg.attach(MIMEText(html,  'html'))
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=15) as server:
+
+        # Fast timeout (4 seconds) so user login is never frozen
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=4) as server:
             server.login(sender, password)
             server.sendmail(sender, to_email, msg.as_string())
+
+        _smtp_auth_failed_until = 0.0
         logger.info('OTP email sent to %s', to_email)
         return True
+
     except smtplib.SMTPAuthenticationError:
-        logger.error('Gmail auth failed — check MAIL_EMAIL and MAIL_PASSWORD')
+        # Cache failure for 300 seconds (5 minutes)
+        _smtp_auth_failed_until = time.time() + 300
+        logger.error('Gmail auth failed (check MAIL_EMAIL and MAIL_PASSWORD). Cached for 5m.')
         return False
     except Exception as e:
-        logger.error('Email OTP failed: %s', e)
+        logger.error('Email OTP delivery failed: %s', e)
         return False
 
 

@@ -1,6 +1,7 @@
 """
 User model — backed by MongoDB users collection.
 """
+import re
 from flask_login import UserMixin
 from bson import ObjectId
 from .database import get_mongo_db
@@ -51,17 +52,34 @@ class User(UserMixin):
         return None
 
     @staticmethod
-    def get_by_username(username):
+    def get_by_identifier(identifier):
+        """Find a user by username or email (case-insensitive)."""
+        if not identifier:
+            return None
         try:
             db = get_mongo_db()
-            return db.users.find_one({'username': username})
+            clean_id = str(identifier).strip()
+            # 1. Exact match first (fastest)
+            doc = db.users.find_one({'username': clean_id})
+            if not doc:
+                doc = db.users.find_one({'email': clean_id.lower()})
+            if not doc:
+                # 2. Case-insensitive regex match on username or email
+                pattern = f'^{re.escape(clean_id)}$'
+                doc = db.users.find_one({
+                    '$or': [
+                        {'username': {'$regex': pattern, '$options': 'i'}},
+                        {'email': {'$regex': pattern, '$options': 'i'}},
+                    ]
+                })
+            return doc
         except Exception:
             return None
 
     @staticmethod
+    def get_by_username(username):
+        return User.get_by_identifier(username)
+
+    @staticmethod
     def get_by_email(email):
-        try:
-            db = get_mongo_db()
-            return db.users.find_one({'email': email})
-        except Exception:
-            return None
+        return User.get_by_identifier(email)
