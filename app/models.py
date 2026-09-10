@@ -21,7 +21,8 @@ class User(UserMixin):
 
     @property
     def is_responder(self):
-        return self.role in ('responder', 'admin')
+        # Backward compatibility alias
+        return self.is_admin
 
     @property
     def is_citizen(self):

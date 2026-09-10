@@ -44,7 +44,7 @@
             <option value="">-- Choose a report --</option>
             {% for r in active_reports %}
             <option value="{{ r._id }}">
-              {{ r.location }} — {{ r.type }} ({{ r.severity }}) — {{ r.timestamp[:10] if r.timestamp else '' }}
+              {{ r.location }} — {{ r.type }} ({{ r.severity }}) — {{ r.timestamp | format_dt(10) }}
             </option>
             {% endfor %}
           </select>

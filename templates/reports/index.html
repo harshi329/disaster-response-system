@@ -8,7 +8,7 @@
     <h4 class="fw-bold mb-0"><i class="bi bi-file-earmark-text me-2 text-danger"></i>Disaster Reports</h4>
     <small class="text-muted">{{ total }} total report{{ 's' if total != 1 }}</small>
   </div>
-  {% if current_user.role in ('responder', 'admin') %}
+  {% if current_user.is_authenticated %}
   <a href="{{ url_for('reports.new_report') }}" class="btn btn-danger">
     <i class="bi bi-plus-circle me-1"></i>Submit Report
   </a>
@@ -40,13 +40,14 @@
               </span>
             </td>
             <td>
-              <span class="fw-bold {% if r.risk_score >= 8 %}text-danger{% elif r.risk_score >= 5 %}text-warning{% else %}text-success{% endif %}">
-                {{ r.risk_score }}/10
+              {% set r_score = r.risk_score or 0 %}
+              <span class="fw-bold {% if r_score >= 8 %}text-danger{% elif r_score >= 5 %}text-warning{% else %}text-success{% endif %}">
+                {{ r.risk_score if r.risk_score is defined and r.risk_score is not none else '—' }}{% if r.risk_score is defined and r.risk_score is not none %}/10{% endif %}
               </span>
             </td>
             <td><span class="badge bg-secondary">{{ r.status }}</span></td>
             <td>{{ r.reported_by }}</td>
-            <td class="text-muted small">{{ r.timestamp[:16] if r.timestamp else '—' }}</td>
+            <td class="text-muted small">{{ r.timestamp | format_dt(16) }}</td>
             <td>
               <div class="d-flex gap-1">
                 <a href="{{ url_for('reports.view_report', report_id=r._id) }}"

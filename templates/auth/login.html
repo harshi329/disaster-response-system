@@ -11,33 +11,24 @@
       <p class="text-muted small">Select your role to continue</p>
     </div>
 
-    <!-- Role selector -->
+    <!-- Role selector: Citizen vs Admin -->
     <div class="row g-2 mb-4" id="role-selector">
-      <div class="col-4">
-        <div class="role-card text-center p-2 rounded border-2 border cursor-pointer"
+      <div class="col-6">
+        <div class="role-card text-center p-3 rounded border-2 border cursor-pointer"
              onclick="selectRole('citizen')" id="role-citizen"
              style="cursor:pointer;transition:all .2s;">
           <i class="bi bi-person-fill d-block fs-3 text-secondary mb-1"></i>
-          <div class="fw-semibold small">Citizen</div>
-          <div class="text-muted" style="font-size:.68rem;">SOS · Volunteer</div>
+          <div class="fw-semibold">Citizen</div>
+          <div class="text-muted" style="font-size:.75rem;">SOS · Reports · Volunteer</div>
         </div>
       </div>
-      <div class="col-4">
-        <div class="role-card text-center p-2 rounded border-2 border cursor-pointer"
-             onclick="selectRole('responder')" id="role-responder"
-             style="cursor:pointer;transition:all .2s;">
-          <i class="bi bi-person-badge-fill d-block fs-3 text-warning mb-1"></i>
-          <div class="fw-semibold small">Responder</div>
-          <div class="text-muted" style="font-size:.68rem;">Reports · SOS</div>
-        </div>
-      </div>
-      <div class="col-4">
-        <div class="role-card text-center p-2 rounded border-2 border cursor-pointer"
+      <div class="col-6">
+        <div class="role-card text-center p-3 rounded border-2 border cursor-pointer"
              onclick="selectRole('admin')" id="role-admin"
              style="cursor:pointer;transition:all .2s;">
           <i class="bi bi-shield-lock-fill d-block fs-3 text-danger mb-1"></i>
-          <div class="fw-semibold small">Admin</div>
-          <div class="text-muted" style="font-size:.68rem;">Full Access</div>
+          <div class="fw-semibold">Admin</div>
+          <div class="text-muted" style="font-size:.75rem;">Duties · Resources · Users</div>
         </div>
       </div>
     </div>
@@ -95,8 +86,7 @@
 <style>
 .role-card:hover { background: #f8f9fa; transform: translateY(-2px); }
 .role-card.selected-citizen  { background:#e8f4fd; border-color:#0d6efd !important; }
-.role-card.selected-responder { background:#fff8e1; border-color:#ffc107 !important; }
-.role-card.selected-admin     { background:#fdecea; border-color:#dc3545 !important; }
+.role-card.selected-admin    { background:#fdecea; border-color:#dc3545 !important; }
 </style>
 
 <script>
@@ -105,44 +95,43 @@ const roles = {
     cls:   'selected-citizen',
     color: 'alert-primary',
     icon:  '👤',
-    text:  '<strong>Citizen</strong> — Send SOS alerts, register as a volunteer, view live alerts, map, weather and AI assistant.',
+    text:  '<strong>Citizen</strong> — Send SOS alerts, submit disaster reports, register as volunteer, view alerts, map, and weather.',
     btn:   'Login as Citizen',
-  },
-  responder: {
-    cls:   'selected-responder',
-    color: 'alert-warning',
-    icon:  '🦺',
-    text:  '<strong>Responder</strong> — Field worker, NDRF, police or paramedic. Submit disaster reports, resolve SOS alerts, view all volunteers.',
-    btn:   'Login as Responder',
   },
   admin: {
     cls:   'selected-admin',
     color: 'alert-danger',
     icon:  '🛡️',
-    text:  '<strong>Admin</strong> — System coordinator. Full access including broadcasts, resource management, volunteer deployment and user management.',
+    text:  '<strong>Admin</strong> — Full control: allocate &amp; restock resources, resolve SOS alerts, send broadcasts, manage volunteers and users.<div class="mt-2 text-danger fw-semibold"><i class="bi bi-key-fill me-1"></i>Default admin: <code>drs_admin</code> / <code>admin123</code></div>',
     btn:   'Login as Admin',
   },
 };
 
 function selectRole(role) {
   // Clear all
-  ['citizen','responder','admin'].forEach(r => {
+  ['citizen','admin'].forEach(r => {
     const el = document.getElementById('role-' + r);
-    el.classList.remove('selected-citizen','selected-responder','selected-admin');
+    if (el) el.classList.remove('selected-citizen','selected-admin');
   });
 
   // Highlight selected
-  document.getElementById('role-' + role).classList.add(roles[role].cls);
+  const target = document.getElementById('role-' + role);
+  if (target) target.classList.add(roles[role].cls);
 
   // Show description
   const desc = document.getElementById('role-desc');
-  desc.className = 'alert py-2 mb-3 small ' + roles[role].color;
-  desc.innerHTML = roles[role].icon + ' ' + roles[role].text;
-  desc.style.display = 'block';
+  if (desc) {
+    desc.className = 'alert py-2 mb-3 small ' + roles[role].color;
+    desc.innerHTML = roles[role].icon + ' ' + roles[role].text;
+    desc.style.display = 'block';
+  }
 
   // Update button
-  document.getElementById('login-btn').innerHTML =
-    '<i class="bi bi-box-arrow-in-right me-2"></i>' + roles[role].btn + ' &amp; Get OTP';
+  const btn = document.getElementById('login-btn');
+  if (btn) {
+    btn.innerHTML =
+      '<i class="bi bi-box-arrow-in-right me-2"></i>' + roles[role].btn + ' &amp; Get OTP';
+  }
 }
 
 // Default to citizen

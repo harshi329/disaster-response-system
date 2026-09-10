@@ -26,7 +26,7 @@ from flask import abort, flash, redirect, url_for
 from flask_login import current_user
 
 # Hierarchy: higher index = more privilege
-ROLE_HIERARCHY = ['citizen', 'responder', 'admin']
+ROLE_HIERARCHY = ['citizen', 'admin']
 
 
 def _rank(role: str) -> int:

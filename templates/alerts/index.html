@@ -41,7 +41,11 @@
                 {{ alert.status or 'Active' }}
               </span>
               <button type="button"
-                onclick="shareAlertWA('{{ alert.disaster_type }}','{{ alert.location | replace(\"'\",\"\") }}','{{ alert.severity }}','{{ alert.message | replace(\"'\",\"\") | truncate(200,true,\"...\") }}')"
+                data-type="{{ alert.disaster_type }}"
+                data-location="{{ alert.location }}"
+                data-severity="{{ alert.severity }}"
+                data-message="{{ alert.message }}"
+                onclick="shareAlertFromBtn(this)"
                 class="btn btn-sm btn-success py-0 px-2" title="Share on WhatsApp">
                 <i class="bi bi-whatsapp"></i>
               </button>
@@ -49,7 +53,7 @@
           </div>
           <p class="mb-1 mt-1">{{ alert.message }}</p>
           <small class="text-muted">
-            <i class="bi bi-clock me-1"></i>{{ alert.created_at[:16] if alert.created_at else '—' }}
+            <i class="bi bi-clock me-1"></i>{{ alert.created_at | format_dt(16) }}
           </small>
         </div>
       </div>
@@ -63,9 +67,13 @@
 
 {% block scripts %}
 <script>
-function shareAlertWA(type, location, severity, message) {
-  const emoji = severity === 'High' ? '🚨' : severity === 'Medium' ? '⚠️' : '📢';
-  const text  = encodeURIComponent(
+function shareAlertFromBtn(btn) {
+  const type     = btn.dataset.type || '';
+  const location = btn.dataset.location || '';
+  const severity = btn.dataset.severity || '';
+  const message  = (btn.dataset.message || '').slice(0, 200);
+  const emoji    = severity === 'High' ? '🚨' : severity === 'Medium' ? '⚠️' : '📢';
+  const text     = encodeURIComponent(
     emoji + ' *EMERGENCY ALERT*\n\n' +
     '*Type:* '     + type     + '\n' +
     '*Location:* ' + location + '\n' +

@@ -44,7 +44,6 @@ def index():
 
 @reports_bp.route('/reports/new', methods=['GET', 'POST'])
 @login_required
-@min_role_required('responder')
 def new_report():
     if request.method == 'POST':
         location    = request.form.get('location', '').strip()[:200]
@@ -86,9 +85,18 @@ def new_report():
         except Exception:
             pass
 
-        allocation = allocate_resources(analysis['severity'], report_id)
-        route      = optimize_route(location, analysis['type'])
-        alert      = generate_alert(location, analysis['type'], analysis['severity'], report_id)
+        # Only admin can allocate resources
+        if current_user.role == 'admin':
+            allocation = allocate_resources(analysis['severity'], report_id)
+        else:
+            allocation = {
+                'allocated': {},
+                'insufficient': [],
+                'status': 'Pending Admin Review (Only Admins can allocate resources)',
+            }
+
+        route = optimize_route(location, analysis['type'])
+        alert = generate_alert(location, analysis['type'], analysis['severity'], report_id)
 
         return render_template(
             'reports/result.html',
@@ -122,7 +130,7 @@ def view_report(report_id):
 
 @reports_bp.route('/reports/<report_id>/status', methods=['POST'])
 @login_required
-@min_role_required('responder')
+@min_role_required('admin')
 def update_status(report_id):
     VALID_STATUSES = {'Active', 'In Progress', 'Resolved', 'Closed'}
     new_status = request.form.get('status', '').strip()

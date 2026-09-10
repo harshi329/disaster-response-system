@@ -15,6 +15,14 @@ def create_app():
         from flask_login import current_user
         return dict(current_user=current_user)
 
+    @app.template_filter('format_dt')
+    def format_dt(value, length=16):
+        if not value:
+            return '—'
+        if hasattr(value, 'isoformat'):
+            return value.isoformat()[:length]
+        return str(value)[:length]
+
     # ── Global error handlers ─────────────────────────────────────────────────
     @app.errorhandler(500)
     def internal_error(e):

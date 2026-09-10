@@ -83,7 +83,7 @@ def register():
 
 @volunteer_bp.route('/volunteer/all')
 @login_required
-@min_role_required('responder')
+@min_role_required('admin')
 def all_volunteers():
     volunteers = []
     stats = {'total': 0, 'available': 0, 'deployed': 0}

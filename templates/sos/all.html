@@ -105,7 +105,7 @@
                   <p class="mb-1 text-dark">{{ sos.message }}</p>
                   <div class="text-muted small d-flex gap-3 flex-wrap">
                     <span><i class="bi bi-person me-1"></i>{{ sos.reported_by }}</span>
-                    <span><i class="bi bi-clock me-1"></i>{{ sos.created_at[:16] if sos.created_at else '—' }}</span>
+                    <span><i class="bi bi-clock me-1"></i>{{ sos.created_at | format_dt(16) }}</span>
                     {% if sos.resolved_by %}
                     <span class="text-success">
                       <i class="bi bi-check me-1"></i>Resolved by {{ sos.resolved_by }}
@@ -130,7 +130,7 @@
                   <i class="bi bi-whatsapp me-1"></i>WhatsApp
                 </button>
 
-                {% if sos.status=='Active' %}
+                {% if sos.status=='Active' and current_user.role == 'admin' %}
                 <form method="POST" action="{{ url_for('sos.resolve', sos_id=sos._id) }}"
                       onsubmit="return confirm('Mark this SOS as resolved?')">
                   <button type="submit" class="btn btn-sm btn-outline-success">

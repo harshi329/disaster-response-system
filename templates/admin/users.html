@@ -14,9 +14,8 @@
 
 <!-- Role legend -->
 <div class="d-flex gap-2 mb-4 flex-wrap">
-  <span class="badge bg-secondary fs-6 px-3 py-2">citizen — view only, SOS, volunteer signup</span>
-  <span class="badge bg-warning text-dark fs-6 px-3 py-2">responder — submit reports, resolve SOS, view volunteers</span>
-  <span class="badge bg-danger fs-6 px-3 py-2">admin — full access incl. broadcasts, deploy volunteers, manage users</span>
+  <span class="badge bg-secondary fs-6 px-3 py-2">citizen — SOS alerts, disaster reports, volunteer signup, maps &amp; weather</span>
+  <span class="badge bg-danger fs-6 px-3 py-2">admin — full access: resource allocation &amp; restock, SOS resolution, broadcasts, user management</span>
 </div>
 
 <div class="card shadow-sm">
@@ -48,8 +47,6 @@
             {% set role = u.get('role', 'citizen') %}
             {% if role == 'admin' %}
               <span class="badge bg-danger">admin</span>
-            {% elif role == 'responder' %}
-              <span class="badge bg-warning text-dark">responder</span>
             {% else %}
               <span class="badge bg-secondary">citizen</span>
             {% endif %}

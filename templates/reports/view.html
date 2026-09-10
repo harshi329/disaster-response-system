@@ -37,8 +37,9 @@
           </tr>
           <tr><th class="text-muted">Risk Score</th>
             <td>
-              <span class="fw-bold {% if report.risk_score >= 8 %}text-danger{% elif report.risk_score >= 5 %}text-warning{% else %}text-success{% endif %}">
-                {{ report.risk_score }}/10
+              {% set r_score = report.risk_score or 0 %}
+              <span class="fw-bold {% if r_score >= 8 %}text-danger{% elif r_score >= 5 %}text-warning{% else %}text-success{% endif %}">
+                {{ report.risk_score if report.risk_score is defined and report.risk_score is not none else '—' }}{% if report.risk_score is defined and report.risk_score is not none %}/10{% endif %}
               </span>
             </td>
           </tr>
@@ -57,7 +58,7 @@
             </td>
           </tr>
           <tr><th class="text-muted">Reported By</th><td>{{ report.reported_by }}</td></tr>
-          <tr><th class="text-muted">Timestamp</th><td class="text-muted small">{{ report.timestamp[:16] if report.timestamp else '—' }}</td></tr>
+          <tr><th class="text-muted">Timestamp</th><td class="text-muted small">{{ report.timestamp | format_dt(16) }}</td></tr>
           <tr><th class="text-muted">Description</th><td>{{ report.description }}</td></tr>
           <tr><th class="text-muted">AI Summary</th><td class="text-muted fst-italic">{{ report.summary }}</td></tr>
         </table>
@@ -65,8 +66,8 @@
     </div>
   </div>
 
-  <!-- Status update (responder/admin only) -->
-  {% if current_user.role in ('responder', 'admin') %}
+  <!-- Status update (admin only) -->
+  {% if current_user.role == 'admin' %}
   <div class="col-lg-4">
     <div class="card border-0 shadow-sm">
       <div class="card-header bg-white fw-semibold border-bottom">

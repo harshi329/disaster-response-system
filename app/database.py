@@ -5,6 +5,8 @@ import os
 import logging
 from pymongo import MongoClient, ASCENDING
 from pymongo.errors import DuplicateKeyError
+from werkzeug.security import generate_password_hash
+import certifi
 
 logger = logging.getLogger(__name__)
 _mongo_client = None
@@ -19,19 +21,21 @@ def get_mongo_db():
         clean_uri = uri.replace('&tlsInsecure=true', '').replace('?tlsInsecure=true', '')
 
         if 'mongodb.net' in clean_uri or 'mongodb+srv' in clean_uri:
-            # Try multiple connection strategies for Render compatibility
+            # Primary strategy: trusted CA bundle via certifi
             strategies = [
-                # Strategy 1: tlsAllowInvalidCertificates
+                # Strategy 1: standard secure TLS with certifi bundle
                 dict(
                     tls=True,
-                    tlsAllowInvalidCertificates=True,
-                    tlsAllowInvalidHostnames=True,
+                    tlsCAFile=certifi.where(),
                     serverSelectionTimeoutMS=5000,
                     connectTimeoutMS=5000,
                     socketTimeoutMS=5000,
                 ),
-                # Strategy 2: certifi CA file
+                # Strategy 2: fallback for corporate proxies / self-signed inspection
                 dict(
+                    tls=True,
+                    tlsAllowInvalidCertificates=True,
+                    tlsAllowInvalidHostnames=True,
                     serverSelectionTimeoutMS=5000,
                     connectTimeoutMS=5000,
                     socketTimeoutMS=5000,
@@ -42,22 +46,16 @@ def get_mongo_db():
 
             for i, kwargs in enumerate(strategies):
                 try:
-                    if i == 1:
-                        import certifi
-                        kwargs['tlsCAFile'] = certifi.where()
-
                     client = MongoClient(clean_uri, **kwargs)
-                    # Test connection
                     client['disaster_response'].command('ping')
                     _mongo_client = client
                     logger.info('MongoDB connected using strategy %d', i + 1)
                     break
                 except Exception as e:
-                    logger.warning('Strategy %d failed: %s', i + 1, e)
+                    logger.warning('MongoDB strategy %d failed: %s', i + 1, e)
                     continue
 
             if _mongo_client is None:
-                # Last resort — just connect without validation
                 _mongo_client = MongoClient(
                     clean_uri,
                     tls=True,
@@ -68,15 +66,52 @@ def get_mongo_db():
         else:
             _mongo_client = MongoClient(clean_uri, serverSelectionTimeoutMS=3000)
 
-    return _mongo_client['disaster_response']
+    db_name = os.environ.get('MONGO_DB_NAME', 'disaster_response')
+    return _mongo_client[db_name]
 
 
 def init_db():
-    """Create indexes for the users collection."""
+    """Create indexes and ensure default admin user and inventory exist."""
     try:
         db = get_mongo_db()
         db.users.create_index('username', unique=True)
         db.users.create_index('email',    unique=True)
         db.users.create_index('google_id', sparse=True)
-    except Exception:
-        pass
+
+        # ── Guarantee default admin user exists ───────────────────────
+        admin_doc = db.users.find_one({'username': 'drs_admin'})
+        if not admin_doc:
+            db.users.insert_one({
+                'username': 'drs_admin',
+                'password': generate_password_hash('admin123'),
+                'email':    'vu.241fa04313@gmail.com',
+                'phone':    '',
+                'role':     'admin',
+            })
+            logger.info('Default admin user created: drs_admin')
+        else:
+            if admin_doc.get('role') != 'admin':
+                db.users.update_one({'username': 'drs_admin'}, {'$set': {'role': 'admin'}})
+
+        # ── Migrate legacy 'responder' role users to 'citizen' ───────
+        db.users.update_many(
+            {'role': 'responder'},
+            {'$set': {'role': 'citizen'}}
+        )
+        db.users.update_many(
+            {'role': {'$exists': False}},
+            {'$set': {'role': 'citizen'}}
+        )
+
+        # ── Ensure default inventory document exists ─────────────────
+        if not db.resources.find_one({'_id': 'inventory'}):
+            db.resources.insert_one({
+                '_id': 'inventory',
+                'ambulances': 10,
+                'rescue_teams': 5,
+                'food_packets': 1000,
+                'helicopters': 2,
+            })
+    except Exception as e:
+        logger.error('Error during init_db: %s', e)
+

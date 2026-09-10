@@ -58,7 +58,11 @@ def seed():
             db.users.update_one({'username': 'drs_admin'}, {'$set': {'role': 'admin'}})
             print('ℹ️  Admin user already exists — role set to admin.')
 
-        # Ensure all existing users without a role get 'citizen'
+        # Ensure all existing users without a role or with legacy responder role get 'citizen'
+        db.users.update_many(
+            {'role': {'$in': ['responder', None]}},
+            {'$set': {'role': 'citizen'}}
+        )
         db.users.update_many(
             {'role': {'$exists': False}},
             {'$set': {'role': 'citizen'}}

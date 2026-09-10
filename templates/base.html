@@ -101,11 +101,27 @@
           <span id="bc-sidebar-badge" class="badge bg-warning text-dark ms-1" style="display:none;"></span>
         </a>
       </li>
-      {% if current_user.role in ('admin', 'responder') %}
+      {% if current_user.role == 'admin' %}
+      <li><hr class="border-secondary my-1" /></li>
+      <li class="nav-item">
+        <span class="text-uppercase text-danger fw-bold px-3 d-block" style="font-size:.7rem; letter-spacing:1px;">Admin Duties</span>
+      </li>
+      <li class="nav-item">
+        <a href="{{ url_for('admin.users') }}"
+           class="nav-link text-warning {% if request.blueprint == 'admin' and request.endpoint != 'admin.manage_resources' %}active-link{% endif %}">
+          <i class="bi bi-people-fill me-2"></i>Manage Users
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="{{ url_for('admin.manage_resources') }}"
+           class="nav-link text-warning {% if request.endpoint == 'admin.manage_resources' %}active-link{% endif %}">
+          <i class="bi bi-boxes me-2"></i>Manage Inventory
+        </a>
+      </li>
       <li class="nav-item">
         <a href="{{ url_for('volunteer.all_volunteers') }}"
            class="nav-link text-white {% if request.endpoint == 'volunteer.all_volunteers' %}active-link{% endif %}">
-          <i class="bi bi-people me-2"></i>All Volunteers
+          <i class="bi bi-person-check-fill me-2"></i>Deploy Volunteers
         </a>
       </li>
       {% endif %}
@@ -116,24 +132,12 @@
       <i class="bi bi-sos me-2"></i>Send SOS
     </a>
 
-    <!-- Admin panel link -->
-    {% if current_user.role == 'admin' %}
-    <li class="nav-item">
-      <a href="{{ url_for('admin.users') }}"
-         class="nav-link text-warning {% if request.blueprint == 'admin' %}active-link{% endif %}">
-        <i class="bi bi-shield-lock me-2"></i>Admin Panel
-      </a>
-    </li>
-    {% endif %}
-
     <div class="mt-2 pt-2 border-top border-secondary">
       <div class="d-flex align-items-center gap-2 mb-1">
         <i class="bi bi-person-circle text-secondary"></i>
         <span class="text-secondary small">{{ current_user.username }}</span>
         {% if current_user.role == 'admin' %}
           <span class="badge bg-danger" style="font-size:.65rem;">admin</span>
-        {% elif current_user.role == 'responder' %}
-          <span class="badge bg-warning text-dark" style="font-size:.65rem;">responder</span>
         {% else %}
           <span class="badge bg-secondary" style="font-size:.65rem;">citizen</span>
         {% endif %}

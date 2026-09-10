@@ -33,7 +33,7 @@ def _send_broadcast_whatsapp(doc: dict, phones: list):
 
 @broadcast_bp.route('/broadcast', methods=['GET', 'POST'])
 @login_required
-@role_required('admin', 'responder')
+@role_required('admin')
 def index():
     if request.method == 'POST':
         title    = request.form.get('title', '').strip()

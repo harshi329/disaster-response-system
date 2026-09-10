@@ -153,7 +153,7 @@ def all_sos():
 
 @sos_bp.route('/sos/<sos_id>/resolve', methods=['POST'])
 @login_required
-@min_role_required('responder')
+@min_role_required('admin')
 def resolve(sos_id):
     try:
         db = get_mongo_db()
