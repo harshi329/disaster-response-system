@@ -13,14 +13,19 @@ def get_mongo_db():
     global _mongo_client
     if _mongo_client is None:
         uri = os.environ.get('MONGO_URI', 'mongodb://localhost:27017/disaster_response')
-        if uri.startswith('mongodb+srv') or 'mongodb.net' in uri:
-            import certifi
+        if 'mongodb.net' in uri or 'mongodb+srv' in uri:
+            import certifi, ssl
+            ctx = ssl.create_default_context(cafile=certifi.where())
+            ctx.check_hostname = False
+            ctx.verify_mode    = ssl.CERT_NONE
             _mongo_client = MongoClient(
                 uri,
                 serverSelectionTimeoutMS=20000,
                 connectTimeoutMS=20000,
                 socketTimeoutMS=20000,
-                tlsCAFile=certifi.where(),
+                tls=True,
+                tlsAllowInvalidCertificates=True,
+                tlsAllowInvalidHostnames=True,
             )
         else:
             _mongo_client = MongoClient(uri, serverSelectionTimeoutMS=5000)
