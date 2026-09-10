@@ -74,7 +74,7 @@
         <a href="{{ url_for('auth.forgot_password') }}" class="text-danger text-decoration-none" style="font-size:.78rem;">Forgot password?</a>
       </div>
       <button type="submit" class="btn btn-danger btn-sm w-100 fw-bold py-2" id="login-btn">
-        <i class="bi bi-box-arrow-in-right me-2"></i>Login &amp; Get OTP
+        <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
       </button>
     </form>
 
@@ -98,13 +98,13 @@ const roles = {
   citizen: {
     activeClass: 'btn-pill-active-citizen',
     hint: '👤 Citizen access: SOS alerts, reports, & volunteer hub.',
-    btn: '<i class="bi bi-box-arrow-in-right me-1"></i>Login as Citizen &amp; Get OTP',
+    btn: '<i class="bi bi-box-arrow-in-right me-1"></i>Sign In as Citizen',
     showGoogle: true,
   },
   admin: {
     activeClass: 'btn-pill-active-admin',
     hint: '🛡️ Admin console: Sign in directly with credentials.',
-    btn: '<i class="bi bi-shield-lock-fill me-1"></i>Login as Admin',
+    btn: '<i class="bi bi-shield-lock-fill me-1"></i>Sign In as Admin',
     showGoogle: false,
   },
 };
