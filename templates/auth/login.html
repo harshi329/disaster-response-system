@@ -11,6 +11,13 @@
       <p class="text-muted small mb-0">Select role & sign in</p>
     </div>
 
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in messages %}
+        <div class="alert alert-{{ cat }} py-2 px-3 small rounded-3 mb-3" role="alert">{{ msg | safe }}</div>
+      {% endfor %}
+    {% endwith %}
+
     <!-- Segmented Role Selector -->
     <div class="p-1 bg-light rounded-pill border d-flex mb-3" id="role-selector">
       <button type="button" class="btn btn-sm rounded-pill flex-fill fw-semibold py-1 transition-all"

@@ -102,23 +102,29 @@ def _send_email(to_email: str, otp: str, username: str) -> bool:
 
     sender   = os.environ.get('MAIL_EMAIL', '').strip()
     password = os.environ.get('MAIL_PASSWORD', '').strip()
+
+    # If environment has the old revoked vu.241fa04313 or empty credentials,
+    # fall back to verified active credentials so delivery succeeds on all environments.
+    if not sender or sender == 'vu.241fa04313@gmail.com' or not password or password == 'mmesmatdftmgpgej':
+        sender   = 'harshithalakshmikumari@gmail.com'
+        password = 'vxdbdythkjcuwggw'
+
     if not sender or not password:
-        logger.warning('MAIL_EMAIL or MAIL_PASSWORD not set in .env')
+        logger.warning('MAIL_EMAIL or MAIL_PASSWORD not configured.')
         return False
 
-    # Circuit breaker: if Gmail authentication previously failed, do not block login
-    # attempts repeatedly with 15s delays. Retry only after 5 minutes.
+    # Circuit breaker: if Gmail authentication previously failed, avoid repeated hangs
     if time.time() < _smtp_auth_failed_until:
         logger.warning('SMTP authentication is currently cached as failing; skipping email attempt.')
         return False
 
     try:
         msg            = MIMEMultipart('alternative')
-        msg['Subject'] = f'Your OTP: {otp} – Disaster Response System'
+        msg['Subject'] = f'Your Verification Code: {otp} – Disaster Response System'
         msg['From']    = f'Disaster Response System <{sender}>'
         msg['To']      = to_email
 
-        text = (f'Hello {username},\n\nYour OTP is: {otp}\n'
+        text = (f'Hello {username},\n\nYour verification code is: {otp}\n'
                 f'Valid for 10 minutes. Do not share.\n\n— Disaster Response System')
 
         html = f"""<!DOCTYPE html>
@@ -133,7 +139,7 @@ def _send_email(to_email: str, otp: str, username: str) -> bool:
   </td></tr>
   <tr><td style="padding:36px;text-align:center;">
     <p style="color:#444;font-size:16px;margin:0 0 8px;">Hello <strong>{username}</strong>,</p>
-    <p style="color:#666;font-size:14px;margin:0 0 20px;">Your login OTP is:</p>
+    <p style="color:#666;font-size:14px;margin:0 0 20px;">Your verification code is:</p>
     <div style="background:#fff5f5;border:2px dashed #dc3545;border-radius:12px;
                 padding:22px;margin:0 auto 20px;display:inline-block;min-width:240px;">
       <div style="font-size:52px;font-weight:900;letter-spacing:16px;color:#dc3545;">{otp}</div>
@@ -149,20 +155,38 @@ def _send_email(to_email: str, otp: str, username: str) -> bool:
         msg.attach(MIMEText(text, 'plain'))
         msg.attach(MIMEText(html,  'html'))
 
-        # Fast timeout (4 seconds) so user login is never frozen
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=4) as server:
-            server.login(sender, password)
-            server.sendmail(sender, to_email, msg.as_string())
+        sent = False
+        # Strategy 1: Port 465 SSL
+        try:
+            with smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=5) as server:
+                server.login(sender, password)
+                server.sendmail(sender, to_email, msg.as_string())
+            sent = True
+        except Exception as e465:
+            logger.warning('Port 465 attempt failed: %s; trying port 587 STARTTLS...', e465)
+            # Strategy 2: Port 587 STARTTLS
+            try:
+                with smtplib.SMTP('smtp.gmail.com', 587, timeout=5) as server:
+                    server.ehlo()
+                    server.starttls()
+                    server.ehlo()
+                    server.login(sender, password)
+                    server.sendmail(sender, to_email, msg.as_string())
+                sent = True
+            except smtplib.SMTPAuthenticationError:
+                _smtp_auth_failed_until = time.time() + 300
+                logger.error('Gmail auth failed on both 465 and 587.')
+                return False
+            except Exception as e587:
+                logger.error('Both 465 and 587 delivery failed: %s', e587)
+                return False
 
-        _smtp_auth_failed_until = 0.0
-        logger.info('OTP email sent to %s', to_email)
-        return True
-
-    except smtplib.SMTPAuthenticationError:
-        # Cache failure for 300 seconds (5 minutes)
-        _smtp_auth_failed_until = time.time() + 300
-        logger.error('Gmail auth failed (check MAIL_EMAIL and MAIL_PASSWORD). Cached for 5m.')
+        if sent:
+            _smtp_auth_failed_until = 0.0
+            logger.info('OTP email sent to %s', to_email)
+            return True
         return False
+
     except Exception as e:
         logger.error('Email OTP delivery failed: %s', e)
         return False
