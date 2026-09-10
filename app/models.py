@@ -7,19 +7,40 @@ from .database import get_mongo_db
 
 
 class User(UserMixin):
-    def __init__(self, id, username, email, phone=None):
+    def __init__(self, id, username, email, phone=None, role='citizen'):
         self.id       = str(id)
         self.username = username
         self.email    = email
         self.phone    = phone
+        self.role     = role or 'citizen'
 
+    # ── Convenience role checks ────────────────────────────────────────
+    @property
+    def is_admin(self):
+        return self.role == 'admin'
+
+    @property
+    def is_responder(self):
+        return self.role in ('responder', 'admin')
+
+    @property
+    def is_citizen(self):
+        return self.role == 'citizen'
+
+    # ── DB helpers ─────────────────────────────────────────────────────
     @staticmethod
     def get_by_id(user_id):
         try:
             db  = get_mongo_db()
             doc = db.users.find_one({'_id': ObjectId(str(user_id))})
             if doc:
-                return User(doc['_id'], doc['username'], doc['email'], doc.get('phone'))
+                return User(
+                    doc['_id'],
+                    doc['username'],
+                    doc['email'],
+                    doc.get('phone'),
+                    doc.get('role', 'citizen'),
+                )
         except Exception:
             pass
         return None

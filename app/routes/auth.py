@@ -1,12 +1,30 @@
+import os
+import re
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from flask_login import login_user, logout_user, login_required
 from werkzeug.security import generate_password_hash, check_password_hash
+from authlib.integrations.flask_client import OAuth
 from ..database import get_mongo_db
 from ..models import User
 from ..otp import generate_and_send_otp, verify_otp
 from .. import login_manager
 
 auth_bp = Blueprint('auth', __name__)
+
+# ── Google OAuth setup ────────────────────────────────────────────────────────
+oauth = OAuth()
+google = oauth.register(
+    name='google',
+    client_id=os.environ.get('GOOGLE_CLIENT_ID', ''),
+    client_secret=os.environ.get('GOOGLE_CLIENT_SECRET', ''),
+    server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
+    client_kwargs={'scope': 'openid email profile'},
+)
+
+
+def _init_oauth(app):
+    """Call this from create_app() after the app is created."""
+    oauth.init_app(app)
 
 
 @login_manager.user_loader
@@ -59,7 +77,7 @@ def verify_otp_view():
 
         if verify_otp(username, otp):
             row  = User.get_by_username(username)
-            user = User(row['_id'], row['username'], row['email'], row.get('phone'))
+            user = User(row['_id'], row['username'], row['email'], row.get('phone'), row.get('role', 'citizen'))
             login_user(user)
             session.pop('pending_user', None)
             flash('Login successful. Welcome back!', 'success')
@@ -89,13 +107,23 @@ def resend_otp():
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        username = request.form.get('username', '').strip()
+        username = request.form.get('username', '').strip()[:50]
         password = request.form.get('password', '').strip()
-        email    = request.form.get('email', '').strip()
-        phone    = request.form.get('phone', '').strip()
+        email    = request.form.get('email', '').strip()[:200]
+        phone    = request.form.get('phone', '').strip()[:20]
 
         if not username or not password or not email:
             flash('Username, email and password are required.', 'danger')
+            return render_template('auth/register.html')
+        if len(username) < 3:
+            flash('Username must be at least 3 characters.', 'danger')
+            return render_template('auth/register.html')
+        if len(password) < 6:
+            flash('Password must be at least 6 characters.', 'danger')
+            return render_template('auth/register.html')
+        import re as _re
+        if not _re.match(r'^[a-zA-Z0-9_]+$', username):
+            flash('Username can only contain letters, numbers and underscores.', 'danger')
             return render_template('auth/register.html')
 
         hashed = generate_password_hash(password)
@@ -106,6 +134,7 @@ def register():
                 'password': hashed,
                 'email':    email,
                 'phone':    phone,
+                'role':     'citizen',
             })
             flash('Account created! Please log in.', 'success')
             return redirect(url_for('auth.login'))
@@ -122,9 +151,95 @@ def logout():
     return redirect(url_for('auth.login'))
 
 
+# ── Google OAuth ──────────────────────────────────────────────────────────────
+
+@auth_bp.route('/login/google')
+def google_login():
+    """Redirect to Google's consent screen."""
+    if not os.environ.get('GOOGLE_CLIENT_ID'):
+        flash('Google login is not configured. Please use username/password.', 'warning')
+        return redirect(url_for('auth.login'))
+    redirect_uri = url_for('auth.google_callback', _external=True)
+    return google.authorize_redirect(redirect_uri)
+
+
+@auth_bp.route('/login/google/callback')
+def google_callback():
+    """Handle Google's redirect back with the auth code."""
+    if not os.environ.get('GOOGLE_CLIENT_ID'):
+        flash('Google login is not configured.', 'warning')
+        return redirect(url_for('auth.login'))
+
+    try:
+        token     = google.authorize_access_token()
+        user_info = token.get('userinfo') or google.userinfo()
+    except Exception as e:
+        flash('Google authentication failed. Please try again.', 'danger')
+        return redirect(url_for('auth.login'))
+
+    google_id = user_info.get('sub')
+    email     = user_info.get('email', '')
+    name      = user_info.get('name', '')
+    picture   = user_info.get('picture', '')
+
+    if not google_id or not email:
+        flash('Could not retrieve account info from Google.', 'danger')
+        return redirect(url_for('auth.login'))
+
+    db = get_mongo_db()
+
+    # ── 1. Try to find existing user by google_id ─────────────────────
+    doc = db.users.find_one({'google_id': google_id})
+
+    # ── 2. Fallback: find by email (links existing account) ──────────
+    if not doc:
+        doc = db.users.find_one({'email': email})
+        if doc:
+            # Link google_id to this existing account
+            db.users.update_one(
+                {'_id': doc['_id']},
+                {'$set': {'google_id': google_id, 'picture': picture}}
+            )
+            doc = db.users.find_one({'_id': doc['_id']})
+
+    # ── 3. Auto-register new user ─────────────────────────────────────
+    if not doc:
+        # Derive a unique username from the Google display name
+        base     = re.sub(r'[^a-zA-Z0-9_]', '', name.replace(' ', '_')) or 'user'
+        username = base
+        counter  = 1
+        while db.users.find_one({'username': username}):
+            username = f'{base}{counter}'
+            counter += 1
+
+        new_doc = {
+            'username':  username,
+            'email':     email,
+            'password':  '',          # no password for OAuth-only accounts
+            'phone':     '',
+            'role':      'citizen',
+            'google_id': google_id,
+            'picture':   picture,
+        }
+        result = db.users.insert_one(new_doc)
+        doc    = db.users.find_one({'_id': result.inserted_id})
+        flash(f'Welcome! Your account <strong>{username}</strong> has been created.', 'success')
+
+    # ── 4. Log in ─────────────────────────────────────────────────────
+    user = User(doc['_id'], doc['username'], doc['email'],
+                doc.get('phone'), doc.get('role', 'citizen'))
+    login_user(user)
+    flash(f'Signed in with Google as <strong>{doc["username"]}</strong>.', 'success')
+    return redirect(url_for('dashboard.index'))
+
+
+# ── Offline fallback page ─────────────────────────────────────────────────────
+@auth_bp.route('/offline')
+def offline():
+    return render_template('offline.html')
+
+
 # ── Voice test page (no login required for debugging) ────────────────────────
 @auth_bp.route('/voice-test')
 def voice_test():
-    from flask import render_template_string
-    with open('templates/voice_test.html', encoding='utf-8') as f:
-        return f.read()
+    return render_template('voice_test.html')

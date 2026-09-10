@@ -5,6 +5,7 @@ from ..agents.analysis_agent import analyze_disaster
 from ..agents.resource_agent import allocate_resources
 from ..agents.route_agent import optimize_route
 from ..agents.alert_agent import generate_alert
+from ..rbac import min_role_required
 from datetime import datetime
 from bson import ObjectId
 
@@ -14,28 +15,51 @@ reports_bp = Blueprint('reports', __name__)
 @reports_bp.route('/reports')
 @login_required
 def index():
-    reports = []
+    page     = max(1, request.args.get('page', 1, type=int))
+    per_page = 20
+    reports  = []
+    total    = 0
     try:
-        db = get_mongo_db()
-        reports = list(db.disaster_reports.find().sort('timestamp', -1).limit(50))
+        db      = get_mongo_db()
+        total   = db.disaster_reports.count_documents({})
+        reports = list(
+            db.disaster_reports.find()
+            .sort('timestamp', -1)
+            .skip((page - 1) * per_page)
+            .limit(per_page)
+        )
         for r in reports:
             r['_id'] = str(r['_id'])
     except Exception:
         flash('Could not connect to database.', 'warning')
-    return render_template('reports/index.html', reports=reports)
+    total_pages = max(1, (total + per_page - 1) // per_page)
+    return render_template(
+        'reports/index.html',
+        reports=reports,
+        page=page,
+        total_pages=total_pages,
+        total=total,
+    )
 
 
 @reports_bp.route('/reports/new', methods=['GET', 'POST'])
 @login_required
+@min_role_required('responder')
 def new_report():
     if request.method == 'POST':
-        location    = request.form.get('location', '').strip()
-        description = request.form.get('description', '').strip()
+        location    = request.form.get('location', '').strip()[:200]
+        description = request.form.get('description', '').strip()[:2000]
         lat         = request.form.get('lat', '')
         lng         = request.form.get('lng', '')
 
         if not location or not description:
             flash('Location and description are required.', 'danger')
+            return render_template('reports/new.html')
+        if len(location) < 3:
+            flash('Location must be at least 3 characters.', 'danger')
+            return render_template('reports/new.html')
+        if len(description) < 10:
+            flash('Description must be at least 10 characters.', 'danger')
             return render_template('reports/new.html')
 
         # ── Run AI Agents ──────────────────────────────────────────────────
@@ -94,3 +118,28 @@ def view_report(report_id):
         flash('Report not found.', 'warning')
         return redirect(url_for('reports.index'))
     return render_template('reports/view.html', report=report)
+
+
+@reports_bp.route('/reports/<report_id>/status', methods=['POST'])
+@login_required
+@min_role_required('responder')
+def update_status(report_id):
+    VALID_STATUSES = {'Active', 'In Progress', 'Resolved', 'Closed'}
+    new_status = request.form.get('status', '').strip()
+    if new_status not in VALID_STATUSES:
+        flash('Invalid status.', 'danger')
+        return redirect(url_for('reports.view_report', report_id=report_id))
+    try:
+        db = get_mongo_db()
+        db.disaster_reports.update_one(
+            {'_id': ObjectId(report_id)},
+            {'$set': {
+                'status':     new_status,
+                'updated_by': current_user.username,
+                'updated_at': datetime.utcnow().isoformat(),
+            }}
+        )
+        flash(f'Report status updated to {new_status}.', 'success')
+    except Exception:
+        flash('Could not update status.', 'danger')
+    return redirect(url_for('reports.view_report', report_id=report_id))

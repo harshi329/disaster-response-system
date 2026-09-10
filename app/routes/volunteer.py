@@ -5,6 +5,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user
 from ..database import get_mongo_db
 from ..whatsapp import send_whatsapp, format_volunteer_message
+from ..rbac import min_role_required
 from datetime import datetime
 from bson import ObjectId
 import threading
@@ -82,6 +83,7 @@ def register():
 
 @volunteer_bp.route('/volunteer/all')
 @login_required
+@min_role_required('responder')
 def all_volunteers():
     volunteers = []
     stats = {'total': 0, 'available': 0, 'deployed': 0}
@@ -101,6 +103,7 @@ def all_volunteers():
 
 @volunteer_bp.route('/volunteer/<vol_id>/deploy', methods=['POST'])
 @login_required
+@min_role_required('admin')
 def deploy(vol_id):
     location = request.form.get('deploy_location', '').strip()
     try:

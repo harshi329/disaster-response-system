@@ -3,7 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#dc3545" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="DRS" />
   <title>{% block title %}Disaster Response System{% endblock %}</title>
+  <link rel="manifest" href="/static/manifest.json" />
+  <link rel="apple-touch-icon" href="/static/icons/icon-192.png" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
@@ -94,6 +101,14 @@
           <span id="bc-sidebar-badge" class="badge bg-warning text-dark ms-1" style="display:none;"></span>
         </a>
       </li>
+      {% if current_user.role in ('admin', 'responder') %}
+      <li class="nav-item">
+        <a href="{{ url_for('volunteer.all_volunteers') }}"
+           class="nav-link text-white {% if request.endpoint == 'volunteer.all_volunteers' %}active-link{% endif %}">
+          <i class="bi bi-people me-2"></i>All Volunteers
+        </a>
+      </li>
+      {% endif %}
     </ul>
 
     <!-- SOS button -->
@@ -101,10 +116,28 @@
       <i class="bi bi-sos me-2"></i>Send SOS
     </a>
 
+    <!-- Admin panel link -->
+    {% if current_user.role == 'admin' %}
+    <li class="nav-item">
+      <a href="{{ url_for('admin.users') }}"
+         class="nav-link text-warning {% if request.blueprint == 'admin' %}active-link{% endif %}">
+        <i class="bi bi-shield-lock me-2"></i>Admin Panel
+      </a>
+    </li>
+    {% endif %}
+
     <div class="mt-2 pt-2 border-top border-secondary">
-      <span class="text-secondary small">
-        <i class="bi bi-person-circle me-1"></i>{{ current_user.username }}
-      </span>
+      <div class="d-flex align-items-center gap-2 mb-1">
+        <i class="bi bi-person-circle text-secondary"></i>
+        <span class="text-secondary small">{{ current_user.username }}</span>
+        {% if current_user.role == 'admin' %}
+          <span class="badge bg-danger" style="font-size:.65rem;">admin</span>
+        {% elif current_user.role == 'responder' %}
+          <span class="badge bg-warning text-dark" style="font-size:.65rem;">responder</span>
+        {% else %}
+          <span class="badge bg-secondary" style="font-size:.65rem;">citizen</span>
+        {% endif %}
+      </div>
       <a href="{{ url_for('auth.logout') }}" class="nav-link text-danger mt-1" style="font-size:.85rem;">
         <i class="bi bi-box-arrow-left me-2"></i>Logout
       </a>
@@ -220,5 +253,6 @@ refreshBroadcasts(); setInterval(refreshBroadcasts, 30000);
 {% endif %}
 
 {% block scripts %}{% endblock %}
+<script src="{{ url_for('static', filename='js/offline.js') }}"></script>
 </body>
 </html>

@@ -5,6 +5,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user
 from ..database import get_mongo_db
 from ..whatsapp import send_whatsapp_bulk, format_broadcast_message
+from ..rbac import role_required
 from datetime import datetime
 from bson import ObjectId
 import threading
@@ -32,6 +33,7 @@ def _send_broadcast_whatsapp(doc: dict, phones: list):
 
 @broadcast_bp.route('/broadcast', methods=['GET', 'POST'])
 @login_required
+@role_required('admin', 'responder')
 def index():
     if request.method == 'POST':
         title    = request.form.get('title', '').strip()

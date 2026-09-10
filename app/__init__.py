@@ -12,14 +12,15 @@ def create_app():
 
     @app.context_processor
     def inject_globals():
-        return {}
+        from flask_login import current_user
+        return dict(current_user=current_user)
 
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
 
     init_db()
 
-    from .routes.auth       import auth_bp
+    from .routes.auth       import auth_bp, _init_oauth
     from .routes.dashboard  import dashboard_bp
     from .routes.reports    import reports_bp
     from .routes.resources  import resources_bp
@@ -32,8 +33,10 @@ def create_app():
     from .routes.analytics  import analytics_bp
     from .routes.volunteer  import volunteer_bp
     from .routes.broadcast  import broadcast_bp
+    from .routes.admin      import admin_bp
 
     app.register_blueprint(auth_bp)
+    _init_oauth(app)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(reports_bp)
     app.register_blueprint(resources_bp)
@@ -46,5 +49,6 @@ def create_app():
     app.register_blueprint(analytics_bp)
     app.register_blueprint(volunteer_bp)
     app.register_blueprint(broadcast_bp)
+    app.register_blueprint(admin_bp)
 
     return app

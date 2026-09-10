@@ -5,6 +5,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user
 from ..database import get_mongo_db
 from ..whatsapp import send_whatsapp, send_whatsapp_bulk, format_sos_message
+from ..rbac import min_role_required
 from datetime import datetime
 from bson import ObjectId
 import threading
@@ -36,18 +37,27 @@ def _send_sos_whatsapp_async(sos_doc: dict, phones: list):
 @login_required
 def submit():
     if request.method == 'POST':
-        name     = request.form.get('name', '').strip() or current_user.username
-        location = request.form.get('location', '').strip()
-        message  = request.form.get('message', '').strip()
+        name     = request.form.get('name', '').strip()[:100] or current_user.username
+        location = request.form.get('location', '').strip()[:300]
+        message  = request.form.get('message', '').strip()[:1000]
         people   = request.form.get('people', '1').strip()
         lat      = request.form.get('lat', '')
         lng      = request.form.get('lng', '')
-        sos_type = request.form.get('sos_type', 'General Emergency')
-        # Optional: recipient phone entered on form
-        recipient_phone = request.form.get('recipient_phone', '').strip()
+        sos_type = request.form.get('sos_type', 'General Emergency')[:50]
+        recipient_phone = request.form.get('recipient_phone', '').strip()[:20]
+
+        VALID_SOS_TYPES = {
+            'Medical Emergency', 'Trapped / Stuck', 'Fire',
+            'Flood', 'Earthquake', 'General Emergency'
+        }
+        if sos_type not in VALID_SOS_TYPES:
+            sos_type = 'General Emergency'
 
         if not location or not message:
             flash('Location and message are required.', 'danger')
+            return render_template('sos/submit.html')
+        if len(message) < 5:
+            flash('Please describe your emergency in more detail.', 'danger')
             return render_template('sos/submit.html')
 
         sos_doc = {
@@ -111,21 +121,39 @@ def confirmation(sos_id):
 @sos_bp.route('/sos/all')
 @login_required
 def all_sos():
+    page     = max(1, request.args.get('page', 1, type=int))
+    per_page = 20
     sos_list = []
+    total    = 0
     active_count = 0
     try:
-        db = get_mongo_db()
-        sos_list = list(db.sos_alerts.find().sort('created_at', -1).limit(100))
+        db    = get_mongo_db()
+        total = db.sos_alerts.count_documents({})
+        sos_list = list(
+            db.sos_alerts.find()
+            .sort('created_at', -1)
+            .skip((page - 1) * per_page)
+            .limit(per_page)
+        )
         for s in sos_list:
             s['_id'] = str(s['_id'])
-        active_count = sum(1 for s in sos_list if s.get('status') == 'Active')
+        active_count = db.sos_alerts.count_documents({'status': 'Active'})
     except Exception:
         flash('Could not load SOS alerts.', 'warning')
-    return render_template('sos/all.html', sos_list=sos_list, active_count=active_count)
+    total_pages = max(1, (total + per_page - 1) // per_page)
+    return render_template(
+        'sos/all.html',
+        sos_list=sos_list,
+        active_count=active_count,
+        page=page,
+        total_pages=total_pages,
+        total=total,
+    )
 
 
 @sos_bp.route('/sos/<sos_id>/resolve', methods=['POST'])
 @login_required
+@min_role_required('responder')
 def resolve(sos_id):
     try:
         db = get_mongo_db()

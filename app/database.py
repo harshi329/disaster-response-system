@@ -18,10 +18,11 @@ def get_mongo_db():
 
 
 def init_db():
-    """Create indexes for the users collection (replaces SQLite init)."""
+    """Create indexes for the users collection."""
     try:
         db = get_mongo_db()
         db.users.create_index('username', unique=True)
         db.users.create_index('email',    unique=True)
+        db.users.create_index('google_id', sparse=True)
     except Exception:
         pass

@@ -2,41 +2,105 @@
 {% block title %}Report Detail{% endblock %}
 
 {% block content %}
-<div class="mb-3 d-flex gap-2">
+<div class="mb-3 d-flex gap-2 flex-wrap">
   <a href="{{ url_for('reports.index') }}" class="btn btn-sm btn-outline-secondary">
     <i class="bi bi-arrow-left me-1"></i>Back
   </a>
   <button type="button" onclick="shareReportWA()" class="btn btn-sm btn-success fw-bold">
     <i class="bi bi-whatsapp me-1"></i>Share on WhatsApp
   </button>
-  <button type="button" onclick="downloadPDF()" class="btn btn-sm btn-primary fw-bold">
-    <i class="bi bi-file-earmark-pdf me-1"></i>Download PDF
-  </button>
 </div>
 
-<div class="card border-0 shadow-sm">
-  <div class="card-header bg-danger text-white fw-semibold">
-    <i class="bi bi-file-earmark-text me-2"></i>Report Detail
+<div class="row g-3">
+  <!-- Report detail -->
+  <div class="col-lg-8">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-danger text-white fw-semibold d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-file-earmark-text me-2"></i>Report Detail</span>
+        <span class="badge
+          {% if report.severity == 'High' %}bg-light text-danger
+          {% elif report.severity == 'Medium' %}bg-warning text-dark
+          {% else %}bg-success{% endif %}">
+          {{ report.severity }} Severity
+        </span>
+      </div>
+      <div class="card-body">
+        <table class="table table-borderless mb-0">
+          <tr><th style="width:160px" class="text-muted">Location</th><td class="fw-semibold">{{ report.location }}</td></tr>
+          <tr><th class="text-muted">Type</th><td>{{ report.type }}</td></tr>
+          <tr><th class="text-muted">Severity</th>
+            <td>
+              <span class="badge {% if report.severity == 'High' %}bg-danger{% elif report.severity == 'Medium' %}bg-warning text-dark{% else %}bg-success{% endif %}">
+                {{ report.severity }}
+              </span>
+            </td>
+          </tr>
+          <tr><th class="text-muted">Risk Score</th>
+            <td>
+              <span class="fw-bold {% if report.risk_score >= 8 %}text-danger{% elif report.risk_score >= 5 %}text-warning{% else %}text-success{% endif %}">
+                {{ report.risk_score }}/10
+              </span>
+            </td>
+          </tr>
+          <tr><th class="text-muted">Status</th>
+            <td>
+              <span class="badge
+                {% if report.status == 'Active' %}bg-danger
+                {% elif report.status == 'In Progress' %}bg-warning text-dark
+                {% elif report.status == 'Resolved' %}bg-success
+                {% else %}bg-secondary{% endif %}">
+                {{ report.status }}
+              </span>
+              {% if report.updated_by %}
+                <small class="text-muted ms-2">updated by {{ report.updated_by }}</small>
+              {% endif %}
+            </td>
+          </tr>
+          <tr><th class="text-muted">Reported By</th><td>{{ report.reported_by }}</td></tr>
+          <tr><th class="text-muted">Timestamp</th><td class="text-muted small">{{ report.timestamp[:16] if report.timestamp else '—' }}</td></tr>
+          <tr><th class="text-muted">Description</th><td>{{ report.description }}</td></tr>
+          <tr><th class="text-muted">AI Summary</th><td class="text-muted fst-italic">{{ report.summary }}</td></tr>
+        </table>
+      </div>
+    </div>
   </div>
-  <div class="card-body">
-    <table class="table table-borderless">
-      <tr><th style="width:160px">Location</th><td>{{ report.location }}</td></tr>
-      <tr><th>Type</th><td>{{ report.type }}</td></tr>
-      <tr><th>Severity</th>
-        <td>
-          <span class="badge {% if report.severity == 'High' %}bg-danger{% elif report.severity == 'Medium' %}bg-warning text-dark{% else %}bg-success{% endif %}">
-            {{ report.severity }}
-          </span>
-        </td>
-      </tr>
-      <tr><th>Risk Score</th><td>{{ report.risk_score }}/10</td></tr>
-      <tr><th>Status</th><td><span class="badge bg-secondary">{{ report.status }}</span></td></tr>
-      <tr><th>Reported By</th><td>{{ report.reported_by }}</td></tr>
-      <tr><th>Timestamp</th><td>{{ report.timestamp }}</td></tr>
-      <tr><th>Description</th><td>{{ report.description }}</td></tr>
-      <tr><th>AI Summary</th><td class="text-muted">{{ report.summary }}</td></tr>
-    </table>
+
+  <!-- Status update (responder/admin only) -->
+  {% if current_user.role in ('responder', 'admin') %}
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white fw-semibold border-bottom">
+        <i class="bi bi-arrow-repeat text-warning me-2"></i>Update Status
+      </div>
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('reports.update_status', report_id=report._id) }}">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">New Status</label>
+            <select name="status" class="form-select">
+              {% for s in ['Active', 'In Progress', 'Resolved', 'Closed'] %}
+              <option value="{{ s }}" {% if report.status == s %}selected{% endif %}>{{ s }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <button type="submit" class="btn btn-warning w-100 fw-bold">
+            <i class="bi bi-save me-2"></i>Update Status
+          </button>
+        </form>
+
+        <!-- Status meaning guide -->
+        <div class="mt-3">
+          <small class="text-muted d-block mb-1 fw-semibold">Status guide:</small>
+          <div class="d-flex flex-column gap-1" style="font-size:.8rem;">
+            <span><span class="badge bg-danger me-1">Active</span> Just reported, not yet actioned</span>
+            <span><span class="badge bg-warning text-dark me-1">In Progress</span> Team dispatched / working</span>
+            <span><span class="badge bg-success me-1">Resolved</span> Situation contained</span>
+            <span><span class="badge bg-secondary me-1">Closed</span> Fully closed, archived</span>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
+  {% endif %}
 </div>
 {% endblock %}
 
@@ -45,12 +109,12 @@
 function shareReportWA() {
   const msg = encodeURIComponent(
     '\uD83D\uDEA8 *DISASTER REPORT*\n\n' +
-    '*Location:* {{ report.location|replace("'","") }}\n' +
+    '*Location:* {{ report.location | replace("'", "") }}\n' +
     '*Type:* {{ report.type }}\n' +
     '*Severity:* {{ report.severity }}\n' +
     '*Risk Score:* {{ report.risk_score }}/10\n' +
     '*Status:* {{ report.status }}\n\n' +
-    '*Description:* {{ report.description|replace("'","")|truncate(200,true,"") }}\n\n' +
+    '*Description:* {{ report.description | replace("'","") | truncate(200, true, "") }}\n\n' +
     '\uD83D\uDE94 Police: 100 | \uD83D\uDE92 Fire: 101 | \uD83D\uDE91 Ambulance: 108'
   );
   window.open('https://wa.me/?text=' + msg, '_blank');

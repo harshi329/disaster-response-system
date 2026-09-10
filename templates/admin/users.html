@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+{% block title %}Admin — User Management{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h4 class="fw-bold mb-0"><i class="bi bi-shield-lock text-danger me-2"></i>User Management</h4>
+    <small class="text-muted">Assign roles and manage user accounts</small>
+  </div>
+  <a href="{{ url_for('admin.manage_resources') }}" class="btn btn-outline-warning btn-sm">
+    <i class="bi bi-boxes me-1"></i>Manage Resources
+  </a>
+</div>
+
+<!-- Role legend -->
+<div class="d-flex gap-2 mb-4 flex-wrap">
+  <span class="badge bg-secondary fs-6 px-3 py-2">citizen — view only, SOS, volunteer signup</span>
+  <span class="badge bg-warning text-dark fs-6 px-3 py-2">responder — submit reports, resolve SOS, view volunteers</span>
+  <span class="badge bg-danger fs-6 px-3 py-2">admin — full access incl. broadcasts, deploy volunteers, manage users</span>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-body p-0">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-dark">
+        <tr>
+          <th>Username</th>
+          <th>Email</th>
+          <th>Phone</th>
+          <th>Current Role</th>
+          <th>Change Role</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td>
+            <i class="bi bi-person-circle me-1 text-muted"></i>
+            <strong>{{ u.username }}</strong>
+            {% if u._id == current_user.id %}
+              <span class="badge bg-info text-dark ms-1" style="font-size:.65rem;">you</span>
+            {% endif %}
+          </td>
+          <td class="text-muted small">{{ u.email }}</td>
+          <td class="text-muted small">{{ u.phone or '—' }}</td>
+          <td>
+            {% set role = u.get('role', 'citizen') %}
+            {% if role == 'admin' %}
+              <span class="badge bg-danger">admin</span>
+            {% elif role == 'responder' %}
+              <span class="badge bg-warning text-dark">responder</span>
+            {% else %}
+              <span class="badge bg-secondary">citizen</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if u._id != current_user.id %}
+            <form method="POST" action="{{ url_for('admin.change_role', user_id=u._id) }}"
+                  class="d-flex gap-2 align-items-center">
+              <select name="role" class="form-select form-select-sm" style="width:130px;">
+                {% for r in roles %}
+                  <option value="{{ r }}" {% if u.get('role', 'citizen') == r %}selected{% endif %}>
+                    {{ r }}
+                  </option>
+                {% endfor %}
+              </select>
+              <button type="submit" class="btn btn-sm btn-outline-primary">Save</button>
+            </form>
+            {% else %}
+            <span class="text-muted small">—</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if u._id != current_user.id %}
+            <form method="POST" action="{{ url_for('admin.delete_user', user_id=u._id) }}"
+                  onsubmit="return confirm('Delete user {{ u.username }}? This cannot be undone.')">
+              <button type="submit" class="btn btn-sm btn-outline-danger">
+                <i class="bi bi-trash"></i>
+              </button>
+            </form>
+            {% else %}
+            <span class="text-muted small">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="text-center text-muted py-4">No users found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

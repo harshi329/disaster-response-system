@@ -1,43 +1,79 @@
 {% extends 'base.html' %}
+{% from 'macros.html' import pagination %}
 {% block title %}Alerts{% endblock %}
+
 {% block content %}
-<h4 class="fw-bold mb-4"><i class="bi bi-bell me-2 text-danger"></i>Emergency Alerts</h4>
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h4 class="fw-bold mb-0"><i class="bi bi-bell me-2 text-danger"></i>Emergency Alerts</h4>
+    <small class="text-muted">{{ total }} total alert{{ 's' if total != 1 }}</small>
+  </div>
+</div>
 
 {% if not alerts %}
 <div class="text-center text-muted py-5">
-  <i class="bi bi-bell-slash fs-1 mb-3 d-block"></i>
-  No active alerts.
+  <i class="bi bi-bell-slash fs-1 mb-3 d-block opacity-25"></i>
+  No alerts yet. They are generated automatically when a disaster report is submitted.
 </div>
 {% endif %}
 
 <div class="row g-3">
   {% for alert in alerts %}
   <div class="col-12">
-    <div class="card border-0 shadow-sm border-start border-4
-      {% if alert.severity == 'High' %}border-danger
-      {% elif alert.severity == 'Medium' %}border-warning
-      {% else %}border-success{% endif %}">
+    <div class="card border-0 shadow-sm"
+         style="border-left:4px solid {% if alert.severity=='High' %}#dc3545{% elif alert.severity=='Medium' %}#ffc107{% else %}#198754{% endif %} !important;">
       <div class="card-body d-flex align-items-start gap-3">
-        <i class="bi bi-exclamation-triangle-fill fs-3
+        <i class="bi bi-exclamation-triangle-fill fs-3 mt-1
           {% if alert.severity == 'High' %}text-danger
           {% elif alert.severity == 'Medium' %}text-warning
-          {% else %}text-success{% endif %} mt-1"></i>
+          {% else %}text-success{% endif %}"></i>
         <div class="flex-grow-1">
-          <div class="d-flex justify-content-between">
+          <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
             <strong>{{ alert.disaster_type }} – {{ alert.location }}</strong>
-            <span class="badge
-              {% if alert.severity == 'High' %}bg-danger
-              {% elif alert.severity == 'Medium' %}bg-warning text-dark
-              {% else %}bg-success{% endif %}">
-              {{ alert.severity }}
-            </span>
+            <div class="d-flex gap-2 align-items-center">
+              <span class="badge
+                {% if alert.severity == 'High' %}bg-danger
+                {% elif alert.severity == 'Medium' %}bg-warning text-dark
+                {% else %}bg-success{% endif %}">
+                {{ alert.severity }}
+              </span>
+              <span class="badge {% if alert.status == 'Active' %}bg-danger{% else %}bg-secondary{% endif %}">
+                {{ alert.status or 'Active' }}
+              </span>
+              <button type="button"
+                onclick="shareAlertWA('{{ alert.disaster_type }}','{{ alert.location | replace(\"'\",\"\") }}','{{ alert.severity }}','{{ alert.message | replace(\"'\",\"\") | truncate(200,true,\"...\") }}')"
+                class="btn btn-sm btn-success py-0 px-2" title="Share on WhatsApp">
+                <i class="bi bi-whatsapp"></i>
+              </button>
+            </div>
           </div>
           <p class="mb-1 mt-1">{{ alert.message }}</p>
-          <small class="text-muted">{{ alert.created_at[:16] if alert.created_at else '' }}</small>
+          <small class="text-muted">
+            <i class="bi bi-clock me-1"></i>{{ alert.created_at[:16] if alert.created_at else '—' }}
+          </small>
         </div>
       </div>
     </div>
   </div>
   {% endfor %}
 </div>
+
+{{ pagination(page, total_pages, 'alerts.index') }}
+{% endblock %}
+
+{% block scripts %}
+<script>
+function shareAlertWA(type, location, severity, message) {
+  const emoji = severity === 'High' ? '🚨' : severity === 'Medium' ? '⚠️' : '📢';
+  const text  = encodeURIComponent(
+    emoji + ' *EMERGENCY ALERT*\n\n' +
+    '*Type:* '     + type     + '\n' +
+    '*Location:* ' + location + '\n' +
+    '*Severity:* ' + severity + '\n\n' +
+    message + '\n\n' +
+    '🚔 Police: 100 | 🚒 Fire: 101 | 🚑 Ambulance: 108'
+  );
+  window.open('https://wa.me/?text=' + text, '_blank');
+}
+</script>
 {% endblock %}

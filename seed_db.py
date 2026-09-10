@@ -4,6 +4,7 @@ Usage: python seed_db.py
 """
 from datetime import datetime, timedelta
 import random
+from werkzeug.security import generate_password_hash
 from app.database import get_mongo_db, init_db
 from app import create_app
 
@@ -42,6 +43,29 @@ def seed():
         init_db()
         db = get_mongo_db()
 
+        # ── Default admin user ─────────────────────────────────────────
+        if not db.users.find_one({'username': 'drs_admin'}):
+            db.users.insert_one({
+                'username': 'drs_admin',
+                'password': generate_password_hash('admin123'),
+                'email':    'vu.241fa04313@gmail.com',
+                'phone':    '',
+                'role':     'admin',
+            })
+            print('✅ Admin user created  (username: drs_admin / password: admin123)')
+        else:
+            # Ensure existing admin user has admin role
+            db.users.update_one({'username': 'drs_admin'}, {'$set': {'role': 'admin'}})
+            print('ℹ️  Admin user already exists — role set to admin.')
+
+        # Ensure all existing users without a role get 'citizen'
+        db.users.update_many(
+            {'role': {'$exists': False}},
+            {'$set': {'role': 'citizen'}}
+        )
+        print('✅ Backfilled citizen role for existing users.')
+
+        # ── Sample data ────────────────────────────────────────────────
         # Clear existing
         db.disaster_reports.delete_many({})
         db.alerts.delete_many({})
