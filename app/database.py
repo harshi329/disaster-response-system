@@ -79,19 +79,25 @@ def init_db():
         db.users.create_index('google_id', sparse=True)
 
         # ── Guarantee default admin user exists ───────────────────────
-        admin_doc = db.users.find_one({'username': 'drs_admin'})
+        admin_user = os.environ.get('ADMIN_USERNAME', 'drs_admin')
+        admin_pass = os.environ.get('ADMIN_PASSWORD', 'admin123')
+        admin_email = os.environ.get('ADMIN_EMAIL', 'vu.241fa04313@gmail.com')
+
+        admin_doc = db.users.find_one({'username': admin_user})
         if not admin_doc:
             db.users.insert_one({
-                'username': 'drs_admin',
-                'password': generate_password_hash('admin123'),
-                'email':    'vu.241fa04313@gmail.com',
+                'username': admin_user,
+                'password': generate_password_hash(admin_pass),
+                'email':    admin_email,
                 'phone':    '',
                 'role':     'admin',
             })
-            logger.info('Default admin user created: drs_admin')
+            logger.info('Admin user created: %s', admin_user)
         else:
-            if admin_doc.get('role') != 'admin':
-                db.users.update_one({'username': 'drs_admin'}, {'$set': {'role': 'admin'}})
+            updates = {'role': 'admin'}
+            if os.environ.get('ADMIN_PASSWORD'):
+                updates['password'] = generate_password_hash(admin_pass)
+            db.users.update_one({'username': admin_user}, {'$set': updates})
 
         # ── Migrate legacy 'responder' role users to 'citizen' ───────
         db.users.update_many(
