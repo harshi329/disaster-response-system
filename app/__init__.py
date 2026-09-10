@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, send_from_directory
 from flask_login import LoginManager
 from .database import init_db
 import os
@@ -38,6 +38,10 @@ def create_app():
     @app.errorhandler(403)
     def forbidden(e):
         return render_template('errors/403.html'), 403
+
+    @app.route('/favicon.ico')
+    def favicon():
+        return send_from_directory(os.path.join(app.root_path, '../static'), 'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
