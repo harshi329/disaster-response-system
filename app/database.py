@@ -13,11 +13,13 @@ def get_mongo_db():
     global _mongo_client
     if _mongo_client is None:
         uri = os.environ.get('MONGO_URI', 'mongodb://localhost:27017/disaster_response')
+        import certifi
         _mongo_client = MongoClient(
             uri,
             serverSelectionTimeoutMS=20000,
-            tls=True,
-            tlsAllowInvalidCertificates=True,
+            connectTimeoutMS=20000,
+            socketTimeoutMS=20000,
+            tlsCAFile=certifi.where(),
         )
     return _mongo_client['disaster_response']
 
