@@ -169,7 +169,18 @@ def google_login():
     if not os.environ.get('GOOGLE_CLIENT_ID'):
         flash('Google login is not configured. Please use username/password.', 'warning')
         return redirect(url_for('auth.login'))
-    redirect_uri = url_for('auth.google_callback', _external=True)
+
+    # Google OAuth explicitly rejects private LAN IPs (e.g. 192.168.x.x, 10.x.x.x, 172.16.x.x)
+    configured_redirect = os.environ.get('GOOGLE_REDIRECT_URI')
+    if configured_redirect:
+        redirect_uri = configured_redirect
+    else:
+        redirect_uri = url_for('auth.google_callback', _external=True)
+        import re
+        if re.search(r'://(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)', redirect_uri):
+            port = os.environ.get('PORT', 5000)
+            redirect_uri = f'http://localhost:{port}/login/google/callback'
+
     return google.authorize_redirect(redirect_uri)
 
 

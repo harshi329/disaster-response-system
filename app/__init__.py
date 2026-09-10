@@ -10,6 +10,9 @@ def create_app():
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'disaster-response-secret-2024')
     app.config['MONGO_URI']  = os.environ.get('MONGO_URI', 'mongodb://localhost:27017/disaster_response')
 
+    from werkzeug.middleware.proxy_fix import ProxyFix
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+
     @app.context_processor
     def inject_globals():
         from flask_login import current_user
