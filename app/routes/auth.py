@@ -56,6 +56,14 @@ def login():
             flash('Invalid username or password.', 'danger')
             return render_template('auth/login.html')
 
+        # Admin logs in directly with credentials — NO OTP required!
+        if row.get('role') == 'admin':
+            user = User(row['_id'], row['username'], row['email'], row.get('phone'), 'admin')
+            login_user(user)
+            flash(f'Admin login successful. Welcome back, {user.username}!', 'success')
+            return redirect(url_for('dashboard.index'))
+
+        # Citizens proceed with OTP verification
         email  = row.get('email', '')
         result = generate_and_send_otp(username, email=email)
 
@@ -201,6 +209,11 @@ def google_callback():
                 {'$set': {'google_id': google_id, 'picture': picture}}
             )
             doc = db.users.find_one({'_id': doc['_id']})
+
+    # Admin accounts cannot sign in via Google OAuth
+    if doc and doc.get('role') == 'admin':
+        flash('Admin accounts must sign in using Admin credentials (username & password).', 'warning')
+        return redirect(url_for('auth.login'))
 
     # ── 3. Auto-register new user ─────────────────────────────────────
     if not doc:
