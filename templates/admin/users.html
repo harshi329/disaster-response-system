@@ -47,6 +47,8 @@
             {% set role = u.get('role', 'citizen') %}
             {% if role == 'admin' %}
               <span class="badge bg-danger">admin</span>
+            {% elif role == 'volunteer' %}
+              <span class="badge bg-primary">volunteer</span>
             {% else %}
               <span class="badge bg-secondary">citizen</span>
             {% endif %}

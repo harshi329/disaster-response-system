@@ -89,9 +89,9 @@
         </a>
       </li>
       <li class="nav-item">
-        <a href="{{ url_for('volunteer.register') }}"
+        <a href="{{ url_for('volunteer.all_volunteers') if current_user.role in ('volunteer', 'admin') else url_for('volunteer.register') }}"
            class="nav-link text-white {% if request.endpoint and 'volunteer' in request.endpoint %}active-link{% endif %}">
-          <i class="bi bi-person-heart me-2"></i>Volunteers
+          <i class="bi bi-person-heart me-2"></i>{% if current_user.role == 'volunteer' %}Volunteer Hub{% else %}Volunteers{% endif %}
         </a>
       </li>
       <li class="nav-item">
@@ -121,7 +121,7 @@
       <li class="nav-item">
         <a href="{{ url_for('volunteer.all_volunteers') }}"
            class="nav-link text-white {% if request.endpoint == 'volunteer.all_volunteers' %}active-link{% endif %}">
-          <i class="bi bi-person-check-fill me-2"></i>Deploy Volunteers
+          <i class="bi bi-person-check-fill me-2"></i>Assign Volunteers
         </a>
       </li>
       {% endif %}
@@ -140,6 +140,8 @@
         </div>
         {% if current_user.role == 'admin' %}
           <span class="badge bg-danger" style="font-size:.65rem;">admin</span>
+        {% elif current_user.role == 'volunteer' %}
+          <span class="badge bg-primary" style="font-size:.65rem;">volunteer</span>
         {% else %}
           <span class="badge bg-secondary" style="font-size:.65rem;">citizen</span>
         {% endif %}
@@ -159,6 +161,10 @@
         {% if current_user.role == 'admin' %}
           <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">
             <i class="bi bi-shield-lock-fill me-1"></i>Admin Console
+          </span>
+        {% elif current_user.role == 'volunteer' %}
+          <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
+            <i class="bi bi-person-heart me-1"></i>Volunteer Hub
           </span>
         {% else %}
           <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">

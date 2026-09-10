@@ -25,6 +25,10 @@ class User(UserMixin):
         return self.is_admin
 
     @property
+    def is_volunteer(self):
+        return self.role in ('volunteer', 'admin')
+
+    @property
     def is_citizen(self):
         return self.role == 'citizen'
 

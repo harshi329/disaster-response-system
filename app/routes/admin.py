@@ -10,7 +10,7 @@ from bson import ObjectId
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
-ROLES = ['citizen', 'admin']
+ROLES = ['citizen', 'volunteer', 'admin']
 
 
 @admin_bp.route('/users')
