@@ -156,17 +156,17 @@ def _send_email(to_email: str, otp: str, username: str) -> bool:
         msg.attach(MIMEText(html,  'html'))
 
         sent = False
-        # Strategy 1: Port 465 SSL
+        # Strategy 1: Port 465 SSL (fast 2.5s timeout)
         try:
-            with smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=5) as server:
+            with smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=2.5) as server:
                 server.login(sender, password)
                 server.sendmail(sender, to_email, msg.as_string())
             sent = True
         except Exception as e465:
             logger.warning('Port 465 attempt failed: %s; trying port 587 STARTTLS...', e465)
-            # Strategy 2: Port 587 STARTTLS
+            # Strategy 2: Port 587 STARTTLS (fast 2.5s timeout)
             try:
-                with smtplib.SMTP('smtp.gmail.com', 587, timeout=5) as server:
+                with smtplib.SMTP('smtp.gmail.com', 587, timeout=2.5) as server:
                     server.ehlo()
                     server.starttls()
                     server.ehlo()

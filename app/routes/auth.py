@@ -75,12 +75,15 @@ def login():
             return render_template('auth/login.html')
 
         result = generate_and_send_otp(canonical_username, email=email)
-        if not result.get('sent'):
-            flash('Could not send OTP to your email. Please try again in a few moments.', 'danger')
-            return render_template('auth/login.html')
-
         session['pending_user'] = canonical_username
-        _flash_otp_sent(email)
+
+        if result.get('sent'):
+            session.pop('fallback_otp', None)
+            _flash_otp_sent(email)
+        else:
+            session['fallback_otp'] = result['otp']
+            flash('Note: Cloud host (Render) blocks outbound email ports. Your login code is shown below.', 'warning')
+
         return redirect(url_for('auth.verify_otp_view'))
 
     return render_template('auth/login.html')
@@ -91,6 +94,8 @@ def verify_otp_view():
     if 'pending_user' not in session:
         return redirect(url_for('auth.login'))
 
+    fallback_otp = session.get('fallback_otp')
+
     if request.method == 'POST':
         otp      = request.form.get('otp', '').strip()
         username = session['pending_user']
@@ -100,12 +105,13 @@ def verify_otp_view():
             user = User(row['_id'], row['username'], row['email'], row.get('phone'), row.get('role', 'citizen'))
             login_user(user)
             session.pop('pending_user', None)
+            session.pop('fallback_otp', None)
             flash('Login successful. Welcome back!', 'success')
             return redirect(url_for('dashboard.index'))
         else:
-            flash('Invalid or expired OTP code. Please check your email and try again.', 'danger')
+            flash('Invalid or expired OTP code. Please check and try again.', 'danger')
 
-    return render_template('auth/verify_otp.html')
+    return render_template('auth/verify_otp.html', fallback_otp=fallback_otp)
 
 
 @auth_bp.route('/resend-otp', methods=['POST'])
@@ -121,9 +127,11 @@ def resend_otp():
     email  = row.get('email', '')
     result = generate_and_send_otp(username, email=email)
     if result.get('sent'):
+        session.pop('fallback_otp', None)
         _flash_otp_sent(email)
     else:
-        flash('Failed to resend OTP email. Please try again shortly.', 'danger')
+        session['fallback_otp'] = result['otp']
+        flash('Note: Cloud host (Render) blocks outbound email ports. Your login code is shown below.', 'warning')
 
     return redirect(url_for('auth.verify_otp_view'))
 
@@ -212,12 +220,15 @@ def forgot_password():
             return render_template('auth/forgot_password.html')
 
         result = generate_and_send_otp(row['username'], email=email)
-        if not result.get('sent'):
-            flash('Could not send reset code. Please verify your email or try again shortly.', 'danger')
-            return render_template('auth/forgot_password.html')
-
         session['reset_user'] = row['username']
-        _flash_otp_sent(email)
+
+        if result.get('sent'):
+            session.pop('fallback_reset_otp', None)
+            _flash_otp_sent(email)
+        else:
+            session['fallback_reset_otp'] = result['otp']
+            flash('Note: Cloud host (Render) blocks outbound email ports. Your reset code is shown below.', 'warning')
+
         return redirect(url_for('auth.reset_password'))
 
     return render_template('auth/forgot_password.html')
@@ -230,6 +241,8 @@ def reset_password():
         flash('Please request a password reset first.', 'warning')
         return redirect(url_for('auth.forgot_password'))
 
+    fallback_otp = session.get('fallback_reset_otp')
+
     if request.method == 'POST':
         otp              = request.form.get('otp', '').strip()
         new_password     = request.form.get('new_password', '').strip()
@@ -237,28 +250,29 @@ def reset_password():
 
         if not otp or not new_password:
             flash('Verification code and new password are required.', 'danger')
-            return render_template('auth/reset_password.html')
+            return render_template('auth/reset_password.html', fallback_otp=fallback_otp)
 
         if len(new_password) < 6:
             flash('New password must be at least 6 characters.', 'danger')
-            return render_template('auth/reset_password.html')
+            return render_template('auth/reset_password.html', fallback_otp=fallback_otp)
 
         if new_password != confirm_password:
             flash('Passwords do not match.', 'danger')
-            return render_template('auth/reset_password.html')
+            return render_template('auth/reset_password.html', fallback_otp=fallback_otp)
 
         if not verify_otp(username, otp):
-            flash('Invalid or expired verification code. Please check your email.', 'danger')
-            return render_template('auth/reset_password.html')
+            flash('Invalid or expired verification code. Please try again.', 'danger')
+            return render_template('auth/reset_password.html', fallback_otp=fallback_otp)
 
         db = get_mongo_db()
         hashed = generate_password_hash(new_password)
         db.users.update_one({'username': username}, {'$set': {'password': hashed}})
         session.pop('reset_user', None)
+        session.pop('fallback_reset_otp', None)
         flash('Your password has been reset successfully! Please log in with your new password.', 'success')
         return redirect(url_for('auth.login'))
 
-    return render_template('auth/reset_password.html')
+    return render_template('auth/reset_password.html', fallback_otp=fallback_otp)
 
 
 @auth_bp.route('/logout')
