@@ -133,7 +133,7 @@ def register():
     if request.method == 'POST':
         username = request.form.get('username', '').strip()[:50]
         password = request.form.get('password', '').strip()
-        email    = request.form.get('email', '').strip()[:200]
+        email    = request.form.get('email', '').strip().lower()[:200]
         phone    = request.form.get('phone', '').strip()[:20]
 
         if not username or not password or not email:
@@ -150,9 +150,34 @@ def register():
             flash('Username can only contain letters, numbers and underscores.', 'danger')
             return render_template('auth/register.html')
 
+        db = get_mongo_db()
         hashed = generate_password_hash(password)
+
+        # Check if email is already in use
+        existing_email = db.users.find_one({'email': email})
+        if existing_email:
+            # If user registered with Google (no password set), allow them to set a manual password!
+            if existing_email.get('google_id') and not existing_email.get('password'):
+                db.users.update_one(
+                    {'_id': existing_email['_id']},
+                    {'$set': {
+                        'password': hashed,
+                        'phone': phone or existing_email.get('phone', ''),
+                    }}
+                )
+                flash('Password set for your account! You can now log in with your email and password.', 'success')
+                return redirect(url_for('auth.login'))
+            else:
+                flash('An account with this email already exists. Please log in or use "Forgot Password".', 'danger')
+                return render_template('auth/register.html')
+
+        # Check if username is already in use (case-insensitive)
+        existing_uname = db.users.find_one({'username': {'$regex': f'^{_re.escape(username)}$', '$options': 'i'}})
+        if existing_uname:
+            flash('That username is already taken. Please choose another username.', 'danger')
+            return render_template('auth/register.html')
+
         try:
-            db = get_mongo_db()
             db.users.insert_one({
                 'username': username,
                 'password': hashed,
@@ -163,9 +188,77 @@ def register():
             flash('Account created! Please log in.', 'success')
             return redirect(url_for('auth.login'))
         except Exception:
-            flash('Username or email already exists.', 'danger')
+            flash('Could not create account. Username or email may already be in use.', 'danger')
 
     return render_template('auth/register.html')
+
+
+@auth_bp.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        identifier = request.form.get('identifier', '').strip()
+        if not identifier:
+            flash('Please enter your username or email.', 'warning')
+            return render_template('auth/forgot_password.html')
+
+        row = User.get_by_identifier(identifier)
+        if not row:
+            flash('No account found with that username or email.', 'danger')
+            return render_template('auth/forgot_password.html')
+
+        email = row.get('email', '').strip()
+        if not email:
+            flash('No email address is linked to this account. Please contact an admin.', 'danger')
+            return render_template('auth/forgot_password.html')
+
+        result = generate_and_send_otp(row['username'], email=email)
+        if not result.get('sent'):
+            flash('Could not send reset code. Please verify your email or try again shortly.', 'danger')
+            return render_template('auth/forgot_password.html')
+
+        session['reset_user'] = row['username']
+        _flash_otp_sent(email)
+        return redirect(url_for('auth.reset_password'))
+
+    return render_template('auth/forgot_password.html')
+
+
+@auth_bp.route('/reset-password', methods=['GET', 'POST'])
+def reset_password():
+    username = session.get('reset_user')
+    if not username:
+        flash('Please request a password reset first.', 'warning')
+        return redirect(url_for('auth.forgot_password'))
+
+    if request.method == 'POST':
+        otp              = request.form.get('otp', '').strip()
+        new_password     = request.form.get('new_password', '').strip()
+        confirm_password = request.form.get('confirm_password', '').strip()
+
+        if not otp or not new_password:
+            flash('Verification code and new password are required.', 'danger')
+            return render_template('auth/reset_password.html')
+
+        if len(new_password) < 6:
+            flash('New password must be at least 6 characters.', 'danger')
+            return render_template('auth/reset_password.html')
+
+        if new_password != confirm_password:
+            flash('Passwords do not match.', 'danger')
+            return render_template('auth/reset_password.html')
+
+        if not verify_otp(username, otp):
+            flash('Invalid or expired verification code. Please check your email.', 'danger')
+            return render_template('auth/reset_password.html')
+
+        db = get_mongo_db()
+        hashed = generate_password_hash(new_password)
+        db.users.update_one({'username': username}, {'$set': {'password': hashed}})
+        session.pop('reset_user', None)
+        flash('Your password has been reset successfully! Please log in with your new password.', 'success')
+        return redirect(url_for('auth.login'))
+
+    return render_template('auth/reset_password.html')
 
 
 @auth_bp.route('/logout')
