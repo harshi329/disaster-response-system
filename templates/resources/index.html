@@ -1,156 +1,472 @@
 {% extends 'base.html' %}
-{% block title %}Resources{% endblock %}
+{% block title %}Resources & Live Dispatch Tracker – Disaster Response{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+  #tracking-map {
+    height: 480px;
+    width: 100%;
+    border-radius: 0.75rem;
+    z-index: 1;
+  }
+  .tracker-card {
+    transition: all 0.2s ease-in-out;
+  }
+  .tracker-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  }
+  .unit-card-active {
+    border-left: 4px solid #0d6efd !important;
+    background-color: #f8faff;
+  }
+  .alert-card-clickable {
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .alert-card-clickable:hover {
+    border-color: #dc3545 !important;
+    background: #fff8f8;
+  }
+  .alert-card-selected {
+    border: 2px solid #dc3545 !important;
+    background: #fff5f5 !important;
+  }
+
+  /* Custom Marker Styles */
+  .custom-pin {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    color: #fff;
+    font-size: 1.1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+    border: 2px solid #fff;
+  }
+  .pin-epicenter {
+    background: #dc3545;
+    width: 38px;
+    height: 38px;
+    position: relative;
+  }
+  .pin-epicenter::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 2px solid #dc3545;
+    animation: pulse-ring 1.8s infinite;
+  }
+  @keyframes pulse-ring {
+    0% { transform: scale(0.8); opacity: 0.9; }
+    80%, 100% { transform: scale(2.4); opacity: 0; }
+  }
+  .pin-ambulance {
+    background: #0d6efd;
+    width: 34px;
+    height: 34px;
+    animation: siren-glow 2s infinite;
+  }
+  @keyframes siren-glow {
+    0%, 100% { box-shadow: 0 0 10px rgba(13, 110, 253, 0.8); }
+    50% { box-shadow: 0 0 12px rgba(220, 53, 69, 0.9); }
+  }
+  .pin-rescue {
+    background: #198754;
+    width: 34px;
+    height: 34px;
+  }
+  .pin-food {
+    background: #ffc107;
+    color: #212529;
+    width: 34px;
+    height: 34px;
+  }
+  .pin-helicopter {
+    background: #0dcaf0;
+    color: #055160;
+    width: 36px;
+    height: 36px;
+  }
+  .live-dot {
+    width: 8px;
+    height: 8px;
+    background-color: #198754;
+    border-radius: 50%;
+    display: inline-block;
+    animation: live-blink 1.2s infinite;
+  }
+  @keyframes live-blink {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.3; transform: scale(1.3); }
+  }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h4 class="fw-bold mb-0"><i class="bi bi-boxes me-2 text-danger"></i>Resource Inventory</h4>
+<!-- Top Header -->
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+  <div>
+    <h4 class="fw-bold mb-0">
+      <i class="bi bi-boxes me-2 text-danger"></i>Resource Inventory &amp; Live Dispatch Tracker
+    </h4>
+    <small class="text-muted">Real-time monitoring of available assets and deployed emergency response units.</small>
+  </div>
   {% if current_user.role == 'admin' %}
-  <button class="btn btn-warning fw-bold" data-bs-toggle="modal" data-bs-target="#restockModal">
+  <button class="btn btn-warning fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#restockModal">
     <i class="bi bi-plus-circle me-1"></i>Restock Inventory
   </button>
   {% endif %}
 </div>
 
-<!-- Inventory cards -->
+<!-- Inventory Overview Cards -->
 <div class="row g-3 mb-4">
-  {% set icons  = {'ambulances':'truck-front-fill','rescue_teams':'person-badge-fill','food_packets':'box-seam-fill','helicopters':'airplane-fill'} %}
-  {% set colors = {'ambulances':'primary','rescue_teams':'success','food_packets':'warning','helicopters':'info'} %}
-  {% for resource, qty in inventory.items() %}
-  <div class="col-6 col-md-3">
-    <div class="card border-0 shadow-sm text-center p-3
-      {% if qty == 0 %}border border-danger{% elif qty < 3 %}border border-warning{% endif %}">
-      <i class="bi bi-{{ icons.get(resource,'box') }} fs-2 text-{{ colors.get(resource,'secondary') }} mb-2"></i>
-      <div class="fs-2 fw-bold {% if qty == 0 %}text-danger{% elif qty < 3 %}text-warning{% endif %}">{{ qty }}</div>
-      <div class="text-muted text-capitalize small">{{ resource.replace('_',' ') }}</div>
-      {% if qty == 0 %}<span class="badge bg-danger mt-1">Out of Stock</span>{% endif %}
+  {% set items_info = [
+    ('ambulances', 'Ambulances', 'truck-front-fill', 'primary', 'Immediate medical transport'),
+    ('rescue_teams', 'Rescue Teams', 'person-badge-fill', 'success', 'Search & disaster extraction'),
+    ('food_packets', 'Food Packets', 'box-seam-fill', 'warning', 'Emergency relief rations'),
+    ('helicopters', 'Helicopters', 'airplane-fill', 'info', 'Aerial reconnaissance & airlift')
+  ] %}
+  {% for key, label, icon, color, desc in items_info %}
+  {% set qty = inventory.get(key, 0) %}
+  <div class="col-6 col-lg-3">
+    <div class="card border-0 shadow-sm p-3 h-100 tracker-card
+      {% if qty == 0 %}border border-danger border-2{% elif qty < 3 %}border border-warning{% endif %}">
+      <div class="d-flex justify-content-between align-items-start mb-2">
+        <span class="badge bg-{{ color }}-subtle text-{{ color }} p-2 rounded-3 fs-5">
+          <i class="bi bi-{{ icon }}"></i>
+        </span>
+        {% if qty == 0 %}
+          <span class="badge bg-danger">Out of Stock</span>
+        {% elif qty < 3 %}
+          <span class="badge bg-warning text-dark">Low Stock</span>
+        {% else %}
+          <span class="badge bg-success-subtle text-success">Available</span>
+        {% endif %}
+      </div>
+      <div class="fs-2 fw-bold mb-0 text-dark">{{ qty }}</div>
+      <div class="fw-semibold text-capitalize small mb-1">{{ label }}</div>
+      <div class="text-muted" style="font-size:.72rem;">{{ desc }}</div>
     </div>
   </div>
   {% endfor %}
 </div>
 
-<!-- Admin: Manual Assignment -->
-{% if current_user.role == 'admin' %}
+<!-- ========================================================================= -->
+<!-- LIVE RESOURCE LOCATION TRACKER (For Both Citizen & Admin)                 -->
+<!-- ========================================================================= -->
 <div class="card border-0 shadow-sm mb-4">
-  <div class="card-header bg-danger text-white fw-semibold">
-    <i class="bi bi-send-check me-2"></i>Manually Assign Resources to Report
+  <div class="card-header bg-white border-0 pt-3 pb-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div>
+      <h5 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+        <i class="bi bi-geo-alt-fill text-danger fs-4"></i>
+        <span>Live Resource Location Tracker</span>
+        <span class="badge bg-light text-dark border ms-2 py-1 px-2 fw-semibold" style="font-size:.75rem;">
+          <span class="live-dot me-1"></span>LIVE GPS STREAM
+        </span>
+      </h5>
+      <p class="text-muted small mb-0 mt-1">
+        Tracking assigned <strong>Ambulances</strong>, <strong>Rescue Teams</strong>, <strong>Food Packets Convoys</strong>, and <strong>Helicopters</strong> dispatched for active disaster incidents.
+      </p>
+    </div>
+    <div class="text-end">
+      <small class="text-muted d-block" id="tracker-last-sync">Auto-updating telemetry</small>
+    </div>
   </div>
-  <div class="card-body">
-    {% if active_reports %}
-    <form method="POST" action="{{ url_for('resources.assign') }}">
-      <div class="row g-3">
-        <div class="col-md-4">
-          <label class="form-label fw-semibold">Select Active Report</label>
-          <select name="report_id" class="form-select" required>
-            <option value="">-- Choose a report --</option>
-            {% for r in active_reports %}
-            <option value="{{ r._id }}">
-              {{ r.location }} — {{ r.type }} ({{ r.severity }}) — {{ r.timestamp | format_dt(10) }}
-            </option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-6 col-md-2">
-          <label class="form-label fw-semibold">Ambulances</label>
-          <input type="number" name="ambulances" class="form-control" value="0" min="0" max="{{ inventory.get('ambulances',0) }}"/>
-          <small class="text-muted">Available: {{ inventory.get('ambulances',0) }}</small>
-        </div>
-        <div class="col-6 col-md-2">
-          <label class="form-label fw-semibold">Rescue Teams</label>
-          <input type="number" name="rescue_teams" class="form-control" value="0" min="0" max="{{ inventory.get('rescue_teams',0) }}"/>
-          <small class="text-muted">Available: {{ inventory.get('rescue_teams',0) }}</small>
-        </div>
-        <div class="col-6 col-md-2">
-          <label class="form-label fw-semibold">Food Packets</label>
-          <input type="number" name="food_packets" class="form-control" value="0" min="0" max="{{ inventory.get('food_packets',0) }}"/>
-          <small class="text-muted">Available: {{ inventory.get('food_packets',0) }}</small>
-        </div>
-        <div class="col-6 col-md-2">
-          <label class="form-label fw-semibold">Helicopters</label>
-          <input type="number" name="helicopters" class="form-control" value="0" min="0" max="{{ inventory.get('helicopters',0) }}"/>
-          <small class="text-muted">Available: {{ inventory.get('helicopters',0) }}</small>
+
+  <div class="card-body pt-1">
+    <!-- Problem / Incident Filter Tabs -->
+    <div class="d-flex align-items-center gap-2 flex-wrap mb-3 p-2 bg-light rounded-3 border">
+      <span class="small fw-bold text-secondary ps-1"><i class="bi bi-funnel me-1"></i>Filter Problem:</span>
+      <button type="button" class="btn btn-sm btn-danger rounded-pill fw-semibold px-3 filter-btn active"
+              data-problem-id="all" onclick="filterByProblem('all', this)">
+        <i class="bi bi-grid-fill me-1"></i>All Active Problems
+      </button>
+      {% for dep in tracked_deployments %}
+      <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill fw-semibold px-3 filter-btn"
+              data-problem-id="{{ dep.id }}" onclick="filterByProblem('{{ dep.id }}', this)">
+        <i class="bi bi-exclamation-triangle-fill text-danger me-1"></i>
+        {{ dep.problem_title }} ({{ dep.units | length }} Units)
+      </button>
+      {% endfor %}
+    </div>
+
+    <!-- Tracker Layout: Map + Unit Status Panel -->
+    <div class="row g-3">
+      <!-- Map Column -->
+      <div class="col-lg-8">
+        <div class="position-relative">
+          <div id="tracking-map"></div>
+          <!-- Legend Overlay -->
+          <div class="position-absolute bottom-0 start-0 m-3 p-2 bg-white bg-opacity-90 rounded-3 shadow-sm border small"
+               style="z-index: 1000; font-size:.75rem; backdrop-filter: blur(4px);">
+            <div class="fw-bold mb-1 text-dark">Map Legend</div>
+            <div class="d-flex flex-wrap gap-2">
+              <span class="d-flex align-items-center gap-1"><span class="badge bg-danger p-1">🚨</span> Incident</span>
+              <span class="d-flex align-items-center gap-1"><span class="badge bg-primary p-1">🚑</span> Ambulance</span>
+              <span class="d-flex align-items-center gap-1"><span class="badge bg-success p-1">👥</span> Rescue Team</span>
+              <span class="d-flex align-items-center gap-1"><span class="badge bg-warning text-dark p-1">📦</span> Food Convoy</span>
+              <span class="d-flex align-items-center gap-1"><span class="badge bg-info text-dark p-1">🚁</span> Helicopter</span>
+            </div>
+          </div>
         </div>
       </div>
-      <button type="submit" class="btn btn-danger mt-3 fw-bold">
-        <i class="bi bi-send-check me-2"></i>Assign Resources
-      </button>
-    </form>
-    {% else %}
-    <p class="text-muted mb-0">No active reports to assign resources to.</p>
-    {% endif %}
-  </div>
-</div>
-{% endif %}
 
-<!-- Allocation history -->
-<div class="card border-0 shadow-sm">
-  <div class="card-header bg-white fw-semibold border-0 pt-3">
-    <i class="bi bi-clock-history me-2 text-danger"></i>Allocation History
-  </div>
-  <div class="card-body p-0">
-    <div class="table-responsive">
-      <table class="table table-hover mb-0">
-        <thead class="table-light">
-          <tr><th>Report ID</th><th>Severity</th><th>Allocated</th><th>By</th><th>Status</th></tr>
-        </thead>
-        <tbody>
-          {% for a in allocations %}
-          <tr>
-            <td class="text-muted small">{{ a.report_id[:8] if a.report_id else '—' }}…</td>
-            <td>
-              <span class="badge
-                {% if a.severity == 'High' %}bg-danger
-                {% elif a.severity == 'Medium' %}bg-warning text-dark
-                {% elif a.severity == 'Manual' %}bg-info text-dark
-                {% else %}bg-success{% endif %}">
-                {{ a.severity }}
-              </span>
-            </td>
-            <td>
-              {% for k, v in a.allocated.items() %}
-                {% if v > 0 %}
-                <span class="badge bg-light text-dark border me-1">{{ v }} {{ k.replace('_',' ') }}</span>
-                {% endif %}
-              {% endfor %}
-            </td>
-            <td class="text-muted small">{{ a.get('assigned_by', 'AI Agent') }}</td>
-            <td>
-              <span class="badge {% if a.insufficient %}bg-warning text-dark{% else %}bg-success{% endif %}">
-                {% if a.insufficient %}Partial{% else %}Complete{% endif %}
-              </span>
-            </td>
-          </tr>
-          {% else %}
-          <tr><td colspan="5" class="text-center text-muted py-4">No allocations yet.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
+      <!-- Live Units Feed Column -->
+      <div class="col-lg-4">
+        <div class="card h-100 border bg-light">
+          <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
+            <span class="fw-bold small text-dark"><i class="bi bi-broadcast me-1 text-danger"></i>Dispatched Units Telemetry</span>
+            <span class="badge bg-dark rounded-pill" id="units-count-badge">0 Units</span>
+          </div>
+          <div class="card-body p-2 overflow-auto" id="units-list-container" style="max-height: 430px;">
+            <!-- Unit items populated by JS -->
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
 
-<!-- Restock Modal (admin only) -->
+<!-- ========================================================================= -->
+<!-- ADMIN ONLY: PENDING EMERGENCY ALERTS & RESOURCE DISPATCH CONSOLE         -->
+<!-- ========================================================================= -->
+{% if current_user.role == 'admin' %}
+<div class="card border-0 shadow-sm mb-4" id="admin-dispatch-section">
+  <div class="card-header bg-danger text-white py-3">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div>
+        <h5 class="fw-bold mb-0 text-white d-flex align-items-center gap-2">
+          <i class="bi bi-send-check fs-4"></i>
+          <span>Pending Emergency Alerts &amp; Resource Assignment</span>
+        </h5>
+        <small class="text-white-50">Review live pending alerts requiring emergency aid and dispatch resources with 1-click presets.</small>
+      </div>
+      <span class="badge bg-white text-danger fw-bold px-3 py-2">
+        {{ pending_alerts | length }} Pending Alert{{ 's' if pending_alerts | length != 1 }}
+      </span>
+    </div>
+  </div>
+
+  <div class="card-body p-4">
+    <!-- Part A: Visual Cards of Pending Alerts -->
+    <div class="mb-4">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h6 class="fw-bold mb-0 text-dark">
+          <i class="bi bi-bell-fill text-danger me-1"></i>1. Select a Pending Emergency Alert to Address:
+        </h6>
+        <span class="text-muted small">Click any alert card below to populate the assignment console</span>
+      </div>
+
+      {% if pending_alerts %}
+      <div class="row g-3">
+        {% for alert in pending_alerts %}
+        <div class="col-md-6 col-lg-4">
+          <div class="card h-100 border p-3 alert-card-clickable shadow-sm"
+               id="alert-card-{{ alert.id }}"
+               onclick="selectAlertForAssign('{{ alert.id }}', '{{ alert.type }} at {{ alert.location }}', '{{ alert.severity }}', '{{ alert.location }}', {{ alert.recommended.ambulances }}, {{ alert.recommended.rescue_teams }}, {{ alert.recommended.food_packets }}, {{ alert.recommended.helicopters }})">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <span class="badge {% if alert.severity == 'High' %}bg-danger{% elif alert.severity == 'Medium' %}bg-warning text-dark{% else %}bg-info text-dark{% endif %} px-2 py-1">
+                {{ alert.severity | upper }} PRIORITY
+              </span>
+              <small class="text-muted" style="font-size:.72rem;">
+                <i class="bi bi-clock me-1"></i>{{ alert.timestamp | format_dt(10) }}
+              </small>
+            </div>
+
+            <h6 class="fw-bold mb-1 text-dark">
+              {% if 'flood' in alert.type|lower %}<i class="bi bi-water text-primary me-1"></i>
+              {% elif 'fire' in alert.type|lower %}<i class="bi bi-fire text-danger me-1"></i>
+              {% elif 'earthquake' in alert.type|lower %}<i class="bi bi-building-down text-warning me-1"></i>
+              {% else %}<i class="bi bi-exclamation-octagon-fill text-danger me-1"></i>{% endif %}
+              {{ alert.type }} — {{ alert.location }}
+            </h6>
+
+            <p class="text-muted small mb-2 text-truncate-2" style="font-size:.8rem; min-height: 38px;">
+              {{ alert.description }}
+            </p>
+
+            <div class="bg-light p-2 rounded-2 small mb-3 border" style="font-size:.74rem;">
+              <span class="fw-semibold text-secondary d-block mb-1">Recommended Response:</span>
+              <span class="badge bg-primary-subtle text-primary me-1">{{ alert.recommended.ambulances }} Amb</span>
+              <span class="badge bg-success-subtle text-success me-1">{{ alert.recommended.rescue_teams }} Squad</span>
+              <span class="badge bg-warning-subtle text-dark me-1">{{ alert.recommended.food_packets }} Rations</span>
+              {% if alert.recommended.helicopters > 0 %}
+              <span class="badge bg-info-subtle text-dark">{{ alert.recommended.helicopters }} Heli</span>
+              {% endif %}
+            </div>
+
+            <button type="button" class="btn btn-danger btn-sm w-100 fw-bold mt-auto"
+                    onclick="event.stopPropagation(); selectAlertForAssign('{{ alert.id }}', '{{ alert.type }} at {{ alert.location }}', '{{ alert.severity }}', '{{ alert.location }}', {{ alert.recommended.ambulances }}, {{ alert.recommended.rescue_teams }}, {{ alert.recommended.food_packets }}, {{ alert.recommended.helicopters }});">
+              <i class="bi bi-send-check me-1"></i>Assign Resources
+            </button>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="alert alert-success d-flex align-items-center gap-2 mb-0">
+        <i class="bi bi-check-circle-fill fs-5"></i>
+        <span>All emergency alerts currently have allocated resources or are resolved.</span>
+      </div>
+      {% endif %}
+    </div>
+
+    <hr class="my-4" />
+
+    <!-- Part B: Manual Assignment Console (Form) -->
+    <div>
+      <h6 class="fw-bold mb-3 text-dark">
+        <i class="bi bi-sliders text-danger me-1"></i>2. Configure &amp; Dispatch Resources:
+      </h6>
+
+      <!-- Selected Target Banner -->
+      <div class="alert alert-danger d-flex align-items-center justify-content-between flex-wrap gap-2 py-2 px-3 mb-3 rounded-3" id="target-alert-banner">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-crosshair fs-4 text-danger"></i>
+          <div>
+            <span class="fw-bold d-block text-danger" id="target-alert-title">Select an alert or report above</span>
+            <small class="text-muted" id="target-alert-meta">Choose from pending alerts above or the dropdown below</small>
+          </div>
+        </div>
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-sm btn-outline-danger" onclick="applyPreset('high')">
+            <i class="bi bi-lightning-charge-fill me-1"></i>Preset: High Severity
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" onclick="applyPreset('medium')">
+            Preset: Medium Severity
+          </button>
+        </div>
+      </div>
+
+      <form method="POST" action="{{ url_for('resources.assign') }}" id="dispatch-form">
+        <!-- Target Selection Dropdown (Fallback/Direct) -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold small text-muted">Target Incident / Emergency Alert</label>
+          <select name="report_id" id="report-select" class="form-select border-danger" required onchange="onSelectDropdownChange(this)">
+            <option value="">-- Choose target alert or report --</option>
+            {% for alert in pending_alerts %}
+            <option value="{{ alert.id }}"
+                    data-title="{{ alert.type }} at {{ alert.location }}"
+                    data-severity="{{ alert.severity }}"
+                    data-location="{{ alert.location }}"
+                    data-amb="{{ alert.recommended.ambulances }}"
+                    data-rsc="{{ alert.recommended.rescue_teams }}"
+                    data-food="{{ alert.recommended.food_packets }}"
+                    data-heli="{{ alert.recommended.helicopters }}">
+              [{{ alert.severity | upper }}] {{ alert.type }} at {{ alert.location }} — ({{ alert.timestamp | format_dt(10) }})
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- 4 Resource Counters with Stock Indicators -->
+        <div class="row g-3 mb-3">
+          <!-- Ambulances -->
+          <div class="col-6 col-md-3">
+            <div class="p-3 border rounded-3 bg-light">
+              <label class="form-label fw-semibold small mb-1 d-flex justify-content-between">
+                <span><i class="bi bi-truck-front-fill text-primary me-1"></i>Ambulances</span>
+                <span class="badge bg-primary-subtle text-primary">Max: {{ inventory.get('ambulances', 0) }}</span>
+              </label>
+              <div class="input-group input-group-sm">
+                <button type="button" class="btn btn-outline-secondary" onclick="stepVal('amb-input', -1)">-</button>
+                <input type="number" id="amb-input" name="ambulances" class="form-control text-center fw-bold" value="0" min="0" max="{{ inventory.get('ambulances', 0) }}" />
+                <button type="button" class="btn btn-outline-secondary" onclick="stepVal('amb-input', 1, {{ inventory.get('ambulances', 0) }})">+</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Rescue Teams -->
+          <div class="col-6 col-md-3">
+            <div class="p-3 border rounded-3 bg-light">
+              <label class="form-label fw-semibold small mb-1 d-flex justify-content-between">
+                <span><i class="bi bi-people-fill text-success me-1"></i>Rescue Teams</span>
+                <span class="badge bg-success-subtle text-success">Max: {{ inventory.get('rescue_teams', 0) }}</span>
+              </label>
+              <div class="input-group input-group-sm">
+                <button type="button" class="btn btn-outline-secondary" onclick="stepVal('rsc-input', -1)">-</button>
+                <input type="number" id="rsc-input" name="rescue_teams" class="form-control text-center fw-bold" value="0" min="0" max="{{ inventory.get('rescue_teams', 0) }}" />
+                <button type="button" class="btn btn-outline-secondary" onclick="stepVal('rsc-input', 1, {{ inventory.get('rescue_teams', 0) }})">+</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Food Packets -->
+          <div class="col-6 col-md-3">
+            <div class="p-3 border rounded-3 bg-light">
+              <label class="form-label fw-semibold small mb-1 d-flex justify-content-between">
+                <span><i class="bi bi-box-seam-fill text-warning me-1"></i>Food Packets</span>
+                <span class="badge bg-warning-subtle text-dark">Max: {{ inventory.get('food_packets', 0) }}</span>
+              </label>
+              <div class="input-group input-group-sm">
+                <button type="button" class="btn btn-outline-secondary" onclick="stepVal('food-input', -50)">-50</button>
+                <input type="number" id="food-input" name="food_packets" class="form-control text-center fw-bold" value="0" min="0" step="50" max="{{ inventory.get('food_packets', 0) }}" />
+                <button type="button" class="btn btn-outline-secondary" onclick="stepVal('food-input', 50, {{ inventory.get('food_packets', 0) }})">+50</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Helicopters -->
+          <div class="col-6 col-md-3">
+            <div class="p-3 border rounded-3 bg-light">
+              <label class="form-label fw-semibold small mb-1 d-flex justify-content-between">
+                <span><i class="bi bi-airplane-fill text-info me-1"></i>Helicopters</span>
+                <span class="badge bg-info-subtle text-dark">Max: {{ inventory.get('helicopters', 0) }}</span>
+              </label>
+              <div class="input-group input-group-sm">
+                <button type="button" class="btn btn-outline-secondary" onclick="stepVal('heli-input', -1)">-</button>
+                <input type="number" id="heli-input" name="helicopters" class="form-control text-center fw-bold" value="0" min="0" max="{{ inventory.get('helicopters', 0) }}" />
+                <button type="button" class="btn btn-outline-secondary" onclick="stepVal('heli-input', 1, {{ inventory.get('helicopters', 0) }})">+</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Optional Dispatch Note -->
+        <div class="mb-3">
+          <label class="form-label small fw-semibold text-muted">Mission Call Sign / Operation Notes (Optional)</label>
+          <input type="text" name="notes" class="form-control form-control-sm" placeholder="e.g., Dispatched from Central Station; Squad Alpha taking Highway Route" />
+        </div>
+
+        <button type="submit" class="btn btn-danger fw-bold py-2 px-4 shadow-sm" id="dispatch-submit-btn">
+          <i class="bi bi-send-fill me-2"></i>Dispatch &amp; Track Resources Now
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Restock Modal (Admin Only) -->
 {% if current_user.role == 'admin' %}
 <div class="modal fade" id="restockModal" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header bg-warning">
-        <h5 class="modal-title fw-bold"><i class="bi bi-plus-circle me-2"></i>Restock Inventory</h5>
+        <h5 class="modal-title fw-bold"><i class="bi bi-plus-circle me-2"></i>Restock Inventory Assets</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <form method="POST" action="{{ url_for('resources.restock') }}">
         <div class="modal-body">
-          <p class="text-muted small">Enter the quantity to <strong>add</strong> to current stock.</p>
-          {% for resource, label in [('ambulances','Ambulances'),('rescue_teams','Rescue Teams'),('food_packets','Food Packets'),('helicopters','Helicopters')] %}
+          <p class="text-muted small">Enter quantities to add to the existing stock levels:</p>
+          {% for res_key, res_label, icon, col, desc in items_info %}
           <div class="mb-3">
-            <label class="form-label fw-semibold">{{ label }} <small class="text-muted">(current: {{ inventory.get(resource,0) }})</small></label>
-            <input type="number" name="{{ resource }}" class="form-control" value="0" min="0"/>
+            <label class="form-label fw-semibold small d-flex justify-content-between">
+              <span><i class="bi bi-{{ icon }} text-{{ col }} me-1"></i>{{ res_label }}</span>
+              <span class="text-muted">(Current: {{ inventory.get(res_key, 0) }})</span>
+            </label>
+            <input type="number" name="{{ res_key }}" class="form-control" value="0" min="0" />
           </div>
           {% endfor %}
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
           <button type="submit" class="btn btn-warning fw-bold">
-            <i class="bi bi-plus-circle me-2"></i>Restock
+            <i class="bi bi-plus-circle me-1"></i>Apply Restock
           </button>
         </div>
       </form>
@@ -159,3 +475,356 @@
 </div>
 {% endif %}
 {% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// Data injected safely from backend
+const deploymentsData = {{ tracked_json | safe }};
+
+let map = null;
+let incidentMarkers = [];
+let unitMarkers = [];
+let routeLines = [];
+let activeProblemFilter = 'all';
+
+// Initialize Leaflet Map
+function initMap() {
+  const mapElement = document.getElementById('tracking-map');
+  if (!mapElement) return;
+
+  // Default Center: Central Disaster Response Grid
+  map = L.map('tracking-map', {
+    zoomControl: true,
+    scrollWheelZoom: true
+  }).setView([28.6139, 77.2090], 12);
+
+  // High-performance OpenStreetMap base layer
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+
+  renderDeployments();
+  startSimulationLoop();
+}
+
+// Clear all markers and lines
+function clearMapLayers() {
+  incidentMarkers.forEach(m => map.removeLayer(m));
+  unitMarkers.forEach(m => map.removeLayer(m.marker));
+  routeLines.forEach(l => map.removeLayer(l));
+  incidentMarkers = [];
+  unitMarkers = [];
+  routeLines = [];
+}
+
+// Render incidents, units, and route trajectories
+function renderDeployments() {
+  if (!map) return;
+  clearMapLayers();
+
+  const bounds = [];
+  const unitsContainer = document.getElementById('units-list-container');
+  if (unitsContainer) unitsContainer.innerHTML = '';
+  let visibleUnitsCount = 0;
+
+  deploymentsData.forEach(dep => {
+    // Check filter
+    if (activeProblemFilter !== 'all' && dep.id !== activeProblemFilter) {
+      return;
+    }
+
+    const targetCoords = [dep.target_lat, dep.target_lng];
+    bounds.push(targetCoords);
+
+    // 1. Disaster Epicenter Marker
+    const epicenterIcon = L.divIcon({
+      className: 'custom-pin-wrapper',
+      html: `<div class="custom-pin pin-epicenter" title="${dep.problem_title}"><i class="bi bi-exclamation-triangle-fill"></i></div>`,
+      iconSize: [38, 38],
+      iconAnchor: [19, 19]
+    });
+
+    const incMarker = L.marker(targetCoords, { icon: epicenterIcon }).addTo(map);
+    incMarker.bindPopup(`
+      <div style="font-family: sans-serif; min-width: 180px;">
+        <span class="badge bg-danger mb-1">${dep.severity.toUpperCase()} PRIORITY</span>
+        <h6 class="fw-bold mb-1 mt-1 text-danger">${dep.problem_title}</h6>
+        <div class="small text-muted mb-1"><i class="bi bi-geo-alt me-1"></i>${dep.location}</div>
+        <div class="small text-dark"><strong>Assigned by:</strong> ${dep.assigned_by}</div>
+      </div>
+    `);
+    incidentMarkers.push(incMarker);
+
+    // 2. Dispatched Units
+    (dep.units || []).forEach(unit => {
+      visibleUnitsCount++;
+      const curCoords = [unit.current_lat, unit.current_lng];
+      bounds.push(curCoords);
+
+      // Route Line from Depot to Incident
+      const routePolyline = L.polyline([
+        [unit.origin_lat, unit.origin_lng],
+        curCoords,
+        targetCoords
+      ], {
+        color: unit.color || '#0d6efd',
+        weight: 3,
+        opacity: 0.7,
+        dashArray: '6, 8'
+      }).addTo(map);
+      routeLines.push(routePolyline);
+
+      // Unit Marker Icon
+      let pinClass = 'pin-ambulance';
+      if (unit.type === 'rescue_teams') pinClass = 'pin-rescue';
+      else if (unit.type === 'food_packets') pinClass = 'pin-food';
+      else if (unit.type === 'helicopters') pinClass = 'pin-helicopter';
+
+      const unitIcon = L.divIcon({
+        className: 'custom-pin-wrapper',
+        html: `<div class="custom-pin ${pinClass}" title="${unit.name}"><i class="bi ${unit.icon}"></i></div>`,
+        iconSize: [34, 34],
+        iconAnchor: [17, 17]
+      });
+
+      const uMarker = L.marker(curCoords, { icon: unitIcon }).addTo(map);
+      uMarker.bindPopup(`
+        <div style="font-family: sans-serif; min-width: 200px;">
+          <div class="d-flex align-items-center justify-content-between mb-1">
+            <span class="badge bg-dark">${unit.unit_id}</span>
+            <span class="badge bg-primary">${unit.status}</span>
+          </div>
+          <h6 class="fw-bold mb-1 text-primary">${unit.name}</h6>
+          <div class="small text-muted mb-1"><i class="bi bi-person-fill me-1"></i>${unit.lead_name}</div>
+          <hr class="my-1" />
+          <div class="small"><strong>Destination:</strong> ${unit.problem_title}</div>
+          <div class="small"><strong>Speed:</strong> ${unit.speed}</div>
+          <div class="small"><strong>Distance:</strong> ${unit.distance_km} km remaining</div>
+          <div class="small text-danger fw-bold"><strong>ETA:</strong> ~${unit.eta_mins} mins</div>
+        </div>
+      `);
+
+      unitMarkers.push({
+        id: unit.unit_id,
+        marker: uMarker,
+        data: unit,
+        routeLine: routePolyline
+      });
+
+      // Append unit card to sidebar list
+      if (unitsContainer) {
+        const cardHtml = `
+          <div class="card mb-2 border shadow-sm p-2 tracker-card unit-card" id="card-unit-${unit.unit_id}">
+            <div class="d-flex justify-content-between align-items-start mb-1">
+              <span class="fw-bold small text-dark d-flex align-items-center gap-1">
+                <i class="bi ${unit.icon}" style="color:${unit.color};"></i>
+                <span>${unit.name}</span>
+              </span>
+              <span class="badge bg-primary" style="font-size:.68rem;">${unit.status}</span>
+            </div>
+            <div class="text-muted" style="font-size:.72rem;">
+              <i class="bi bi-bullseye me-1"></i>${unit.problem_title}
+            </div>
+            <div class="d-flex justify-content-between align-items-center text-muted mt-1" style="font-size:.7rem;">
+              <span><i class="bi bi-speedometer2 me-1"></i>${unit.speed}</span>
+              <span class="text-danger fw-semibold"><i class="bi bi-clock me-1"></i>ETA: ${unit.eta_mins} mins (${unit.distance_km} km)</span>
+            </div>
+            <!-- Progress Bar -->
+            <div class="progress mt-1 mb-2" style="height: 5px;">
+              <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+                   style="width: ${unit.progress}%" id="prog-${unit.unit_id}"></div>
+            </div>
+            <div class="d-flex justify-content-between align-items-center">
+              <small class="text-muted" style="font-size:.68rem;">${unit.lead_name}</small>
+              <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size:.72rem;"
+                      onclick="focusUnit('${unit.unit_id}')">
+                <i class="bi bi-crosshair me-1"></i>Track
+              </button>
+            </div>
+          </div>
+        `;
+        unitsContainer.insertAdjacentHTML('beforeend', cardHtml);
+      }
+    });
+  });
+
+  const countBadge = document.getElementById('units-count-badge');
+  if (countBadge) countBadge.textContent = `${visibleUnitsCount} Active Units`;
+
+  if (visibleUnitsCount === 0 && unitsContainer) {
+    unitsContainer.innerHTML = `
+      <div class="text-center text-muted py-4">
+        <i class="bi bi-geo-alt fs-2 d-block opacity-25 mb-1"></i>
+        <span class="small">No active units dispatched for this incident filter.</span>
+      </div>
+    `;
+  }
+
+  // Adjust map viewport
+  if (bounds.length > 0) {
+    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
+  }
+}
+
+// Focus on a particular unit on the map
+function focusUnit(unitId) {
+  const item = unitMarkers.find(u => u.id === unitId);
+  if (!item || !map) return;
+
+  const latLng = item.marker.getLatLng();
+  map.flyTo(latLng, 14, { duration: 1.2 });
+  setTimeout(() => {
+    item.marker.openPopup();
+  }, 1300);
+
+  // Highlight card in list
+  document.querySelectorAll('.unit-card').forEach(c => c.classList.remove('unit-card-active'));
+  const card = document.getElementById(`card-unit-${unitId}`);
+  if (card) {
+    card.classList.add('unit-card-active');
+    card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+
+// Problem Filter Switcher
+function filterByProblem(problemId, btn) {
+  activeProblemFilter = problemId;
+
+  // Update button active states
+  document.querySelectorAll('.filter-btn').forEach(b => {
+    b.classList.remove('btn-danger', 'active');
+    b.classList.add('btn-outline-secondary');
+  });
+  if (btn) {
+    btn.classList.remove('btn-outline-secondary');
+    btn.classList.add('btn-danger', 'active');
+  }
+
+  renderDeployments();
+}
+
+// Live GPS Simulation Loop (advances vehicle markers smoothly)
+function startSimulationLoop() {
+  setInterval(() => {
+    let updatedAny = false;
+
+    deploymentsData.forEach(dep => {
+      (dep.units || []).forEach(unit => {
+        if (unit.progress < 96) {
+          unit.progress += 0.8;
+          const t = unit.progress / 100.0;
+          unit.current_lat = +(unit.origin_lat + (unit.target_lat - unit.origin_lat) * t).toFixed(6);
+          unit.current_lng = +(unit.origin_lng + (unit.target_lng - unit.origin_lng) * t).toFixed(6);
+          unit.distance_km = +(Math.max(0.2, unit.distance_km - 0.05)).toFixed(1);
+          unit.eta_mins = Math.max(1, Math.round(unit.distance_km / 0.8));
+
+          // Update Leaflet marker position
+          const uObj = unitMarkers.find(m => m.id === unit.unit_id);
+          if (uObj) {
+            uObj.marker.setLatLng([unit.current_lat, unit.current_lng]);
+          }
+
+          // Update DOM progress bar
+          const bar = document.getElementById(`prog-${unit.unit_id}`);
+          if (bar) bar.style.width = `${unit.progress}%`;
+
+          updatedAny = true;
+        }
+      });
+    });
+
+    const syncLabel = document.getElementById('tracker-last-sync');
+    if (syncLabel) {
+      const now = new Date();
+      syncLabel.textContent = `GPS Synced: ${now.toLocaleTimeString()}`;
+    }
+  }, 3200);
+}
+
+// =========================================================================
+// ADMIN ASSIGNMENT HELPERS
+// =========================================================================
+function selectAlertForAssign(alertId, title, severity, location, recAmb, recRsc, recFood, recHeli) {
+  // Highlight card
+  document.querySelectorAll('.alert-card-clickable').forEach(c => c.classList.remove('alert-card-selected'));
+  const card = document.getElementById(`alert-card-${alertId}`);
+  if (card) card.classList.add('alert-card-selected');
+
+  // Update banner
+  const titleEl = document.getElementById('target-alert-title');
+  const metaEl = document.getElementById('target-alert-meta');
+  if (titleEl) titleEl.textContent = `Target: ${title} (${severity.toUpperCase()} Priority)`;
+  if (metaEl) metaEl.textContent = `Location: ${location} | Pre-filled recommended units below`;
+
+  // Update dropdown
+  const sel = document.getElementById('report-select');
+  if (sel) {
+    sel.value = alertId;
+  }
+
+  // Set recommended values
+  setFieldValue('amb-input', recAmb || 1);
+  setFieldValue('rsc-input', recRsc || 1);
+  setFieldValue('food-input', recFood || 100);
+  setFieldValue('heli-input', recHeli || (severity === 'High' ? 1 : 0));
+
+  // Scroll to assignment console smoothly
+  const banner = document.getElementById('target-alert-banner');
+  if (banner) {
+    banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+
+function onSelectDropdownChange(sel) {
+  const opt = sel.options[sel.selectedIndex];
+  if (!opt || !opt.value) return;
+
+  const alertId = opt.value;
+  const title = opt.dataset.title || opt.textContent;
+  const severity = opt.dataset.severity || 'High';
+  const location = opt.dataset.location || '';
+  const recAmb = parseInt(opt.dataset.amb || 1);
+  const recRsc = parseInt(opt.dataset.rsc || 1);
+  const recFood = parseInt(opt.dataset.food || 100);
+  const recHeli = parseInt(opt.dataset.heli || 0);
+
+  selectAlertForAssign(alertId, title, severity, location, recAmb, recRsc, recFood, recHeli);
+}
+
+function setFieldValue(fieldId, val) {
+  const input = document.getElementById(fieldId);
+  if (!input) return;
+  const max = parseInt(input.max || 999999);
+  input.value = Math.min(Math.max(0, val), max);
+}
+
+function stepVal(fieldId, step, maxLimit) {
+  const input = document.getElementById(fieldId);
+  if (!input) return;
+  let cur = parseInt(input.value || 0);
+  cur += step;
+  const max = maxLimit !== undefined ? maxLimit : parseInt(input.max || 999999);
+  input.value = Math.min(Math.max(0, cur), max);
+}
+
+function applyPreset(level) {
+  if (level === 'high') {
+    setFieldValue('amb-input', 2);
+    setFieldValue('rsc-input', 2);
+    setFieldValue('food-input', 200);
+    setFieldValue('heli-input', 1);
+  } else {
+    setFieldValue('amb-input', 1);
+    setFieldValue('rsc-input', 1);
+    setFieldValue('food-input', 100);
+    setFieldValue('heli-input', 0);
+  }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', initMap);
+</script>
+{% endblock %}
+
