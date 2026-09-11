@@ -8,17 +8,28 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def sanitize_phone(phone: str) -> str:
+    """Normalize phone number to international format without + or spaces."""
+    if not phone:
+        return ''
+    clean = ''.join(c for c in str(phone) if c.isdigit())
+    # If 10 digits starting with 6-9, assume Indian mobile number and prepend 91
+    if len(clean) == 10 and clean[0] in ('6', '7', '8', '9'):
+        clean = '91' + clean
+    return clean
+
+
 def whatsapp_share_url(message: str, phone: str = '') -> str:
     """
-    Generate a wa.me URL that opens WhatsApp with a pre-filled message.
-    If phone is given, opens a chat with that specific number.
+    Generate an api.whatsapp.com URL that opens WhatsApp with a pre-filled message.
+    Compatible across desktop (WhatsApp Web) and mobile (WhatsApp App).
     Works for ANY WhatsApp number worldwide — no API key needed.
     """
-    encoded = urllib.parse.quote(message)
-    if phone:
-        clean = phone.replace('+', '').replace(' ', '').replace('-', '')
-        return f'https://wa.me/{clean}?text={encoded}'
-    return f'https://wa.me/?text={encoded}'
+    encoded = urllib.parse.quote(message.strip())
+    clean = sanitize_phone(phone)
+    if clean:
+        return f'https://api.whatsapp.com/send?phone={clean}&text={encoded}'
+    return f'https://api.whatsapp.com/send?text={encoded}'
 
 
 def send_whatsapp(phone: str, message: str) -> dict:

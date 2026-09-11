@@ -194,10 +194,17 @@ function addMsg(role, text, time) {
     lb.onclick = () => doSpeak(strip(text), lb);
     ts.appendChild(lb);
     const wa = document.createElement('a');
-    wa.target='_blank';
-    wa.style.cssText='display:inline-flex;align-items:center;gap:4px;background:#25D366;color:#fff;padding:2px 10px;border-radius:12px;font-size:.72rem;font-weight:600;text-decoration:none;';
-    wa.innerHTML='<i class="bi bi-whatsapp"></i> Share';
-    wa.href='https://wa.me/?text='+encodeURIComponent('🤖 ARIA:\n\n'+strip(text).slice(0,800)+'\n\n🚔 100 | 🚒 101 | 🚑 108');
+    wa.target = '_blank';
+    wa.rel = 'noopener noreferrer';
+    wa.style.cssText = 'display:inline-flex;align-items:center;gap:4px;background:#25D366;color:#fff;padding:2px 10px;border-radius:12px;font-size:.72rem;font-weight:600;text-decoration:none;cursor:pointer;';
+    wa.innerHTML = '<i class="bi bi-whatsapp"></i> Share';
+    const waMsg = '🤖 *ARIA Disaster Assistant:*\n\n' + strip(text).slice(0, 800) + '\n\n🚔 Police: 100 | 🚒 Fire: 101 | 🚑 Ambulance: 108';
+    wa.href = window.getWhatsAppUrl ? window.getWhatsAppUrl(waMsg) : ('https://api.whatsapp.com/send?text=' + encodeURIComponent(waMsg));
+    wa.onclick = (e) => {
+      e.preventDefault();
+      if (window.shareToWhatsApp) window.shareToWhatsApp(waMsg);
+      else window.open(wa.href, '_blank');
+    };
     ts.appendChild(wa);
   }
   w.appendChild(b); w.appendChild(ts); cw.appendChild(w); scroll();

@@ -171,10 +171,10 @@
             <i class="bi bi-sos me-2 fs-5"></i>SEND SOS ALERT NOW
           </button>
 
-          <!-- WhatsApp Share button (opens WhatsApp with pre-filled message) -->
-          <button type="button" class="btn btn-success w-100 mt-2 fw-bold"
-                  id="wa-share-btn" onclick="shareOnWhatsApp()" style="display:none;">
-            <i class="bi bi-whatsapp me-2"></i>Share on WhatsApp
+          <!-- WhatsApp Share button (opens WhatsApp with pre-filled SOS message) -->
+          <button type="button" class="btn btn-success w-100 mt-2 fw-semibold py-2 d-flex align-items-center justify-content-center gap-2"
+                  id="wa-share-btn" onclick="shareOnWhatsApp()">
+            <i class="bi bi-whatsapp fs-5"></i>Share SOS via WhatsApp Now
           </button>
 
           <a href="{{ url_for('dashboard.index') }}"
@@ -378,23 +378,28 @@ function stopSOSSiren() {
 
 // ── WhatsApp share (opens WhatsApp with pre-filled SOS message) ───────────────
 function shareOnWhatsApp() {
-  const location = document.getElementById('sos-location').value || 'Unknown location';
-  const message  = document.querySelector('textarea[name="message"]')?.value || '';
-  const sosType  = document.querySelector('input[name="sos_type"]:checked')?.value || 'Emergency';
-  const phone    = document.querySelector('input[name="recipient_phone"]')?.value || '';
+  const location = document.getElementById('sos-location')?.value.trim() || 'Location not specified';
+  const message  = document.querySelector('textarea[name="message"]')?.value.trim() || 'Urgent assistance needed!';
+  const sosType  = document.querySelector('input[name="sos_type"]:checked')?.value || 'General Emergency';
+  const phone    = document.querySelector('input[name="recipient_phone"]')?.value.trim() || '';
+  const lat      = document.getElementById('lat')?.value || '';
+  const lng      = document.getElementById('lng')?.value || '';
 
-  const text = encodeURIComponent(
-    `🆘 SOS ALERT\n\nType: ${sosType}\nLocation: ${location}\nMessage: ${message}\n\n🚔 Police: 100 | 🚒 Fire: 101 | 🚑 Ambulance: 108`
-  );
-
-  let url;
-  if (phone) {
-    const clean = phone.replace(/[^0-9]/g, '');
-    url = `https://wa.me/${clean}?text=${text}`;
-  } else {
-    url = `https://wa.me/?text=${text}`;
+  let coordsInfo = '';
+  if (lat && lng) {
+    coordsInfo = `\n📍 GPS Location: https://maps.google.com/?q=${lat},${lng}`;
   }
-  window.open(url, '_blank');
+
+  const text =
+    `🆘 *EMERGENCY SOS ALERT*\n\n` +
+    `*Type:* ${sosType}\n` +
+    `*Location:* ${location}\n` +
+    `*Details:* ${message}` +
+    `${coordsInfo}\n\n` +
+    `🚔 Police: 100 | 🚒 Fire: 101 | 🚑 Ambulance: 108\n` +
+    `NDRF Helpline: 011-24363260`;
+
+  shareToWhatsApp({ text: text, phone: phone });
 }
 
 const st = document.createElement('style');

@@ -108,17 +108,24 @@
 {% block scripts %}
 <script>
 function shareReportWA() {
-  const msg = encodeURIComponent(
-    '\uD83D\uDEA8 *DISASTER REPORT*\n\n' +
-    '*Location:* {{ report.location | replace("'", "") }}\n' +
-    '*Type:* {{ report.type }}\n' +
-    '*Severity:* {{ report.severity }}\n' +
-    '*Risk Score:* {{ report.risk_score }}/10\n' +
-    '*Status:* {{ report.status }}\n\n' +
-    '*Description:* {{ report.description | replace("'","") | truncate(200, true, "") }}\n\n' +
-    '\uD83D\uDE94 Police: 100 | \uD83D\uDE92 Fire: 101 | \uD83D\uDE91 Ambulance: 108'
-  );
-  window.open('https://wa.me/?text=' + msg, '_blank');
+  const loc = {{ (report.location or '') | tojson }};
+  const type = {{ (report.type or '') | tojson }};
+  const severity = {{ (report.severity or '') | tojson }};
+  const risk = {{ (report.risk_score or '—') | tojson }};
+  const status = {{ (report.status or 'Active') | tojson }};
+  const desc = {{ (report.description or '') | tojson }};
+
+  const text =
+    '🚨 *DISASTER REPORT*\n\n' +
+    '*Location:* ' + loc + '\n' +
+    '*Type:* ' + type + '\n' +
+    '*Severity:* ' + severity + '\n' +
+    '*Risk Score:* ' + risk + '/10\n' +
+    '*Status:* ' + status + '\n' +
+    (desc ? ('*Description:* ' + desc.slice(0, 300) + '\n\n') : '\n') +
+    '🚔 Police: 100 | 🚒 Fire: 101 | 🚑 Ambulance: 108';
+
+  shareToWhatsApp({ text: text });
 }
 </script>
 {% endblock %}

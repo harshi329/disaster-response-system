@@ -100,11 +100,14 @@
         <i class="bi bi-sos me-1"></i>New SOS
       </a>
       {% if sos %}
-      <!-- WhatsApp share — opens WhatsApp with SOS details, works for ANY number -->
-      <a href="https://wa.me/?text={{ ('🆘 SOS ALERT%0AType: ' + sos.sos_type + '%0ALocation: ' + sos.location + '%0AMessage: ' + sos.message + '%0A%0A🚔 Police: 100 | 🚒 Fire: 101 | 🚑 Ambulance: 108') }}"
-         target="_blank" class="btn btn-success px-4">
+      {% if sos.recipient_phone %}
+      <button type="button" onclick="shareSOSToRecipient()" class="btn btn-success px-3 fw-semibold">
+        <i class="bi bi-whatsapp me-1"></i>WhatsApp to Contact ({{ sos.recipient_phone }})
+      </button>
+      {% endif %}
+      <button type="button" onclick="shareSOSGeneral()" class="btn {% if sos.recipient_phone %}btn-outline-success{% else %}btn-success{% endif %} px-4 fw-semibold">
         <i class="bi bi-whatsapp me-1"></i>Share on WhatsApp
-      </a>
+      </button>
       {% endif %}
     </div>
 
@@ -122,5 +125,39 @@ window.addEventListener('load', () => {
     audio.play().catch(() => sosAlarm(4));
   } catch(e) { sosAlarm(4); }
 });
+
+function getSOSMessageText() {
+  const type = {{ (sos.sos_type or 'General Emergency') | tojson if sos else '""' }};
+  const loc = {{ (sos.location or '') | tojson if sos else '""' }};
+  const msg = {{ (sos.message or '') | tojson if sos else '""' }};
+  const people = {{ (sos.people or 1) | tojson if sos else '""' }};
+  const lat = {{ (sos.lat or '') | tojson if sos else '""' }};
+  const lng = {{ (sos.lng or '') | tojson if sos else '""' }};
+
+  let coords = '';
+  if (lat && lng) {
+    coords = `\n📍 Live Map Pin: https://maps.google.com/?q=${lat},${lng}`;
+  }
+
+  return (
+    `🆘 *EMERGENCY SOS ALERT*\n\n` +
+    `*Emergency Type:* ${type}\n` +
+    `*Location:* ${loc}\n` +
+    `*People in Danger:* ${people}\n` +
+    `*Situation:* ${msg}` +
+    `${coords}\n\n` +
+    `🚔 Police: 100 | 🚒 Fire: 101 | 🚑 Ambulance: 108\n` +
+    `National Disaster Helpline: 1070`
+  );
+}
+
+function shareSOSToRecipient() {
+  const phone = {{ (sos.recipient_phone or '') | tojson if sos else '""' }};
+  shareToWhatsApp({ text: getSOSMessageText(), phone: phone });
+}
+
+function shareSOSGeneral() {
+  shareToWhatsApp({ text: getSOSMessageText() });
+}
 </script>
 {% endblock %}

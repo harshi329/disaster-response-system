@@ -125,7 +125,14 @@
 
                 <!-- WhatsApp Share — opens WhatsApp with SOS details, works for ANY number -->
                 <button type="button"
-                   onclick="shareSOSWhatsApp('{{ sos.sos_type }}','{{ sos.location | replace("'","") }}','{{ sos.message | replace("'","") | truncate(100,true,"") }}','{{ sos.people }}')"
+                   data-type="{{ sos.sos_type }}"
+                   data-location="{{ sos.location }}"
+                   data-message="{{ sos.message }}"
+                   data-people="{{ sos.people }}"
+                   data-phone="{{ sos.recipient_phone or '' }}"
+                   data-lat="{{ sos.lat or '' }}"
+                   data-lng="{{ sos.lng or '' }}"
+                   onclick="shareSOSCard(this)"
                    class="btn btn-sm btn-success" title="Share on WhatsApp">
                   <i class="bi bi-whatsapp me-1"></i>WhatsApp
                 </button>
@@ -159,24 +166,43 @@
 
 {% block scripts %}
 <script>
+function shareSOSCard(btn) {
+  const type     = btn.dataset.type || 'Emergency';
+  const location = btn.dataset.location || '';
+  const message  = btn.dataset.message || '';
+  const people   = btn.dataset.people || '1';
+  const phone    = btn.dataset.phone || '';
+  const lat      = btn.dataset.lat || '';
+  const lng      = btn.dataset.lng || '';
+
+  let coords = '';
+  if (lat && lng) {
+    coords = `\n📍 GPS: https://maps.google.com/?q=${lat},${lng}`;
+  }
+
+  const text =
+    `🆘 *EMERGENCY SOS ALERT*\n\n` +
+    `*Emergency Type:* ${type}\n` +
+    `*Location:* ${location}\n` +
+    `*People:* ${people}\n` +
+    `*Message:* ${message}` +
+    `${coords}\n\n` +
+    `🚔 Police: 100 | 🚒 Fire: 101 | 🚑 Ambulance: 108\n` +
+    `National Disaster Helpline: 1070`;
+
+  shareToWhatsApp({ text: text, phone: phone });
+}
+
 function shareSOSWhatsApp(type, location, message, people) {
-  const text = encodeURIComponent(
-    '🆘 *SOS ALERT*\n\n' +
-    '*Type:* ' + type + '\n' +
-    '*Location:* ' + location + '\n' +
-    '*Message:* ' + message + '\n' +
-    '*People:* ' + people + '\n\n' +
-    '🚔 Police: 100 | 🚒 Fire: 101 | 🚑 Ambulance: 108'
-  );
-  const phone = prompt('Send to specific number? (e.g. +918074177416)\nLeave blank to choose in WhatsApp.');
-  let url;
-  if (phone && phone.trim()) {
-    const num = phone.trim().replace(/[^0-9]/g, '');
-    url = 'https://wa.me/' + num + '?text=' + text;
-  } else if (phone !== null) {
-    url = 'https://wa.me/?text=' + text;
-  } else return;
-  window.open(url, '_blank');
+  const text =
+    `🆘 *EMERGENCY SOS ALERT*\n\n` +
+    `*Type:* ${type || 'Emergency'}\n` +
+    `*Location:* ${location || ''}\n` +
+    `*People:* ${people || '1'}\n` +
+    `*Message:* ${message || ''}\n\n` +
+    `🚔 Police: 100 | 🚒 Fire: 101 | 🚑 Ambulance: 108`;
+
+  shareToWhatsApp({ text: text });
 }
 
 {% if active_count > 0 %}

@@ -130,18 +130,26 @@
 <script>
 // ── WhatsApp share ────────────────────────────────────────────────────────────
 function shareWA() {
-  const msg = encodeURIComponent(
-    '\uD83D\uDEA8 *DISASTER REPORT*\n\n' +
-    '*Location:* {{ report.location }}\n' +
-    '*Type:* {{ analysis.type }}\n' +
-    '*Severity:* {{ analysis.severity }}\n' +
-    '*Risk Score:* {{ analysis.risk_score }}/10\n\n' +
-    '*Alert:* {{ alert.message }}\n\n' +
-    '*Route:* {{ route.route_summary }}\n' +
-    '*ETA:* {{ route.estimated_time_mins }} mins\n\n' +
-    '\uD83D\uDE94 Police: 100 | \uD83D\uDE92 Fire: 101 | \uD83D\uDE91 Ambulance: 108'
-  );
-  window.open('https://wa.me/?text=' + msg, '_blank');
+  const loc = {{ (report.location or '') | tojson }};
+  const type = {{ (analysis.type or '') | tojson }};
+  const severity = {{ (analysis.severity or '') | tojson }};
+  const risk = {{ (analysis.risk_score or 0) | tojson }};
+  const alertMsg = {{ ((alert and alert.message) or '') | tojson }};
+  const routeSummary = {{ ((route and route.route_summary) or '') | tojson }};
+  const eta = {{ ((route and route.estimated_time_mins) or '') | tojson }};
+
+  const text =
+    '🚨 *DISASTER REPORT*\n\n' +
+    '*Location:* ' + loc + '\n' +
+    '*Type:* ' + type + '\n' +
+    '*Severity:* ' + severity + '\n' +
+    '*Risk Score:* ' + risk + '/10\n\n' +
+    (alertMsg ? ('*Emergency Alert:* ' + alertMsg + '\n\n') : '') +
+    (routeSummary ? ('*Evacuation Route:* ' + routeSummary + '\n') : '') +
+    (eta ? ('*Estimated Time:* ' + eta + ' mins\n\n') : '\n') +
+    '🚔 Police: 100 | 🚒 Fire: 101 | 🚑 Ambulance: 108';
+
+  shareToWhatsApp({ text: text });
 }
 
 // ── PDF download ──────────────────────────────────────────────────────────────

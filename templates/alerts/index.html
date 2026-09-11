@@ -73,15 +73,15 @@ function shareAlertFromBtn(btn) {
   const severity = btn.dataset.severity || '';
   const message  = (btn.dataset.message || '').slice(0, 200);
   const emoji    = severity === 'High' ? '🚨' : severity === 'Medium' ? '⚠️' : '📢';
-  const text     = encodeURIComponent(
+  const text =
     emoji + ' *EMERGENCY ALERT*\n\n' +
     '*Type:* '     + type     + '\n' +
     '*Location:* ' + location + '\n' +
     '*Severity:* ' + severity + '\n\n' +
     message + '\n\n' +
-    '🚔 Police: 100 | 🚒 Fire: 101 | 🚑 Ambulance: 108'
-  );
-  window.open('https://wa.me/?text=' + text, '_blank');
+    '🚔 Police: 100 | 🚒 Fire: 101 | 🚑 Ambulance: 108';
+
+  shareToWhatsApp({ text: text });
 }
 </script>
 {% endblock %}

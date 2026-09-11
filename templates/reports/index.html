@@ -55,7 +55,12 @@
                   <i class="bi bi-eye"></i>
                 </a>
                 <button type="button"
-                        onclick="shareWA('{{ r.location|replace("'","") }}','{{ r.type }}','{{ r.severity }}','{{ r.risk_score }}','{{ r.status }}')"
+                        data-location="{{ r.location }}"
+                        data-type="{{ r.type }}"
+                        data-severity="{{ r.severity }}"
+                        data-risk="{{ r.risk_score or '—' }}"
+                        data-status="{{ r.status or 'Active' }}"
+                        onclick="shareReportRow(this)"
                         class="btn btn-sm btn-success" title="Share on WhatsApp">
                   <i class="bi bi-whatsapp"></i>
                 </button>
@@ -76,17 +81,36 @@
 
 {% block scripts %}
 <script>
-function shareWA(location, type, severity, risk, status) {
-  const msg = encodeURIComponent(
-    '\uD83D\uDEA8 *DISASTER REPORT*\n\n' +
-    '*Location:* ' + location + '\n' +
+function shareReportRow(btn) {
+  const loc = btn.dataset.location || '';
+  const type = btn.dataset.type || '';
+  const severity = btn.dataset.severity || '';
+  const risk = btn.dataset.risk || '—';
+  const status = btn.dataset.status || 'Active';
+
+  const text =
+    '🚨 *DISASTER REPORT*\n\n' +
+    '*Location:* ' + loc + '\n' +
     '*Type:* ' + type + '\n' +
     '*Severity:* ' + severity + '\n' +
     '*Risk Score:* ' + risk + '/10\n' +
     '*Status:* ' + status + '\n\n' +
-    '\uD83D\uDE94 Police: 100 | \uD83D\uDE92 Fire: 101 | \uD83D\uDE91 Ambulance: 108'
-  );
-  window.open('https://wa.me/?text=' + msg, '_blank');
+    '🚔 Police: 100 | 🚒 Fire: 101 | 🚑 Ambulance: 108';
+
+  shareToWhatsApp({ text: text });
+}
+
+function shareWA(location, type, severity, risk, status) {
+  const text =
+    '🚨 *DISASTER REPORT*\n\n' +
+    '*Location:* ' + (location || '') + '\n' +
+    '*Type:* ' + (type || '') + '\n' +
+    '*Severity:* ' + (severity || '') + '\n' +
+    '*Risk Score:* ' + (risk || '—') + '/10\n' +
+    '*Status:* ' + (status || 'Active') + '\n\n' +
+    '🚔 Police: 100 | 🚒 Fire: 101 | 🚑 Ambulance: 108';
+
+  shareToWhatsApp({ text: text });
 }
 </script>
 {% endblock %}

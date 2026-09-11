@@ -120,10 +120,13 @@
             <a href="tel:{{ v.phone }}" class="btn btn-sm btn-outline-secondary py-1 px-2" title="Call volunteer">
               <i class="bi bi-telephone-fill"></i> Call
             </a>
-            <a href="https://wa.me/{{ v.phone | replace('+','') | replace(' ','') | replace('-','') }}?text={{ ('🤝 Hi ' + v.name + ', coordinating with you via Disaster Response Volunteer Network.') | urlencode }}"
-               target="_blank" class="btn btn-sm btn-success py-1 px-2" title="WhatsApp Chat">
+            <button type="button"
+                    data-phone="{{ v.phone }}"
+                    data-name="{{ v.name }}"
+                    onclick="chatVolunteerWA(this)"
+                    class="btn btn-sm btn-success py-1 px-2" title="WhatsApp Chat">
               <i class="bi bi-whatsapp me-1"></i>Chat
-            </a>
+            </button>
             {% endif %}
           </div>
 
@@ -176,6 +179,13 @@
 
 {% block scripts %}
 <script>
+function chatVolunteerWA(btn) {
+  const phone = btn.dataset.phone || '';
+  const name  = btn.dataset.name || 'Volunteer';
+  const text  = `🤝 Hi ${name}, coordinating with you via Disaster Response Volunteer Network.`;
+  shareToWhatsApp({ text: text, phone: phone });
+}
+
 const assignModal = document.getElementById('assignModal');
 if (assignModal) {
   assignModal.addEventListener('show.bs.modal', function(e) {
