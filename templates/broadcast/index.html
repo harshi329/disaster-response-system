@@ -1,19 +1,88 @@
 {% extends 'base.html' %}
-{% block title %}Broadcast{% endblock %}
-{% block content %}
-<div class="row g-4">
+{% block title %}Emergency Broadcasts{% endblock %}
 
-  <!-- Send broadcast form -->
-  <div class="col-lg-5">
-    <div class="card border-0 shadow-sm">
-      <div class="card-header bg-danger text-white fw-semibold">
-        <i class="bi bi-megaphone-fill me-2"></i>Send Broadcast
+{% block content %}
+<!-- Top Emergency Hotline Bar (Available for all roles) -->
+<div class="card border-0 shadow-sm mb-4 bg-white">
+  <div class="card-body py-2 px-3">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+      <div class="d-flex align-items-center gap-2">
+        <span class="badge bg-danger rounded-pill px-2 py-1">
+          <i class="bi bi-telephone-fill me-1"></i>24/7 HELPLINES
+        </span>
+        <span class="small fw-semibold text-secondary d-none d-md-inline">Emergency Quick Dial:</span>
       </div>
-      <div class="card-body p-4">
-        <form method="POST">
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <a href="tel:112" class="badge text-bg-light border text-decoration-none py-2 px-2 text-dark">
+          <i class="bi bi-shield-fill text-danger me-1"></i>Emergency: <strong>112</strong>
+        </a>
+        <a href="tel:108" class="badge text-bg-light border text-decoration-none py-2 px-2 text-dark">
+          <i class="bi bi-hospital-fill text-danger me-1"></i>Ambulance: <strong>108</strong>
+        </a>
+        <a href="tel:101" class="badge text-bg-light border text-decoration-none py-2 px-2 text-dark">
+          <i class="bi bi-fire text-warning me-1"></i>Fire: <strong>101</strong>
+        </a>
+        <a href="tel:100" class="badge text-bg-light border text-decoration-none py-2 px-2 text-dark">
+          <i class="bi bi-person-badge-fill text-primary me-1"></i>Police: <strong>100</strong>
+        </a>
+        <a href="tel:1070" class="badge text-bg-light border text-decoration-none py-2 px-2 text-dark">
+          <i class="bi bi-life-preserver text-info me-1"></i>Disaster Control: <strong>1070</strong>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if current_user.role == 'admin' %}
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- ADMIN VIEW: Issue Alerts, Quick Templates, Sample Seeder & Live Feed   -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div class="row g-4">
+  <!-- Left column: Quick Templates + Broadcast Form -->
+  <div class="col-lg-5">
+
+    <!-- Quick Emergency Templates Card -->
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header bg-dark text-white fw-semibold d-flex justify-content-between align-items-center py-2">
+        <span><i class="bi bi-lightning-charge-fill text-warning me-2"></i>Quick Emergency Templates</span>
+        <span class="badge bg-warning text-dark small">1-Click Fill</span>
+      </div>
+      <div class="card-body p-3 bg-light">
+        <p class="small text-muted mb-2">Click any standard template to pre-fill the form instantly:</p>
+        <div class="d-flex flex-wrap gap-2">
+          <button type="button" class="btn btn-sm btn-outline-danger" onclick="fillTemplate('evac')">
+            <i class="bi bi-door-open me-1"></i>Flood Evacuation
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-warning text-dark" onclick="fillTemplate('weather')">
+            <i class="bi bi-cloud-lightning-rain me-1"></i>Red Weather Alert
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-primary" onclick="fillTemplate('relief')">
+            <i class="bi bi-boxes me-1"></i>Food & Relief Camps
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-danger" onclick="fillTemplate('rescue')">
+            <i class="bi bi-life-preserver me-1"></i>Air & Boat Rescue
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-success" onclick="fillTemplate('allclear')">
+            <i class="bi bi-check2-circle me-1"></i>All Clear Advisory
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearForm()">
+            <i class="bi bi-arrow-counterclockwise me-1"></i>Clear Form
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Send Broadcast Form -->
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header bg-danger text-white fw-semibold d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-megaphone-fill me-2"></i>Issue Public Broadcast</span>
+        <span class="badge bg-white text-danger small fw-bold">Admin Only</span>
+      </div>
+      <div class="card-body p-4" id="formCardBody">
+        <form method="POST" id="broadcastForm">
           <div class="mb-3">
-            <label class="form-label fw-semibold">Type</label>
-            <select name="btype" class="form-select">
+            <label class="form-label fw-semibold">Broadcast Type</label>
+            <select name="btype" id="form-btype" class="form-select">
               {% for t in types %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
             </select>
           </div>
@@ -22,7 +91,7 @@
             <div class="d-flex gap-2">
               {% for p, color in [('Normal','secondary'),('Urgent','warning'),('Critical','danger')] %}
               <div class="form-check">
-                <input class="form-check-input" type="radio" name="priority"
+                <input class="form-check-input priority-radio" type="radio" name="priority"
                        id="p-{{ p }}" value="{{ p }}" {% if p=='Normal' %}checked{% endif %}/>
                 <label class="form-check-label" for="p-{{ p }}">
                   <span class="badge bg-{{ color }} {% if color=='warning' %}text-dark{% endif %}">{{ p }}</span>
@@ -32,87 +101,131 @@
             </div>
           </div>
           <div class="mb-3">
-            <label class="form-label fw-semibold">Target Area</label>
-            <input type="text" name="area" class="form-control" value="All Areas"
-                   placeholder="e.g. All Areas, North Zone"/>
+            <label class="form-label fw-semibold">Target Area / Region</label>
+            <input type="text" name="area" id="form-area" class="form-control" value="All Areas"
+                   placeholder="e.g. All Areas, River Road, North Zone" required/>
           </div>
           <div class="mb-3">
-            <label class="form-label fw-semibold">Title <span class="text-danger">*</span></label>
-            <input type="text" name="title" class="form-control"
-                   placeholder="e.g. Evacuation Order – River Road" required/>
+            <label class="form-label fw-semibold">Alert Title <span class="text-danger">*</span></label>
+            <input type="text" name="title" id="form-title" class="form-control"
+                   placeholder="e.g. 🚨 Evacuation Notice – Yamuna Riverbank" required/>
           </div>
           <div class="mb-3">
-            <label class="form-label fw-semibold">Message <span class="text-danger">*</span></label>
-            <textarea name="message" class="form-control" rows="4"
-                      placeholder="Broadcast message to all users…" required></textarea>
+            <label class="form-label fw-semibold">Broadcast Message <span class="text-danger">*</span></label>
+            <textarea name="message" id="form-message" class="form-control" rows="4"
+                      placeholder="Enter emergency instructions, shelter locations, or advisory details…" required></textarea>
           </div>
 
           <!-- WhatsApp toggle -->
-          <div class="mb-4 d-flex align-items-center gap-2">
+          <div class="mb-4 d-flex align-items-center gap-2 p-2 rounded bg-light border">
             <div class="form-check form-switch mb-0">
               <input class="form-check-input" type="checkbox" name="send_whatsapp"
                      id="wa-toggle" checked/>
-              <label class="form-check-label fw-semibold" for="wa-toggle">
+              <label class="form-check-label fw-semibold small" for="wa-toggle">
                 <i class="bi bi-whatsapp text-success me-1"></i>
-                Send WhatsApp to all registered users
+                Deliver WhatsApp alert to all registered citizens
               </label>
             </div>
           </div>
 
-          <button type="submit" class="btn btn-danger w-100 fw-bold">
-            <i class="bi bi-megaphone me-2"></i>Send to All Users
+          <button type="submit" class="btn btn-danger w-100 fw-bold py-2 shadow-sm">
+            <i class="bi bi-send-fill me-2"></i>Send Broadcast to All Users
           </button>
         </form>
       </div>
     </div>
+
+    <!-- Sample Broadcasts Restorer -->
+    <div class="card border-0 shadow-sm bg-light">
+      <div class="card-body p-3">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+          <div class="text-start">
+            <div class="fw-bold small text-dark"><i class="bi bi-collection-fill text-primary me-1"></i>Citizen Sample Broadcasts</div>
+            <div class="text-muted small" style="font-size:.78rem;">Quickly add 5 realistic emergency alerts for citizens.</div>
+          </div>
+          <form method="POST" action="{{ url_for('broadcast.seed_samples') }}" class="mb-0">
+            <button type="submit" class="btn btn-sm btn-outline-primary fw-semibold" onclick="return confirm('Restore/Add sample emergency broadcasts for citizens?');">
+              <i class="bi bi-arrow-repeat me-1"></i>Restore Samples
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <!-- Broadcast history -->
+  <!-- Right column: Active Broadcast Feed for Admin -->
   <div class="col-lg-7">
-    <h5 class="fw-bold mb-3">
-      <i class="bi bi-clock-history me-2 text-danger"></i>Broadcast History
-    </h5>
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+      <h5 class="fw-bold mb-0">
+        <i class="bi bi-megaphone me-2 text-danger"></i>Active Broadcast Feed
+        <span class="badge bg-secondary ms-1 fs-6">{{ broadcasts|length }}</span>
+      </h5>
+      <!-- Category Filter Pills -->
+      <div class="btn-group btn-group-sm" role="group" id="feedFilterButtons">
+        <button type="button" class="btn btn-danger active" onclick="filterFeed('all', this)">All</button>
+        <button type="button" class="btn btn-outline-danger" onclick="filterFeed('Evacuation Order', this)">Evacuation</button>
+        <button type="button" class="btn btn-outline-warning text-dark" onclick="filterFeed('Weather Warning', this)">Weather</button>
+        <button type="button" class="btn btn-outline-primary" onclick="filterFeed('Resource Update', this)">Relief</button>
+      </div>
+    </div>
+
+    <!-- Search input -->
+    <div class="mb-3 position-relative">
+      <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+      <input type="text" id="feedSearch" class="form-control ps-5" placeholder="Filter alerts by title, message, or area..." onkeyup="searchFeed()">
+    </div>
 
     {% if not broadcasts %}
-    <div class="text-center text-muted py-5">
+    <div class="text-center text-muted py-5 bg-white rounded shadow-sm">
       <i class="bi bi-megaphone fs-1 d-block mb-2 opacity-25"></i>
-      No broadcasts sent yet.
+      No broadcasts sent yet. Use the form or click "Restore Samples".
     </div>
     {% endif %}
 
-    <div class="d-flex flex-column gap-3">
+    <div class="d-flex flex-column gap-3" id="broadcastList">
       {% for b in broadcasts %}
       {% set p_color = {'Normal':'secondary','Urgent':'warning','Critical':'danger'}.get(b.priority,'secondary') %}
-      {% set t_icon  = {'Evacuation Order':'bi-door-open','All Clear':'bi-check-circle',
-                        'Weather Warning':'bi-cloud-lightning','Curfew':'bi-moon',
-                        'Resource Update':'bi-boxes','General':'bi-megaphone'}.get(b.type,'bi-megaphone') %}
-      <div class="card border-0 shadow-sm border-start border-4
+      {% set t_icon  = {'Evacuation Order':'bi-door-open-fill',
+                        'All Clear':'bi-check-circle-fill',
+                        'Weather Warning':'bi-cloud-lightning-rain-fill',
+                        'Curfew':'bi-slash-circle-fill',
+                        'Resource Update':'bi-box-seam-fill',
+                        'General':'bi-megaphone-fill'}.get(b.type,'bi-megaphone-fill') %}
+      <div class="card border-0 shadow-sm border-start border-4 broadcast-card
         {% if b.priority=='Critical' %}border-danger
         {% elif b.priority=='Urgent' %}border-warning
-        {% else %}border-secondary{% endif %}">
-        <div class="card-body py-3">
-          <div class="d-flex justify-content-between align-items-start mb-1">
+        {% else %}border-primary{% endif %}"
+        data-btype="{{ b.type }}" data-priority="{{ b.priority }}">
+        <div class="card-body p-3">
+          <div class="d-flex justify-content-between align-items-start mb-2 gap-2 flex-wrap">
             <div class="d-flex align-items-center gap-2">
-              <i class="bi {{ t_icon }} text-danger"></i>
-              <strong>{{ b.title }}</strong>
+              <span class="p-2 rounded bg-{{ p_color }}-subtle text-{{ p_color }}">
+                <i class="bi {{ t_icon }} fs-5"></i>
+              </span>
+              <div>
+                <h6 class="mb-0 fw-bold text-dark">{{ b.title }}</h6>
+                <div class="small text-muted">
+                  <i class="bi bi-geo-alt-fill text-danger me-1"></i><strong>{{ b.area }}</strong>
+                  <span class="mx-1">•</span>
+                  <i class="bi bi-person-fill text-secondary me-1"></i>{{ b.sent_by }}
+                </div>
+              </div>
             </div>
-            <div class="d-flex gap-1 flex-wrap">
+            <div class="d-flex gap-1 align-items-center flex-wrap">
               <span class="badge bg-{{ p_color }} {% if p_color=='warning' %}text-dark{% endif %}">{{ b.priority }}</span>
               <span class="badge bg-light text-dark border">{{ b.type }}</span>
-              <!-- WhatsApp share — opens WhatsApp with broadcast, works for ANY number -->
-              <a href="https://wa.me/?text={{ ('📢 ' + b.type + ': ' + b.title + '%0A' + b.message + '%0AArea: ' + b.area + '%0A%0A🚔 Police: 100 | 🚒 Fire: 101 | 🚑 Ambulance: 108') | urlencode }}"
-                 target="_blank" class="btn btn-xs btn-success py-0 px-2"
-                 style="font-size:.72rem;" title="Share on WhatsApp">
-                <i class="bi bi-whatsapp"></i> Share
+              <!-- WhatsApp share link -->
+              <a href="https://wa.me/?text={{ ('📢 ' + b.type + ': ' + b.title + '%0A%0A' + b.message + '%0A%0A📍 Area: ' + b.area + '%0A%0A🚨 Emergency: 112 | 🚑 Ambulance: 108 | 🚒 Fire: 101 | 🚔 Police: 100') | urlencode }}"
+                 target="_blank" class="btn btn-sm btn-success py-1 px-2 d-inline-flex align-items-center gap-1"
+                 style="font-size:.78rem;" title="Share on WhatsApp">
+                <i class="bi bi-whatsapp"></i><span>Share</span>
               </a>
             </div>
           </div>
-          <p class="mb-1 text-dark">{{ b.message }}</p>
-          <div class="d-flex gap-3 text-muted small flex-wrap">
-            <span><i class="bi bi-geo-alt me-1"></i>{{ b.area }}</span>
-            <span><i class="bi bi-person me-1"></i>{{ b.sent_by }}</span>
+          <p class="mb-2 text-secondary" style="font-size:.92rem; line-height:1.5;">{{ b.message }}</p>
+          <div class="d-flex justify-content-between align-items-center text-muted small pt-2 border-top">
             <span><i class="bi bi-clock me-1"></i>{{ b.created_at | format_dt(16) }}</span>
-            <span><i class="bi bi-eye me-1"></i>{{ b.read_by|length }} read</span>
+            <span><i class="bi bi-eye me-1"></i>{{ b.read_by|length }} user(s) acknowledged</span>
           </div>
         </div>
       </div>
@@ -120,15 +233,261 @@
     </div>
   </div>
 </div>
+
+{% else %}
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- CITIZEN / VOLUNTEER VIEW: High-Legibility Emergency Directives Feed     -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div class="row justify-content-center">
+  <div class="col-12 col-xl-10">
+
+    <!-- Citizen Header Banner -->
+    <div class="card border-0 shadow-sm mb-4 bg-white border-start border-5 border-danger">
+      <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+          <div>
+            <div class="d-flex align-items-center gap-2 mb-2">
+              <span class="badge bg-danger px-2 py-1"><i class="bi bi-broadcast me-1"></i>OFFICIAL EMERGENCY BROADCASTS</span>
+              <span class="badge bg-success-subtle text-success border border-success px-2 py-1">
+                <i class="bi bi-shield-check me-1"></i>Verified Directives
+              </span>
+            </div>
+            <h4 class="fw-bold mb-1 text-dark">Real-Time Disaster Advisories & Public Directives</h4>
+            <p class="text-muted mb-0">
+              Immediate safety instructions, evacuation shelters, relief camp food & water distribution hubs, and weather warnings issued by the Disaster Management Authority.
+            </p>
+          </div>
+          <a href="{{ url_for('sos.submit') }}" class="btn btn-danger fw-bold shadow-sm px-3 py-2">
+            <i class="bi bi-sos me-1"></i>Request Emergency SOS
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search & Filter Controls for Citizen -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body p-3">
+        <div class="row g-2 align-items-center">
+          <div class="col-md-6">
+            <div class="position-relative">
+              <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+              <input type="text" id="feedSearch" class="form-control ps-5"
+                     placeholder="Search alerts by area (e.g. River Road), shelter, or keyword..."
+                     onkeyup="searchFeed()">
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="d-flex gap-1 flex-wrap justify-content-md-end" id="feedFilterButtons">
+              <button type="button" class="btn btn-sm btn-danger active" onclick="filterFeed('all', this)">All</button>
+              <button type="button" class="btn btn-sm btn-outline-danger" onclick="filterFeed('Evacuation Order', this)">🚨 Evacuations</button>
+              <button type="button" class="btn btn-sm btn-outline-warning text-dark" onclick="filterFeed('Weather Warning', this)">⚠️ Weather</button>
+              <button type="button" class="btn btn-sm btn-outline-primary" onclick="filterFeed('Resource Update', this)">📦 Relief Camps</button>
+              <button type="button" class="btn btn-sm btn-outline-secondary" onclick="filterFeed('Curfew', this)">🛑 Travel & Roads</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Citizen Broadcast Feed Cards -->
+    {% if not broadcasts %}
+    <div class="card border-0 shadow-sm p-5 text-center text-muted bg-white">
+      <i class="bi bi-shield-check text-success fs-1 d-block mb-3"></i>
+      <h5 class="fw-bold text-dark">No Active Emergency Advisories</h5>
+      <p class="mb-0 text-muted">All metropolitan sectors are currently operating under normal conditions. You will receive real-time notifications here if an emergency advisory is issued.</p>
+    </div>
+    {% endif %}
+
+    <div class="d-flex flex-column gap-3" id="broadcastList">
+      {% for b in broadcasts %}
+      {% set p_color = {'Normal':'secondary','Urgent':'warning','Critical':'danger'}.get(b.priority,'secondary') %}
+      {% set t_icon  = {'Evacuation Order':'bi-door-open-fill',
+                        'All Clear':'bi-check-circle-fill',
+                        'Weather Warning':'bi-cloud-lightning-rain-fill',
+                        'Curfew':'bi-slash-circle-fill',
+                        'Resource Update':'bi-box-seam-fill',
+                        'General':'bi-megaphone-fill'}.get(b.type,'bi-megaphone-fill') %}
+      <div class="card border-0 shadow-sm border-start border-5 broadcast-card
+        {% if b.priority=='Critical' %}border-danger
+        {% elif b.priority=='Urgent' %}border-warning
+        {% else %}border-primary{% endif %}"
+        data-btype="{{ b.type }}" data-priority="{{ b.priority }}">
+        <div class="card-body p-4">
+          <div class="d-flex justify-content-between align-items-start mb-3 gap-2 flex-wrap">
+            <div class="d-flex align-items-center gap-3">
+              <span class="p-3 rounded-circle bg-{{ p_color }}-subtle text-{{ p_color }} d-flex align-items-center justify-content-center" style="width:48px;height:48px;">
+                <i class="bi {{ t_icon }} fs-4"></i>
+              </span>
+              <div>
+                <h5 class="mb-1 fw-bold text-dark">{{ b.title }}</h5>
+                <div class="small text-muted d-flex align-items-center gap-2 flex-wrap">
+                  <span class="badge bg-danger-subtle text-danger border border-danger-subtle">
+                    <i class="bi bi-geo-alt-fill me-1"></i>{{ b.area }}
+                  </span>
+                  <span class="text-muted"><i class="bi bi-clock me-1"></i>{{ b.created_at | format_dt(16) }}</span>
+                  <span class="text-muted"><i class="bi bi-shield-shaded me-1"></i>{{ b.sent_by }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="d-flex gap-2 align-items-center flex-wrap">
+              <span class="badge bg-{{ p_color }} {% if p_color=='warning' %}text-dark{% endif %} px-3 py-2 fw-semibold">{{ b.priority }}</span>
+              <span class="badge bg-light text-dark border px-3 py-2">{{ b.type }}</span>
+            </div>
+          </div>
+
+          <div class="p-3 bg-light rounded-3 mb-3 border">
+            <p class="mb-0 text-dark" style="font-size:1rem; line-height:1.6; white-space:pre-line;">{{ b.message }}</p>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 pt-2 border-top">
+            <div class="d-flex align-items-center gap-2 text-muted small">
+              <i class="bi bi-info-circle text-primary"></i>
+              <span>Official broadcast for your safety. Share with family and community members.</span>
+            </div>
+            <div class="d-flex gap-2">
+              <a href="https://wa.me/?text={{ ('📢 ' + b.type + ': ' + b.title + '%0A%0A' + b.message + '%0A%0A📍 Affected Area: ' + b.area + '%0A%0A🚨 Helplines:%0A- Emergency: 112%0A- Ambulance: 108%0A- Fire: 101%0A- Police: 100%0A- Disaster Control: 1070') | urlencode }}"
+                 target="_blank" class="btn btn-success fw-semibold shadow-sm d-inline-flex align-items-center gap-2 px-3 py-1">
+                <i class="bi bi-whatsapp"></i><span>Share via WhatsApp</span>
+              </a>
+              <a href="tel:112" class="btn btn-outline-danger btn-sm d-inline-flex align-items-center gap-1">
+                <i class="bi bi-telephone-fill"></i><span>Call 112</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
 {% endblock %}
 
 {% block scripts %}
 <script>
-// Play chime when broadcast page loads with new broadcasts
+// Play broadcast chime on page load if broadcasts exist
 {% if broadcasts %}
 window.addEventListener('load', () => {
   try { broadcastChime(); } catch(e) {}
 });
 {% endif %}
+
+// Sample templates for 1-click admin pre-fill
+const sampleTemplates = {
+  evac: {
+    title: "🚨 URGENT EVACUATION: Yamuna River Bank & Low-Lying Sectors",
+    type: "Evacuation Order",
+    priority: "Critical",
+    area: "River Road & Low-Lying Riverside Sectors",
+    message: "Water levels have crossed the danger mark (205.53m) following upstream reservoir release. All residents in low-lying riverside communities must evacuate immediately to designated relief shelters: Municipal Community Center #4 and Govt. Senior Secondary School. Emergency rescue teams and transport buses are stationed at River Road checkpost. Call 108 or tap SOS in this app for immediate assistance."
+  },
+  weather: {
+    title: "⚠️ RED ALERT: Heavy Rainfall & Flash Flood Advisory (Next 48 Hours)",
+    type: "Weather Warning",
+    priority: "Urgent",
+    area: "All Metropolitan Sectors & NCR Region",
+    message: "IMD has issued a Red Alert predicting 120-180mm torrential rainfall and flash flood risks over the next 48 hours. Citizens are strongly advised to remain indoors, avoid electric poles and waterlogged underpasses, keep power banks charged, and stock up on clean drinking water and essential medications."
+  },
+  relief: {
+    title: "📦 Relief Camps Active: Free Food Packets, Clean Water & Medical Aid",
+    type: "Resource Update",
+    priority: "Urgent",
+    area: "Relief Shelters (Sectors 4, 7 & 12)",
+    message: "Emergency relief distribution is now actively operating at 3 major hubs: Central School Ground (Camp A), Sector 12 Sports Complex (Camp B), and District Red Cross Center (Camp C). Free meal packets, bottled drinking water, baby food, blankets, and 24/7 medical triage booths are fully stocked and available for all affected citizens."
+  },
+  rescue: {
+    title: "🚁 Search & Rescue Operations Active: Air Support & Boats Deployed",
+    type: "General",
+    priority: "Critical",
+    area: "Hill Zone & North District Flood Zones",
+    message: "Combined air-and-boat rescue squads are deployed across submerged neighborhoods. If trapped on rooftops, display bright clothing or flash your phone light skyward. Keep mobile phones in battery saver mode and submit an SOS alert in this app for direct GPS rescue dispatch."
+  },
+  allclear: {
+    title: "✅ ALL CLEAR: Flood Waters Receding – Safe Return Advisory",
+    type: "All Clear",
+    priority: "Normal",
+    area: "Sector 3, 5 & North Ridge Zones",
+    message: "District Disaster Control confirms that floodwaters have receded below safety thresholds in Sectors 3, 5 and North Ridge. Municipal sanitization teams are clearing debris. Electricity and water supply are being restored in phases. Return cautiously and report any downed power lines immediately."
+  }
+};
+
+function fillTemplate(key) {
+  const t = sampleTemplates[key];
+  if (!t) return;
+  const titleEl = document.getElementById('form-title');
+  const msgEl = document.getElementById('form-message');
+  const btypeEl = document.getElementById('form-btype');
+  const areaEl = document.getElementById('form-area');
+
+  if (titleEl) titleEl.value = t.title;
+  if (msgEl) msgEl.value = t.message;
+  if (btypeEl) btypeEl.value = t.type;
+  if (areaEl) areaEl.value = t.area;
+
+  const radio = document.getElementById('p-' + t.priority);
+  if (radio) radio.checked = true;
+
+  const card = document.getElementById('formCardBody');
+  if (card) {
+    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    card.classList.add('bg-warning-subtle');
+    setTimeout(() => card.classList.remove('bg-warning-subtle'), 500);
+  }
+}
+
+function clearForm() {
+  const form = document.getElementById('broadcastForm');
+  if (form) form.reset();
+  const normalRadio = document.getElementById('p-Normal');
+  if (normalRadio) normalRadio.checked = true;
+  const areaEl = document.getElementById('form-area');
+  if (areaEl) areaEl.value = 'All Areas';
+}
+
+let currentFilterType = 'all';
+
+function filterFeed(btype, btn) {
+  currentFilterType = btype;
+  const container = document.getElementById('feedFilterButtons');
+  if (container) {
+    container.querySelectorAll('button').forEach(b => {
+      b.classList.remove('active');
+      if (b.classList.contains('btn-danger') || b.classList.contains('btn-outline-danger')) {
+        b.className = (b === btn) ? 'btn btn-sm btn-danger active' : 'btn btn-sm btn-outline-danger';
+      } else if (b.classList.contains('btn-warning') || b.classList.contains('btn-outline-warning')) {
+        b.className = (b === btn) ? 'btn btn-sm btn-warning text-dark active' : 'btn btn-sm btn-outline-warning text-dark';
+      } else if (b.classList.contains('btn-primary') || b.classList.contains('btn-outline-primary')) {
+        b.className = (b === btn) ? 'btn btn-sm btn-primary active' : 'btn btn-sm btn-outline-primary';
+      } else if (b.classList.contains('btn-secondary') || b.classList.contains('btn-outline-secondary')) {
+        b.className = (b === btn) ? 'btn btn-sm btn-secondary active' : 'btn btn-sm btn-outline-secondary';
+      }
+    });
+  }
+  applyFilters();
+}
+
+function searchFeed() {
+  applyFilters();
+}
+
+function applyFilters() {
+  const query = (document.getElementById('feedSearch')?.value || '').toLowerCase().trim();
+  const cards = document.querySelectorAll('.broadcast-card');
+
+  cards.forEach(card => {
+    const btype = card.getAttribute('data-btype') || '';
+    const text = card.textContent.toLowerCase();
+
+    const matchesType = (currentFilterType === 'all' || btype === currentFilterType);
+    const matchesSearch = (!query || text.includes(query));
+
+    if (matchesType && matchesSearch) {
+      card.style.display = '';
+    } else {
+      card.style.display = 'none';
+    }
+  });
+}
 </script>
 {% endblock %}
