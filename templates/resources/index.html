@@ -196,17 +196,24 @@
         Live GPS telemetry of mobilized <strong>ALS Ambulances</strong>, <strong>NDRF Rescue Squads</strong>, <strong>Life-Support Rations</strong>, and <strong>Air Rescue Choppers</strong> deployed across disaster sectors.
       </p>
     </div>
-    <div class="d-flex align-items-center gap-2">
+    <div class="d-flex align-items-center gap-2 flex-wrap">
       <!-- Simulation Speed Selector -->
       <div class="btn-group btn-group-sm" role="group">
         <button type="button" class="btn btn-outline-secondary active fw-semibold" id="speed-1x-btn" onclick="setSimSpeed(1)">
-          <i class="bi bi-play-fill"></i> Normal (1x)
+          <i class="bi bi-play-fill"></i> Fast (1x)
         </button>
-        <button type="button" class="btn btn-outline-secondary fw-semibold" id="speed-4x-btn" onclick="setSimSpeed(4)">
-          <i class="bi bi-fast-forward-fill"></i> Fast (4x)
+        <button type="button" class="btn btn-outline-danger fw-semibold" id="speed-4x-btn" onclick="setSimSpeed(4)">
+          <i class="bi bi-lightning-charge-fill"></i> Turbo (4x)
         </button>
       </div>
-      <small class="text-muted d-none d-md-block" id="tracker-last-sync">GPS Synced</small>
+      <!-- Instant Fast Demo Buttons -->
+      <button type="button" class="btn btn-sm btn-success fw-bold py-1 px-2" onclick="fastForwardAllToScene()" title="Fast forward all en-route units to arrive on scene immediately">
+        <i class="bi bi-geo-alt-fill me-1"></i>⚡ Arrive on Scene
+      </button>
+      <button type="button" class="btn btn-sm btn-warning text-dark fw-bold py-1 px-2" onclick="fastForwardAllToBase()" title="Fast forward all units to safely return & replenish base inventory immediately">
+        <i class="bi bi-house-door-fill me-1"></i>⚡ Return &amp; Replenish
+      </button>
+      <small class="text-muted d-none d-xl-block" id="tracker-last-sync">GPS Synced</small>
     </div>
   </div>
 
@@ -863,11 +870,20 @@ function renderDeployments() {
             <div class="d-flex justify-content-between align-items-center gap-1">
               <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size:.72rem;"
                       onclick="focusUnit('${unit.unit_id}')">
-                <i class="bi bi-crosshair me-1"></i>Track on Map
+                <i class="bi bi-crosshair me-1"></i>Track
               </button>
-              <span class="text-muted small" id="sub-status-${unit.unit_id}" style="font-size:.68rem;">
-                ${unit.phase==='on_scene'?'Operations Active':(unit.phase==='returning'?'Returning':'In Transit')}
-              </span>
+              <div class="d-flex gap-1 align-items-center">
+                <button type="button" class="btn btn-xs btn-outline-success py-0 px-1 fw-semibold" style="font-size:.68rem;"
+                        title="Fast forward this unit to scene arrival immediately"
+                        onclick="quickReachUnit('${unit.unit_id}')">
+                  ⚡ Scene
+                </button>
+                <button type="button" class="btn btn-xs btn-outline-warning text-dark py-0 px-1 fw-semibold" style="font-size:.68rem;"
+                        title="Fast forward this unit to base return & inventory replenishment immediately"
+                        onclick="quickReturnUnit('${unit.unit_id}')">
+                  ⚡ Base
+                </button>
+              </div>
             </div>
           </div>
         `;
@@ -1086,12 +1102,45 @@ function triggerStationedAtBase(item) {
   syncUnitStatus(item, 'returned');
 }
 
-// Fully Automated GPS Simulation Lifecycle (Zero manual button pressing!)
+// Fast Demo Helper Functions for Easy Demonstration
+function quickReachUnit(unitId) {
+  const item = unitMarkers.find(u => u.id === unitId);
+  if (!item) return;
+  item.data.progress = 100;
+  triggerOnScene(item);
+}
+
+function quickReturnUnit(unitId) {
+  const item = unitMarkers.find(u => u.id === unitId);
+  if (!item) return;
+  item.data.progress = 0;
+  triggerStationedAtBase(item);
+}
+
+function fastForwardAllToScene() {
+  unitMarkers.forEach(item => {
+    if (item.data.phase === 'en_route') {
+      item.data.progress = 100;
+      triggerOnScene(item);
+    }
+  });
+}
+
+function fastForwardAllToBase() {
+  unitMarkers.forEach(item => {
+    if (item.data.phase === 'on_scene' || item.data.phase === 'returning') {
+      item.data.progress = 0;
+      triggerStationedAtBase(item);
+    }
+  });
+}
+
+// Fully Automated Fast GPS Simulation Lifecycle (Reaches & returns rapidly for easy demo!)
 function startSimulationLoop() {
   setInterval(() => {
     unitMarkers.forEach(item => {
       const unit = item.data;
-      const step = 2.4 * simSpeedMultiplier;
+      const step = 7.0 * simSpeedMultiplier;
 
       // Phase 1: En Route to Incident Site
       if (unit.phase === 'en_route') {
@@ -1123,15 +1172,15 @@ function startSimulationLoop() {
       else if (unit.phase === 'on_scene') {
         item.onSceneDuration = (item.onSceneDuration || 0) + (1 * simSpeedMultiplier);
 
-        // After on-scene operations duration (~16 simulation seconds), demobilize!
-        if (item.onSceneDuration >= 16) {
+        // After on-scene operations (~4 simulation ticks = ~3.5 seconds), demobilize!
+        if (item.onSceneDuration >= 4) {
           triggerDemobilizing(item);
         }
       }
       // Phase 3: Demobilizing — Returning to Base
       else if (unit.phase === 'returning') {
         if (unit.progress > 0) {
-          unit.progress -= (step * 1.15);
+          unit.progress -= (step * 1.25);
 
           if (unit.progress <= 0) {
             triggerStationedAtBase(item);
@@ -1161,7 +1210,7 @@ function startSimulationLoop() {
       const now = new Date();
       syncLabel.textContent = `GPS Synced: ${now.toLocaleTimeString()}`;
     }
-  }, 2500);
+  }, 850);
 }
 
 // Admin Assignment UI Helpers

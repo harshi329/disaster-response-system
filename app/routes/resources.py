@@ -149,8 +149,8 @@ def build_tracked_units(allocated: dict, target_lat: float, target_lng: float, p
         for i in range(num_physical_units):
             uid = f"{cfg['key'][:3].upper()}-{random.randint(101, 999)}"
             lead = cfg['default_leads'][i % len(cfg['default_leads'])]
-            # Stagger starting progression smoothly (between 35% and 80%)
-            progress = min(85, max(35, 45 + (unit_idx * 12)))
+            # Stagger starting progression close to scene (68% - 88%) for rapid demo
+            progress = min(88, max(68, 72 + (unit_idx * 5)))
             unit_idx += 1
 
             # Coordinate along the trajectory from Command Staging Base to Incident Site
