@@ -548,78 +548,11 @@ let routeLines = [];
 let activeProblemFilter = 'all';
 let simSpeedMultiplier = 1; // 1 = normal, 4 = fast-forward
 
-// Audio Synthesizer for Tactical Radio / Alerts
-function playChime(kind) {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
+// Sound Muted to eliminate audio interruptions
+let soundEnabled = false;
 
-    if (kind === 'on_scene') {
-      osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
-      osc.frequency.setValueAtTime(880.00, ctx.currentTime + 0.12); // A5
-    } else if (kind === 'returned') {
-      osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
-      osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1); // E5
-      osc.frequency.setValueAtTime(783.99, ctx.currentTime + 0.2); // G5
-    } else {
-      osc.frequency.setValueAtTime(440.00, ctx.currentTime); // A4
-      osc.frequency.setValueAtTime(392.00, ctx.currentTime + 0.12); // G4
-    }
-
-    gain.gain.setValueAtTime(0.20, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.38);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.40);
-  } catch (e) {}
-}
-
-// Show Toast Alert and append to Field Operations Incident Log
-function notifyUser(type, title, message) {
-  playChime(type);
-
-  const toastArea = document.getElementById('toast-notification-area');
-  if (toastArea) {
-    const toastId = 'toast-' + Math.random().toString(36).substring(2, 8);
-    let bgClass = 'bg-primary text-white';
-    let icon = 'bi-broadcast';
-
-    if (type === 'on_scene') {
-      bgClass = 'bg-success text-white';
-      icon = 'bi-check-circle-fill';
-    } else if (type === 'returning') {
-      bgClass = 'bg-warning text-dark';
-      icon = 'bi-arrow-left-circle-fill';
-    } else if (type === 'returned') {
-      bgClass = 'bg-dark text-white border border-success';
-      icon = 'bi-shield-check';
-    }
-
-    const toastHtml = `
-      <div id="${toastId}" class="toast align-items-center ${bgClass} border-0 shadow-lg mb-2 show" role="alert" style="opacity: 1;">
-        <div class="d-flex">
-          <div class="toast-body d-flex align-items-start gap-2 py-2">
-            <i class="bi ${icon} fs-4"></i>
-            <div>
-              <strong class="d-block">${title}</strong>
-              <span class="small">${message}</span>
-            </div>
-          </div>
-          <button type="button" class="btn-close ${type !== 'returning' ? 'btn-close-white' : ''} me-2 m-auto" onclick="document.getElementById('${toastId}').remove()"></button>
-        </div>
-      </div>
-    `;
-    toastArea.insertAdjacentHTML('beforeend', toastHtml);
-
-    setTimeout(() => {
-      const el = document.getElementById(toastId);
-      if (el) el.remove();
-    }, 6500);
-  }
-
-  // Append to on-page Incident Log
+// Quiet on-page log update - NEVER creates screen-blocking popups or beeps!
+function logIncidentEvent(type, title, message) {
   const logContainer = document.getElementById('activity-log-container');
   if (logContainer) {
     const emptyMsg = document.getElementById('empty-log-msg');
@@ -641,7 +574,7 @@ function notifyUser(type, title, message) {
     }
 
     const logEntry = `
-      <div class="d-flex align-items-start gap-2 mb-2 pb-1 border-bottom">
+      <div class="d-flex align-items-start gap-2 mb-2 pb-1 border-bottom incident-log-entry">
         <span class="badge ${badgeBg} mt-1">${tag}</span>
         <div class="flex-grow-1">
           <div class="fw-bold text-dark">${title}</div>
@@ -650,7 +583,57 @@ function notifyUser(type, title, message) {
       </div>
     `;
     logContainer.insertAdjacentHTML('afterbegin', logEntry);
+
+    // Keep log clean and compact (max 6 entries)
+    const rows = logContainer.querySelectorAll('.incident-log-entry');
+    if (rows.length > 6) {
+      for (let i = 6; i < rows.length; i++) rows[i].remove();
+    }
   }
+}
+
+// Single brief unobtrusive toast - ONLY for manual demo clicks (never spams during auto loop)
+function showToast(type, title, message) {
+  const toastArea = document.getElementById('toast-notification-area');
+  if (!toastArea) return;
+
+  // Clear any existing toast immediately so they NEVER stack up!
+  toastArea.innerHTML = '';
+
+  let bgClass = 'bg-primary text-white';
+  let icon = 'bi-broadcast';
+
+  if (type === 'on_scene') {
+    bgClass = 'bg-success text-white';
+    icon = 'bi-check-circle-fill';
+  } else if (type === 'returning') {
+    bgClass = 'bg-warning text-dark';
+    icon = 'bi-arrow-left-circle-fill';
+  } else if (type === 'returned') {
+    bgClass = 'bg-dark text-white border border-success';
+    icon = 'bi-shield-check';
+  }
+
+  const toastHtml = `
+    <div class="toast align-items-center ${bgClass} border-0 shadow-lg mb-2 show" role="alert">
+      <div class="d-flex">
+        <div class="toast-body d-flex align-items-center gap-2 py-2">
+          <i class="bi ${icon} fs-5"></i>
+          <div>
+            <strong class="d-block small">${title}</strong>
+            <span style="font-size:.75rem;">${message}</span>
+          </div>
+        </div>
+        <button type="button" class="btn-close ${type !== 'returning' ? 'btn-close-white' : ''} me-2 m-auto" onclick="this.closest('.toast').remove()"></button>
+      </div>
+    </div>
+  `;
+  toastArea.insertAdjacentHTML('beforeend', toastHtml);
+
+  // Auto dismiss quickly in 2 seconds
+  setTimeout(() => {
+    toastArea.innerHTML = '';
+  }, 2000);
 }
 
 // Update Top Inventory Counters Dynamically
@@ -1003,18 +986,18 @@ function triggerOnScene(item) {
   const subStatus = document.getElementById(`sub-status-${unit.unit_id}`);
   if (subStatus) subStatus.textContent = 'Active on Scene';
 
-  // Fire notification & update backend
-  notifyUser(
+  // Quiet log entry & update backend (no interrupting screen popups!)
+  logIncidentEvent(
     'on_scene',
-    `${unit.name} Arrived on Scene!`,
-    `Unit arrived on scene at ${item.problemLocation || 'incident site'}. Emergency triage and operations actively underway.`
+    `${unit.name} Arrived on Scene`,
+    `Arrived at ${item.problemLocation || 'incident site'}. Triage & disaster operations active.`
   );
 
   if (unit.type === 'food_packets') {
-    notifyUser(
+    logIncidentEvent(
       'on_scene',
       `Relief Rations Distributed`,
-      `${unit.quantity} life-support ration packages successfully distributed to disaster victims.`
+      `${unit.quantity} life-support ration packages distributed to disaster victims.`
     );
   }
 
@@ -1048,10 +1031,10 @@ function triggerDemobilizing(item) {
   const subStatus = document.getElementById(`sub-status-${unit.unit_id}`);
   if (subStatus) subStatus.textContent = 'Demobilizing';
 
-  notifyUser(
+  logIncidentEvent(
     'returning',
     `${unit.name} Demobilizing`,
-    `Concluded active mission at ${item.problemLocation || 'incident site'}. En route back to Command Staging Base.`
+    `Mission concluded at ${item.problemLocation || 'incident site'}. En route back to Command Staging Base.`
   );
 
   syncUnitStatus(item, 'returning');
@@ -1092,22 +1075,23 @@ function triggerStationedAtBase(item) {
   const subStatus = document.getElementById(`sub-status-${unit.unit_id}`);
   if (subStatus) subStatus.textContent = 'Available for Redeployment';
 
-  notifyUser(
+  logIncidentEvent(
     'returned',
     `Asset Replenished: ${unit.name}`,
-    `Successfully returned to Command Staging Base. Available fleet count restored (+1).`
+    `Returned to Command Staging Base. Available fleet count restored (+1).`
   );
 
   // Sync with backend to restore inventory in database & UI
   syncUnitStatus(item, 'returned');
 }
 
-// Fast Demo Helper Functions for Easy Demonstration
+// Fast Demo Helper Functions for Easy Demonstration (Shows single concise toast on click)
 function quickReachUnit(unitId) {
   const item = unitMarkers.find(u => u.id === unitId);
   if (!item) return;
   item.data.progress = 100;
   triggerOnScene(item);
+  showToast('on_scene', 'Tactical Unit Arrived', `${item.data.name} arrived on scene.`);
 }
 
 function quickReturnUnit(unitId) {
@@ -1115,24 +1099,31 @@ function quickReturnUnit(unitId) {
   if (!item) return;
   item.data.progress = 0;
   triggerStationedAtBase(item);
+  showToast('returned', 'Tactical Unit Returned', `${item.data.name} returned to Base. Fleet replenished.`);
 }
 
 function fastForwardAllToScene() {
+  let count = 0;
   unitMarkers.forEach(item => {
     if (item.data.phase === 'en_route') {
       item.data.progress = 100;
       triggerOnScene(item);
+      count++;
     }
   });
+  showToast('on_scene', '⚡ Units Arrived on Scene', `${count || 'All'} tactical units reached incident site.`);
 }
 
 function fastForwardAllToBase() {
+  let count = 0;
   unitMarkers.forEach(item => {
     if (item.data.phase === 'on_scene' || item.data.phase === 'returning') {
       item.data.progress = 0;
       triggerStationedAtBase(item);
+      count++;
     }
   });
+  showToast('returned', '⚡ Units Returned to Base', `${count || 'All'} units returned to Base. Inventory replenished.`);
 }
 
 // Fully Automated Fast GPS Simulation Lifecycle (Reaches & returns rapidly for easy demo!)
