@@ -51,63 +51,95 @@ def resolve_coordinates(location_str: str, lat=None, lng=None):
     return round(28.6139 + lat_off, 6), round(77.2090 + lng_off, 6)
 
 
+def get_inventory_and_stats(db):
+    """Returns real-time inventory at staging base, deployed assets in field, and on-scene counts."""
+    inv = db.resources.find_one({'_id': 'inventory'})
+    if not inv:
+        inv = DEFAULT_INVENTORY.copy()
+        inv['_id'] = 'inventory'
+        inv['distributed_food_packets'] = 0
+        db.resources.insert_one(inv)
+
+    inventory = {
+        'ambulances': max(0, inv.get('ambulances', 10)),
+        'rescue_teams': max(0, inv.get('rescue_teams', 5)),
+        'food_packets': max(0, inv.get('food_packets', 1000)),
+        'helicopters': max(0, inv.get('helicopters', 2)),
+        'distributed_food_packets': max(0, inv.get('distributed_food_packets', 0)),
+    }
+
+    deployed = {'ambulances': 0, 'rescue_teams': 0, 'food_packets': 0, 'helicopters': 0}
+    on_scene = {'ambulances': 0, 'rescue_teams': 0, 'food_packets': 0, 'helicopters': 0}
+
+    # Aggregate active units from allocations
+    active_allocs = list(db.allocations.find({'status': {'$ne': 'Mission Completed'}}))
+    for a in active_allocs:
+        for u in a.get('units', []):
+            u_type = u.get('type')
+            u_phase = u.get('phase', 'en_route')
+            u_qty = u.get('quantity', 1)
+            if u_type in deployed and u_phase != 'returned':
+                deployed[u_type] += u_qty
+                if u_phase == 'on_scene':
+                    on_scene[u_type] += u_qty
+
+    return inventory, deployed, on_scene
+
+
 def build_tracked_units(allocated: dict, target_lat: float, target_lng: float, problem_title: str, assigned_by: str):
     """
-    Constructs rich tracking unit objects for ambulances, rescue teams,
-    food supply convoys, and helicopters issued for a particular disaster.
+    Constructs rich tactical unit telemetry objects for advanced life-support ambulances (ALS),
+    NDRF search & rescue squads, essential life-support ration logistics, and air rescue wings.
     """
     units = []
-    # Emergency Depot / Base station offset ~4 to 6 km away from target
+    # Command Staging Base offset ~4 to 6 km away from incident site
     depot_lat = round(target_lat - 0.035, 6)
     depot_lng = round(target_lng - 0.026, 6)
 
     unit_configs = [
         {
             'key': 'ambulances',
-            'name_prefix': 'Ambulance Unit',
-            'type_label': 'Ambulance',
+            'name_prefix': 'ALS Paramedic Unit',
+            'type_label': 'Emergency Medical Service',
             'icon': 'bi-truck-front-fill',
             'color': '#0d6efd',
-            'speed': 55,
-            'lead_title': 'Paramedic Lead',
-            'default_leads': ['R. Sharma', 'A. Verma', 'P. Nair', 'S. Gupta'],
-            'initial_progress': 65,
+            'speed': 60,
+            'lead_title': 'Chief Paramedic',
+            'default_leads': ['R. Sharma, EMT-P', 'A. Verma, EMT-P', 'P. Nair, MD', 'S. Gupta, EMT'],
         },
         {
             'key': 'rescue_teams',
-            'name_prefix': 'NDRF Rescue Squad',
-            'type_label': 'Rescue Team',
+            'name_prefix': 'NDRF Tactical Rescue Squad',
+            'type_label': 'Search & Rescue (USAR)',
             'icon': 'bi-people-fill',
             'color': '#198754',
-            'speed': 45,
+            'speed': 48,
             'lead_title': 'Squad Commander',
-            'default_leads': ['Capt. Vikram', 'Maj. Sandeep', 'Insp. Joshi'],
-            'initial_progress': 42,
+            'default_leads': ['Capt. Vikram Singh', 'Maj. Sandeep Rao', 'Insp. Joshi'],
         },
         {
             'key': 'food_packets',
-            'name_prefix': 'Supply Logistics Convoy',
-            'type_label': 'Food Packets Supply',
+            'name_prefix': 'Life-Support Rations Unit',
+            'type_label': 'Relief Nutrition Supplies',
             'icon': 'bi-box-seam-fill',
             'color': '#ffc107',
-            'speed': 38,
-            'lead_title': 'Convoy In-Charge',
-            'default_leads': ['M. Khan (Logistics)', 'D. Reddy (Rations)'],
-            'initial_progress': 52,
+            'speed': 40,
+            'lead_title': 'Relief Logistics Officer',
+            'default_leads': ['M. Khan (Civil Supplies)', 'D. Reddy (Rations Lead)'],
         },
         {
             'key': 'helicopters',
-            'name_prefix': 'Air Rescue Chopper',
-            'type_label': 'Helicopter',
+            'name_prefix': 'Tactical Air Rescue Chopper',
+            'type_label': 'Air Rescue & Evacuation Wing',
             'icon': 'bi-airplane-fill',
             'color': '#0dcaf0',
-            'speed': 150,
-            'lead_title': 'Chief Aviator',
-            'default_leads': ['Capt. Malhotra', 'Wing Cdr. Roy'],
-            'initial_progress': 78,
+            'speed': 160,
+            'lead_title': 'Flight Operations Commander',
+            'default_leads': ['Wing Cdr. Roy', 'Capt. Malhotra'],
         },
     ]
 
+    unit_idx = 0
     for cfg in unit_configs:
         qty = allocated.get(cfg['key'], 0)
         if qty <= 0:
@@ -117,26 +149,27 @@ def build_tracked_units(allocated: dict, target_lat: float, target_lng: float, p
         for i in range(num_physical_units):
             uid = f"{cfg['key'][:3].upper()}-{random.randint(101, 999)}"
             lead = cfg['default_leads'][i % len(cfg['default_leads'])]
-            # Start around 75-88% so users quickly witness reaching the location & returning notifications
-            progress = min(92, max(68, 74 + (i * 7)))
+            # Stagger starting progression smoothly (between 35% and 80%)
+            progress = min(85, max(35, 45 + (unit_idx * 12)))
+            unit_idx += 1
 
-            # Coordinate along the path
+            # Coordinate along the trajectory from Command Staging Base to Incident Site
             t = progress / 100.0
             cur_lat = round(depot_lat + (target_lat - depot_lat) * t, 6)
             cur_lng = round(depot_lng + (target_lng - depot_lng) * t, 6)
-            dist_km = round(max(0.3, (1.0 - t) * 6.0), 1)
+            dist_km = round(max(0.2, (1.0 - t) * 6.0), 1)
             eta_mins = max(1, int((dist_km / cfg['speed']) * 60))
 
             units.append({
                 'unit_id': uid,
                 'type': cfg['key'],
                 'type_label': cfg['type_label'],
-                'name': f"{cfg['name_prefix']} #{uid}" if cfg['key'] != 'food_packets' else f"{cfg['name_prefix']} ({qty} Food Packets)",
+                'name': f"{cfg['name_prefix']} #{uid}" if cfg['key'] != 'food_packets' else f"{cfg['name_prefix']} ({qty} Rations)",
                 'icon': cfg['icon'],
                 'color': cfg['color'],
                 'quantity': qty if cfg['key'] == 'food_packets' else 1,
-                'phase': 'on_the_way',
-                'status': 'On the Way',
+                'phase': 'en_route',
+                'status': 'En Route — In Transit',
                 'speed': f"{cfg['speed']} km/h",
                 'eta_mins': eta_mins,
                 'distance_km': dist_km,
@@ -151,6 +184,8 @@ def build_tracked_units(allocated: dict, target_lat: float, target_lng: float, p
                 'assigned_by': assigned_by,
                 'assigned_at': datetime.utcnow().strftime('%H:%M:%S UTC'),
                 'problem_title': problem_title,
+                'returned_to_stock': False,
+                'distributed': False,
             })
 
     return units
@@ -160,20 +195,15 @@ def build_tracked_units(allocated: dict, target_lat: float, target_lng: float, p
 @login_required
 def index():
     inventory = DEFAULT_INVENTORY.copy()
+    deployed = {'ambulances': 0, 'rescue_teams': 0, 'food_packets': 0, 'helicopters': 0}
+    on_scene = {'ambulances': 0, 'rescue_teams': 0, 'food_packets': 0, 'helicopters': 0}
     pending_alerts = []
     tracked_deployments = []
 
     try:
         db = get_mongo_db()
 
-        # 1. Load Live Inventory
-        inv = db.resources.find_one({'_id': 'inventory'})
-        if inv:
-            inventory = {k: v for k, v in inv.items() if k != '_id'}
-        else:
-            db.resources.insert_one({'_id': 'inventory', **DEFAULT_INVENTORY})
-
-        # 2. Load Active Disaster Reports & Alerts needing resources
+        # 1. Load Active Disaster Reports & Alerts needing resources
         active_reports = list(
             db.disaster_reports.find({'status': {'$in': ['Active', 'In Progress', 'Pending']}})
             .sort('timestamp', -1).limit(20)
@@ -192,7 +222,6 @@ def index():
             lat, lng = resolve_coordinates(loc, r.get('lat'), r.get('lng'))
             seen_locations.add(loc.lower())
 
-            # Recommended resource counts
             rec = {
                 'ambulances': 2 if sev == 'High' else 1,
                 'rescue_teams': 2 if sev == 'High' else 1,
@@ -245,11 +274,12 @@ def index():
                 'is_alert': True,
             })
 
-        # 3. Load Allocations and build Tracked Deployments
-        raw_allocations = list(db.allocations.find().sort('_id', -1).limit(20))
+        # 2. Load Allocations and build Tracked Deployments
+        raw_allocations = list(db.allocations.find({'status': {'$ne': 'Mission Completed'}}).sort('_id', -1).limit(20))
+        if not raw_allocations:
+            raw_allocations = list(db.allocations.find().sort('_id', -1).limit(20))
 
-        # If no allocations exist yet, auto-seed a realistic dispatch for the top active report
-        # so both Citizen and Admin immediately see live tracking on load!
+        # If no allocations exist yet, auto-seed a realistic deployment for the top active report
         if not raw_allocations and pending_alerts:
             top = pending_alerts[0]
             seed_allocated = {
@@ -258,6 +288,11 @@ def index():
                 'food_packets': 100,
                 'helicopters': 1,
             }
+            # Deduct from inventory
+            db.resources.update_one(
+                {'_id': 'inventory'},
+                {'$inc': {'ambulances': -1, 'rescue_teams': -1, 'food_packets': -100, 'helicopters': -1}}
+            )
             seed_units = build_tracked_units(
                 seed_allocated,
                 target_lat=top['lat'],
@@ -276,8 +311,8 @@ def index():
                 'insufficient': [],
                 'units': seed_units,
                 'assigned_by': 'drs_admin',
-                'notes': 'Initial emergency response assistance issued by Admin.',
-                'status': 'On the Way'
+                'notes': 'Initial emergency response mobilization issued by Incident Command.',
+                'status': 'En Route'
             }
             db.allocations.insert_one(seed_doc)
             raw_allocations = [seed_doc]
@@ -320,12 +355,16 @@ def index():
                 'notes': a.get('notes', ''),
             })
 
+        inventory, deployed, on_scene = get_inventory_and_stats(db)
+
     except Exception as e:
-        flash(f'Notice: Loaded default live telemetry ({e}).', 'warning')
+        flash(f'Notice: Loaded live telemetry ({e}).', 'warning')
 
     return render_template(
         'resources/index.html',
         inventory=inventory,
+        deployed=deployed,
+        on_scene=on_scene,
         pending_alerts=pending_alerts,
         tracked_deployments=tracked_deployments,
         tracked_json=json.dumps(tracked_deployments),
@@ -336,7 +375,7 @@ def index():
 @login_required
 @role_required('admin')
 def assign():
-    """Admin manually assigns resources to a report or emergency alert."""
+    """Admin manually mobilizes resources to a report or emergency alert."""
     report_id    = request.form.get('report_id', '').strip()
     ambulances   = int(request.form.get('ambulances', 0))
     rescue_teams = int(request.form.get('rescue_teams', 0))
@@ -350,7 +389,7 @@ def assign():
 
     total_requested = ambulances + rescue_teams + food_packets + helicopters
     if total_requested <= 0:
-        flash('Please allocate at least one resource (Ambulance, Rescue Team, Food Packets, or Helicopter).', 'warning')
+        flash('Please allocate at least one resource (Ambulance, Rescue Squad, Rations, or Helicopter).', 'warning')
         return redirect(url_for('resources.index'))
 
     try:
@@ -385,12 +424,12 @@ def assign():
         target_lat, target_lng = resolve_coordinates(location, t_lat, t_lng)
         problem_title = f"{disaster_type} at {location}"
 
-        # Deduct from Inventory
-        inventory = db.resources.find_one({'_id': 'inventory'})
-        if not inventory:
-            inventory = DEFAULT_INVENTORY.copy()
-            inventory['_id'] = 'inventory'
-            db.resources.insert_one(inventory)
+        # Deduct from Staging Base Inventory
+        inv_doc = db.resources.find_one({'_id': 'inventory'})
+        if not inv_doc:
+            inv_doc = DEFAULT_INVENTORY.copy()
+            inv_doc['_id'] = 'inventory'
+            db.resources.insert_one(inv_doc)
 
         needed = {
             'ambulances': ambulances,
@@ -405,7 +444,7 @@ def assign():
         for resource, qty in needed.items():
             if qty <= 0:
                 continue
-            available = inventory.get(resource, 0)
+            available = inv_doc.get(resource, 0)
             give = min(qty, available)
             allocated[resource] = give
             if give < qty:
@@ -416,7 +455,7 @@ def assign():
                     {'$inc': {resource: -give}}
                 )
 
-        # Build Rich Dispatched Tracking Units
+        # Build Rich Tactical Tracking Units
         units = build_tracked_units(
             allocated=allocated,
             target_lat=target_lat,
@@ -425,7 +464,7 @@ def assign():
             assigned_by=current_user.username
         )
 
-        # Save to db.allocations
+        # Save to db.allocations with En Route status
         db.allocations.insert_one({
             'report_id': report_id,
             'problem_title': problem_title,
@@ -439,7 +478,7 @@ def assign():
             'notes': notes,
             'assigned_by': current_user.username,
             'assigned_at': datetime.utcnow().isoformat(),
-            'status': 'On the Way'
+            'status': 'En Route'
         })
 
         # Update problem status in database
@@ -458,24 +497,123 @@ def assign():
 
         summary_items = []
         if allocated.get('ambulances'):
-            summary_items.append(f"{allocated['ambulances']} Ambulance(s)")
+            summary_items.append(f"{allocated['ambulances']} ALS Ambulance(s)")
         if allocated.get('rescue_teams'):
             summary_items.append(f"{allocated['rescue_teams']} Rescue Squad(s)")
         if allocated.get('food_packets'):
-            summary_items.append(f"{allocated['food_packets']} Food Packet(s)")
+            summary_items.append(f"{allocated['food_packets']} Ration Package(s)")
         if allocated.get('helicopters'):
-            summary_items.append(f"{allocated['helicopters']} Helicopter(s)")
+            summary_items.append(f"{allocated['helicopters']} Air Rescue Chopper(s)")
 
         disp_text = ", ".join(summary_items) if summary_items else "Resources"
         if insufficient:
-            flash(f"Partially assigned: {disp_text} sent to {problem_title}. Insufficient stock for: {', '.join(insufficient)}.", 'warning')
+            flash(f"Partially deployed: {disp_text} mobilized for {problem_title}. Insufficient base inventory for: {', '.join(insufficient)}.", 'warning')
         else:
-            flash(f"Successfully assigned & sent: {disp_text} to {problem_title}! You can track their live location below.", 'success')
+            flash(f"Tactically mobilized & deployed: {disp_text} to {problem_title}! Live telemetry is tracking their progress below.", 'success')
 
     except Exception as e:
-        flash(f"Could not assign resources: {e}", 'danger')
+        flash(f"Could not mobilize resources: {e}", 'danger')
 
     return redirect(url_for('resources.index'))
+
+
+@resources_bp.route('/resources/api/unit-status', methods=['POST'])
+@login_required
+def update_unit_status():
+    """
+    Called automatically when a deployed tactical unit reaches scene, demobilizes, or returns to base.
+    Persists unit telemetry and dynamically restores available inventory when units return to base,
+    and increments distributed relief rations when life-support supplies arrive on scene.
+    """
+    data = request.get_json(silent=True) or {}
+    allocation_id = data.get('allocation_id')
+    unit_id = data.get('unit_id')
+    new_phase = data.get('phase')  # 'on_scene', 'returning', 'returned'
+
+    if not allocation_id or not unit_id or not new_phase:
+        return jsonify({'error': 'Missing allocation_id, unit_id, or phase'}), 400
+
+    db = get_mongo_db()
+    alloc = None
+    try:
+        alloc = db.allocations.find_one({'_id': ObjectId(allocation_id)})
+    except Exception:
+        pass
+    if not alloc:
+        alloc = db.allocations.find_one({'_id': allocation_id})
+
+    if not alloc:
+        return jsonify({'error': 'Allocation not found'}), 404
+
+    units = alloc.get('units', [])
+    target_unit = None
+    all_returned = True
+
+    for u in units:
+        if u.get('unit_id') == unit_id:
+            target_unit = u
+            u['phase'] = new_phase
+
+            if new_phase == 'on_scene':
+                u['status'] = 'On Scene — Operations Active'
+                u['progress'] = 100
+                if u.get('type') == 'food_packets' and not u.get('distributed'):
+                    u['distributed'] = True
+                    qty = u.get('quantity', 100)
+                    db.resources.update_one(
+                        {'_id': 'inventory'},
+                        {'$inc': {'distributed_food_packets': qty}}
+                    )
+
+            elif new_phase == 'returning':
+                u['status'] = 'Demobilizing — Returning to Base'
+
+            elif new_phase == 'returned':
+                u['status'] = 'Mission Accomplished — Stationed at Base'
+                u['progress'] = 0
+                # Reusable asset replenishment: restores available fleet stock
+                if u.get('type') in ('ambulances', 'rescue_teams', 'helicopters') and not u.get('returned_to_stock'):
+                    u['returned_to_stock'] = True
+                    qty = u.get('quantity', 1)
+                    db.resources.update_one(
+                        {'_id': 'inventory'},
+                        {'$inc': {u.get('type'): qty}}
+                    )
+
+        if u.get('phase') != 'returned':
+            all_returned = False
+
+    alloc_status = 'Mission Completed' if all_returned else ('On Scene' if new_phase == 'on_scene' else alloc.get('status', 'In Progress'))
+
+    db.allocations.update_one(
+        {'_id': alloc['_id']},
+        {'$set': {'units': units, 'status': alloc_status}}
+    )
+
+    inventory, deployed, on_scene = get_inventory_and_stats(db)
+
+    return jsonify({
+        'success': True,
+        'unit_id': unit_id,
+        'phase': new_phase,
+        'unit': target_unit,
+        'inventory': inventory,
+        'deployed': deployed,
+        'on_scene': on_scene,
+    })
+
+
+@resources_bp.route('/resources/api/live-status')
+@login_required
+def live_status():
+    """Real-time poll endpoint to synchronize live base inventory and active deployed metrics."""
+    db = get_mongo_db()
+    inventory, deployed, on_scene = get_inventory_and_stats(db)
+    return jsonify({
+        'inventory': inventory,
+        'deployed': deployed,
+        'on_scene': on_scene,
+    })
 
 
 @resources_bp.route('/resources/restock', methods=['POST'])
@@ -496,7 +634,7 @@ def restock():
             {'$inc': updates},
             upsert=True
         )
-        flash('Inventory restocked successfully.', 'success')
+        flash('Staging Base Inventory replenished successfully.', 'success')
     except Exception as e:
         flash(f'Could not restock: {e}', 'danger')
     return redirect(url_for('resources.index'))
