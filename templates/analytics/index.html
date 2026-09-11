@@ -20,9 +20,6 @@
     <i class="bi bi-bar-chart-line text-danger fs-4"></i>
     <span>Analytics &amp; Insights</span>
   </h4>
-  <button class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1" onclick="loadAnalytics()" title="Refresh Analytics Data">
-    <i class="bi bi-arrow-clockwise"></i><span>Refresh Data</span>
-  </button>
 </div>
 
 <!-- 4 Key Stat Metrics -->
@@ -121,6 +118,19 @@ let severityChartInstance = null;
 let typeChartInstance = null;
 let resourceChartInstance = null;
 
+// Enclosed chart border plugin matching reference screenshot
+const chartAreaBorder = {
+  id: 'chartAreaBorder',
+  beforeDraw(chart, args, options) {
+    const {ctx, chartArea: {top, right, bottom, left, width, height}} = chart;
+    ctx.save();
+    ctx.strokeStyle = options.borderColor || '#e5e7eb';
+    ctx.lineWidth = options.borderWidth || 1;
+    ctx.strokeRect(left, top, width, height);
+    ctx.restore();
+  }
+};
+
 async function loadAnalytics() {
   try {
     const res = await fetch('/api/analytics/summary');
@@ -133,34 +143,30 @@ async function loadAnalytics() {
     document.getElementById('t-sos').textContent      = data.totals.sos ?? 8;
     document.getElementById('t-resolved').textContent = data.totals.resolved ?? (data.sos ? data.sos.resolved : 8);
 
-    // ── 2. Reports Over Last 7 Days (Smooth Spline with Gradient Fill) ─
+    // ── 2. Reports Over Last 7 Days (Smooth Spline with Box Border & Hollow Points) ─
     const dailyCanvas = document.getElementById('dailyChart');
     if (dailyCanvas) {
       const dailyCtx = dailyCanvas.getContext('2d');
-      const gradient = dailyCtx.createLinearGradient(0, 0, 0, 280);
-      gradient.addColorStop(0, 'rgba(224, 49, 49, 0.25)');
-      gradient.addColorStop(0.7, 'rgba(224, 49, 49, 0.05)');
-      gradient.addColorStop(1, 'rgba(224, 49, 49, 0.0)');
-
-      const dailyLabels = Object.keys(data.daily).map(d => d.slice(5)); // e.g. "05-26"
+      const dailyLabels = Object.keys(data.daily).map(d => d.length > 5 ? d.slice(5) : d);
       const dailyValues = Object.values(data.daily);
 
       if (dailyChartInstance) dailyChartInstance.destroy();
 
       dailyChartInstance = new Chart(dailyCtx, {
         type: 'line',
+        plugins: [chartAreaBorder],
         data: {
           labels: dailyLabels,
           datasets: [{
             label: 'Reports',
             data: dailyValues,
             borderColor: '#e03131',
-            borderWidth: 2.6,
-            backgroundColor: gradient,
+            borderWidth: 2.5,
+            backgroundColor: 'rgba(224, 49, 49, 0.08)',
             fill: true,
-            tension: 0.45,
-            pointRadius: 5,
-            pointHoverRadius: 7,
+            tension: 0.42,
+            pointRadius: 4.5,
+            pointHoverRadius: 6.5,
             pointBackgroundColor: '#ffffff',
             pointBorderColor: '#e03131',
             pointBorderWidth: 2,
@@ -171,6 +177,10 @@ async function loadAnalytics() {
           maintainAspectRatio: false,
           plugins: {
             legend: { display: false },
+            chartAreaBorder: {
+              borderColor: '#e5e7eb',
+              borderWidth: 1
+            },
             tooltip: {
               backgroundColor: '#1f2937',
               titleFont: { size: 12, weight: 'bold' },
@@ -185,14 +195,35 @@ async function loadAnalytics() {
           },
           scales: {
             y: {
-              beginAtZero: true,
-              suggestedMax: Math.max(7, ...dailyValues),
-              ticks: { stepSize: 1, color: '#6b7280', font: { size: 11 } },
-              grid: { color: 'rgba(0,0,0,0.06)' }
+              min: 0,
+              max: 7,
+              ticks: {
+                stepSize: 1,
+                color: '#8c95a6',
+                font: { size: 11 }
+              },
+              grid: {
+                color: '#eceef1',
+                drawTicks: false
+              },
+              border: {
+                display: true,
+                color: '#e5e7eb'
+              }
             },
             x: {
-              ticks: { color: '#6b7280', font: { size: 11 } },
-              grid: { color: 'rgba(0,0,0,0.03)' }
+              ticks: {
+                color: '#8c95a6',
+                font: { size: 11 }
+              },
+              grid: {
+                color: '#eceef1',
+                drawTicks: false
+              },
+              border: {
+                display: true,
+                color: '#e5e7eb'
+              }
             }
           }
         }
@@ -217,20 +248,20 @@ async function loadAnalytics() {
             backgroundColor: ['#dc3545', '#ffc107', '#198754'],
             borderColor: '#ffffff',
             borderWidth: 2.5,
-            hoverOffset: 6
+            hoverOffset: 5
           }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          cutout: '68%',
+          cutout: '70%',
           plugins: {
             legend: {
               position: 'bottom',
               labels: {
-                boxWidth: 18,
-                boxHeight: 12,
-                padding: 16,
+                boxWidth: 26,
+                boxHeight: 8,
+                padding: 18,
                 color: '#4b5563',
                 font: { size: 12, weight: '500' }
               }
