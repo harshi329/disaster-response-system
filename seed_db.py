@@ -1,41 +1,119 @@
 """
-Run once to seed MongoDB with sample data and initialize resource inventory.
+Run once to seed MongoDB with sample benchmark data matching Analytics dashboard and initialize resource inventory.
 Usage: python seed_db.py
 """
 from datetime import datetime, timedelta
-import random
 from werkzeug.security import generate_password_hash
 from app.database import get_mongo_db, init_db
 from app import create_app
 
-SAMPLE_REPORTS = [
-    {'location': 'River Road', 'type': 'Flood', 'severity': 'High', 'risk_score': 9,
-     'description': 'Flood near River Road. Water rising quickly.',
-     'summary': 'Flood detected. Severity: High. Immediate attention required.',
-     'status': 'Active', 'reported_by': 'admin', 'lat': 28.6139, 'lng': 77.2090},
-    {'location': 'Green Park', 'type': 'Fire', 'severity': 'Medium', 'risk_score': 6,
-     'description': 'Fire reported in Green Park residential area.',
-     'summary': 'Fire detected. Severity: Medium.',
-     'status': 'Active', 'reported_by': 'admin', 'lat': 28.5600, 'lng': 77.2000},
-    {'location': 'Hill Zone', 'type': 'Earthquake', 'severity': 'High', 'risk_score': 9,
-     'description': 'Major earthquake in Hill Zone. Buildings collapsed.',
-     'summary': 'Earthquake detected. Severity: High.',
-     'status': 'Active', 'reported_by': 'admin', 'lat': 28.7041, 'lng': 77.1025},
-]
 
-SAMPLE_ALERTS = [
-    {'location': 'River Road', 'disaster_type': 'Flood', 'severity': 'High',
-     'message': 'FLOOD ALERT: Avoid River Road area. Move to higher ground immediately.',
-     'status': 'Active', 'created_at': datetime.utcnow().isoformat()},
-]
+def get_benchmark_seed_data():
+    now = datetime.utcnow()
+    d0 = now.strftime('%Y-%m-%d')
+    d1 = (now - timedelta(days=1)).strftime('%Y-%m-%d')
+    d3 = (now - timedelta(days=3)).strftime('%Y-%m-%d')
 
-INVENTORY = {
-    '_id': 'inventory',
-    'ambulances': 10,
-    'rescue_teams': 5,
-    'food_packets': 1000,
-    'helicopters': 2,
-}
+    reports = [
+        # 3 High severity (2 on Day-1, 1 on Day-0)
+        {'location': 'Yamuna River Bank, Sector 14', 'type': 'Flood', 'severity': 'High', 'risk_score': 9.2,
+         'description': 'Water levels breached safety embankment. Evacuation in progress.',
+         'summary': 'Critical flood condition. Immediate emergency assistance deployed.',
+         'status': 'Active', 'reported_by': 'admin', 'lat': 28.6139, 'lng': 77.2090,
+         'timestamp': f"{d1}T10:15:00"},
+        {'location': 'Brodipet Industrial Complex', 'type': 'Fire', 'severity': 'High', 'risk_score': 8.8,
+         'description': 'Major chemical warehouse fire. NDRF teams and fire tenders on site.',
+         'summary': 'High severity commercial fire with heavy smoke dispersion.',
+         'status': 'Active', 'reported_by': 'admin', 'lat': 28.5600, 'lng': 77.2000,
+         'timestamp': f"{d1}T11:30:00"},
+        {'location': 'Hill Zone Ridge Colony', 'type': 'Earthquake', 'severity': 'High', 'risk_score': 8.5,
+         'description': 'Seismic tremors triggered structural collapse and rockfall.',
+         'summary': 'Severe structural damage reported. Search squads conducting triage.',
+         'status': 'Active', 'reported_by': 'admin', 'lat': 28.7041, 'lng': 77.1025,
+         'timestamp': f"{d0}T08:20:00"},
+
+        # 7 Medium severity (5 on Day-1, 2 on Day-3)
+        {'location': 'Old Railway Underpass', 'type': 'Flood', 'severity': 'Medium', 'risk_score': 6.5,
+         'description': 'Heavy waterlogging reaching 3 feet. Civilian traffic halted.',
+         'summary': 'Waterlogging advisory issued; pump stations deployed.',
+         'status': 'Active', 'reported_by': 'admin', 'lat': 28.6250, 'lng': 77.2150,
+         'timestamp': f"{d1}T12:00:00"},
+        {'location': 'Market Square Substation', 'type': 'Fire', 'severity': 'Medium', 'risk_score': 6.0,
+         'description': 'Transformer explosion near shopping street.',
+         'summary': 'Power substation isolated and blaze suppressed.',
+         'status': 'Resolved', 'reported_by': 'admin', 'lat': 28.6300, 'lng': 77.2200,
+         'timestamp': f"{d1}T13:45:00"},
+        {'location': 'Metro Station Line 3', 'type': 'Flood', 'severity': 'Medium', 'risk_score': 5.8,
+         'description': 'Rainwater seepage into concourse entrance.',
+         'summary': 'Drainage diversion underway; station operations maintained.',
+         'status': 'Active', 'reported_by': 'admin', 'lat': 28.6180, 'lng': 77.2100,
+         'timestamp': f"{d1}T14:10:00"},
+        {'location': 'Green Valley Timber Yard', 'type': 'Fire', 'severity': 'Medium', 'risk_score': 6.2,
+         'description': 'Dry wood storage caught fire from lightning strike.',
+         'summary': 'Fire containment line established.',
+         'status': 'Resolved', 'reported_by': 'admin', 'lat': 28.5900, 'lng': 77.1800,
+         'timestamp': f"{d1}T15:25:00"},
+        {'location': 'North Sector Highway Bridge', 'type': 'Earthquake', 'severity': 'Medium', 'risk_score': 5.5,
+         'description': 'Minor surface cracks detected along flyover expansion joints.',
+         'summary': 'Traffic routed to single lane for structural inspection.',
+         'status': 'Active', 'reported_by': 'admin', 'lat': 28.6500, 'lng': 77.2300,
+         'timestamp': f"{d1}T16:50:00"},
+        {'location': 'Coastal Ring Road Sector 9', 'type': 'Cyclone', 'severity': 'Medium', 'risk_score': 6.8,
+         'description': 'Gale force winds uprooted trees and electric pylons.',
+         'summary': 'Road clearance squads operating with heavy cranes.',
+         'status': 'Active', 'reported_by': 'admin', 'lat': 28.5800, 'lng': 77.2400,
+         'timestamp': f"{d3}T10:30:00"},
+        {'location': 'Central Bus Terminal', 'type': 'Flood', 'severity': 'Medium', 'risk_score': 6.0,
+         'description': 'Storm drain backflow inundating terminal bays.',
+         'summary': 'Buses redirected to satellite parking lot.',
+         'status': 'Active', 'reported_by': 'admin', 'lat': 28.6400, 'lng': 77.2250,
+         'timestamp': f"{d3}T11:45:00"},
+
+        # 1 Low severity (1 on Day-0)
+        {'location': 'West Block Community Park', 'type': 'Flood', 'severity': 'Low', 'risk_score': 3.5,
+         'description': 'Shallow standing water on walking tracks.',
+         'summary': 'Natural drainage progressing normally.',
+         'status': 'Resolved', 'reported_by': 'admin', 'lat': 28.6100, 'lng': 77.1950,
+         'timestamp': f"{d0}T09:15:00"},
+    ]
+
+    alerts = []
+    for r in reports:
+        alerts.append({
+            'location': r['location'],
+            'disaster_type': r['type'],
+            'severity': r['severity'],
+            'message': f"EMERGENCY ADVISORY: {r['type'].upper()} incident in {r['location']}. Please exercise caution.",
+            'status': r['status'],
+            'created_at': r['timestamp'],
+        })
+
+    sos_alerts = []
+    sos_types = ['Medical Emergency', 'Trapped / Stuck', 'Fire', 'Flood', 'Medical Emergency', 'Earthquake', 'Flood', 'General Emergency']
+    for i, stype in enumerate(sos_types):
+        t_offset = (now - timedelta(hours=(i + 1) * 3)).isoformat()
+        sos_alerts.append({
+            'name': f'Citizen #{101 + i}',
+            'location': f'Sector {4 + (i % 6)}, Block {chr(65 + i % 4)}',
+            'message': f'Urgent assistance requested for {stype.lower()}. Responders dispatched.',
+            'people': (i % 3) + 1,
+            'sos_type': stype,
+            'status': 'Resolved',
+            'created_at': t_offset,
+            'resolved_at': now.isoformat(),
+            'resolved_by': 'admin'
+        })
+
+    inventory = {
+        '_id': 'inventory',
+        'ambulances': 7,
+        'rescue_teams': 3,
+        'food_packets': 650,
+        'helicopters': 1,
+    }
+
+    return reports, alerts, sos_alerts, inventory
+
 
 def seed():
     app = create_app()
@@ -52,41 +130,32 @@ def seed():
                 'phone':    '',
                 'role':     'admin',
             })
-            print('✅ Admin user created  (username: drs_admin / password: admin123)')
+            print('[OK] Admin user created  (username: drs_admin / password: admin123)')
         else:
-            # Ensure existing admin user has admin role
             db.users.update_one({'username': 'drs_admin'}, {'$set': {'role': 'admin'}})
-            print('ℹ️  Admin user already exists — role set to admin.')
+            print('[INFO] Admin user verified.')
 
-        # Ensure all existing users without a role or with legacy responder role get 'citizen'
-        db.users.update_many(
-            {'role': {'$in': ['responder', None]}},
-            {'$set': {'role': 'citizen'}}
-        )
-        db.users.update_many(
-            {'role': {'$exists': False}},
-            {'$set': {'role': 'citizen'}}
-        )
-        print('✅ Backfilled citizen role for existing users.')
+        # ── Sample benchmark data ──────────────────────────────────────
+        reports, alerts, sos_alerts, inventory = get_benchmark_seed_data()
 
-        # ── Sample data ────────────────────────────────────────────────
-        # Clear existing
         db.disaster_reports.delete_many({})
+        db.disaster_reports.insert_many(reports)
+
         db.alerts.delete_many({})
+        db.alerts.insert_many(alerts)
+
+        db.sos_alerts.delete_many({})
+        db.sos_alerts.insert_many(sos_alerts)
+
         db.resources.delete_many({})
+        db.resources.insert_one(inventory)
 
-        # Insert
-        now = datetime.utcnow()
-        for i, r in enumerate(SAMPLE_REPORTS):
-            r['timestamp'] = (now - timedelta(minutes=i * 15)).isoformat()
-            db.disaster_reports.insert_one(r)
+        print(f'[OK] Database seeded successfully with benchmark analytics:')
+        print(f'   - {len(reports)} Disaster Reports')
+        print(f'   - {len(alerts)} Emergency Alerts')
+        print(f'   - {len(sos_alerts)} Resolved SOS Alerts')
+        print(f'   - Active inventory baseline ready')
 
-        for a in SAMPLE_ALERTS:
-            db.alerts.insert_one(a)
-
-        db.resources.insert_one(INVENTORY)
-
-        print('✅ Database seeded successfully.')
 
 if __name__ == '__main__':
     seed()
