@@ -117,14 +117,15 @@ def build_tracked_units(allocated: dict, target_lat: float, target_lng: float, p
         for i in range(num_physical_units):
             uid = f"{cfg['key'][:3].upper()}-{random.randint(101, 999)}"
             lead = cfg['default_leads'][i % len(cfg['default_leads'])]
-            progress = min(92, max(18, cfg['initial_progress'] + (i * 7)))
+            # Start around 75-88% so users quickly witness reaching the location & returning notifications
+            progress = min(92, max(68, 74 + (i * 7)))
 
-            # Coordinate along the trajectory
+            # Coordinate along the path
             t = progress / 100.0
             cur_lat = round(depot_lat + (target_lat - depot_lat) * t, 6)
             cur_lng = round(depot_lng + (target_lng - depot_lng) * t, 6)
-            dist_km = round(max(0.4, (1.0 - t) * 6.2), 1)
-            eta_mins = max(2, int((dist_km / cfg['speed']) * 60))
+            dist_km = round(max(0.3, (1.0 - t) * 6.0), 1)
+            eta_mins = max(1, int((dist_km / cfg['speed']) * 60))
 
             units.append({
                 'unit_id': uid,
@@ -134,7 +135,8 @@ def build_tracked_units(allocated: dict, target_lat: float, target_lng: float, p
                 'icon': cfg['icon'],
                 'color': cfg['color'],
                 'quantity': qty if cfg['key'] == 'food_packets' else 1,
-                'status': 'Airborne' if cfg['key'] == 'helicopters' else 'En Route',
+                'phase': 'on_the_way',
+                'status': 'On the Way',
                 'speed': f"{cfg['speed']} km/h",
                 'eta_mins': eta_mins,
                 'distance_km': dist_km,
@@ -274,9 +276,8 @@ def index():
                 'insufficient': [],
                 'units': seed_units,
                 'assigned_by': 'drs_admin',
-                'assigned_at': datetime.utcnow().isoformat(),
-                'notes': 'Initial emergency response dispatch issued by Admin.',
-                'status': 'Active Dispatched'
+                'notes': 'Initial emergency response assistance issued by Admin.',
+                'status': 'On the Way'
             }
             db.allocations.insert_one(seed_doc)
             raw_allocations = [seed_doc]
@@ -438,7 +439,7 @@ def assign():
             'notes': notes,
             'assigned_by': current_user.username,
             'assigned_at': datetime.utcnow().isoformat(),
-            'status': 'Active Dispatched'
+            'status': 'On the Way'
         })
 
         # Update problem status in database
@@ -446,7 +447,7 @@ def assign():
             try:
                 db.disaster_reports.update_one(
                     {'_id': problem_doc['_id']},
-                    {'$set': {'status': 'In Progress', 'resources_dispatched': True}}
+                    {'$set': {'status': 'In Progress', 'resources_sent': True}}
                 )
                 db.alerts.update_many(
                     {'location': location},
@@ -467,9 +468,9 @@ def assign():
 
         disp_text = ", ".join(summary_items) if summary_items else "Resources"
         if insufficient:
-            flash(f"Partially dispatched: {disp_text} to {problem_title}. Insufficient stock for: {', '.join(insufficient)}.", 'warning')
+            flash(f"Partially assigned: {disp_text} sent to {problem_title}. Insufficient stock for: {', '.join(insufficient)}.", 'warning')
         else:
-            flash(f"Successfully dispatched: {disp_text} to {problem_title}! Live location tracking is now active.", 'success')
+            flash(f"Successfully assigned & sent: {disp_text} to {problem_title}! You can track their live location below.", 'success')
 
     except Exception as e:
         flash(f"Could not assign resources: {e}", 'danger')
