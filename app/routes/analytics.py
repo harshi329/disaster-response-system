@@ -234,6 +234,78 @@ def summary():
         if all(v == 0 for v in resource_used.values()):
             resource_used = {'ambulances': 4, 'rescue_teams': 3, 'food_packets': 350, 'helicopters': 1}
 
+        # ── Operational KPIs & Sample Details ────────────────────────────────
+        kpis = {
+            'avg_response_time': '12.4 min',
+            'response_trend': '↓ 3.2m faster than baseline',
+            'clearance_rate': '94.8%',
+            'clearance_sub': 'High mission efficiency across sectors',
+            'active_personnel': 48,
+            'personnel_sub': '4 ALS crews, 6 USAR squads deployed',
+            'top_hotspot': 'Yamuna River Sector 14',
+            'hotspot_sub': 'Critical Risk Index: 9.2/10'
+        }
+
+        recent_incidents = [
+            {
+                'location': 'Yamuna River Bank, Sector 14',
+                'type': 'Flood',
+                'severity': 'High',
+                'risk_score': 9.2,
+                'assigned': 'NDRF Squad Alpha & ALS Unit #2',
+                'status': 'Active Triage',
+                'status_color': 'danger',
+                'time': 'Today, 08:30'
+            },
+            {
+                'location': 'Brodipet Industrial Complex',
+                'type': 'Fire',
+                'severity': 'High',
+                'risk_score': 8.8,
+                'assigned': 'Fire Brigade & USAR Team #1',
+                'status': 'Under Containment',
+                'status_color': 'warning',
+                'time': 'Today, 11:15'
+            },
+            {
+                'location': 'Hill Zone Ridge Colony',
+                'type': 'Earthquake',
+                'severity': 'High',
+                'risk_score': 8.5,
+                'assigned': 'Tactical Air Chopper #1',
+                'status': 'Evacuation Active',
+                'status_color': 'primary',
+                'time': 'Yesterday, 14:20'
+            },
+            {
+                'location': 'Old Railway Underpass',
+                'type': 'Flood',
+                'severity': 'Medium',
+                'risk_score': 6.5,
+                'assigned': 'ALS Paramedic #1',
+                'status': 'Controlled',
+                'status_color': 'info',
+                'time': 'Yesterday, 16:45'
+            },
+            {
+                'location': 'Market Square Substation',
+                'type': 'Fire',
+                'severity': 'Medium',
+                'risk_score': 6.0,
+                'assigned': 'Local Engine Unit',
+                'status': 'Resolved',
+                'status_color': 'success',
+                'time': '2 days ago'
+            }
+        ]
+
+        fleet_readiness = [
+            {'name': 'ALS Paramedic Fleet', 'ready': inv.get('ambulances', 7), 'total': 10, 'pct': int((inv.get('ambulances', 7) / 10) * 100), 'color': 'primary'},
+            {'name': 'NDRF Search & Rescue', 'ready': inv.get('rescue_teams', 3), 'total': 5, 'pct': int((inv.get('rescue_teams', 3) / 5) * 100), 'color': 'success'},
+            {'name': 'Tactical Air Choppers', 'ready': inv.get('helicopters', 1), 'total': 2, 'pct': int((inv.get('helicopters', 1) / 2) * 100), 'color': 'info'},
+            {'name': 'Life-Support Rations', 'ready': inv.get('food_packets', 650), 'total': 1000, 'pct': int((inv.get('food_packets', 650) / 1000) * 100), 'color': 'warning'}
+        ]
+
         return jsonify({
             'severity':       severity_counts if any(severity_counts.values()) else {'High': 3, 'Medium': 7, 'Low': 1},
             'types':          dict(type_counts.most_common(8)) or {'Flood': 5, 'Fire': 3, 'Earthquake': 2, 'Cyclone': 1},
@@ -242,6 +314,9 @@ def summary():
             'sos_types':      dict(sos_type_counts) or {'Medical Emergency': 4, 'Trapped / Stuck': 2, 'Flood': 2},
             'resource_used':  resource_used,
             'totals':         {'reports': total_reports or 11, 'alerts': total_alerts or 11, 'sos': sos_total or 8, 'resolved': sos_resolved or 8},
+            'kpis':           kpis,
+            'recent_incidents': recent_incidents,
+            'fleet_readiness': fleet_readiness,
         })
     except Exception:
         return jsonify(_demo_data())
@@ -257,4 +332,72 @@ def _demo_data():
         'sos_types':     {'Medical Emergency': 4, 'Trapped / Stuck': 2, 'Flood': 2},
         'resource_used': {'ambulances': 4, 'rescue_teams': 3, 'food_packets': 350, 'helicopters': 1},
         'totals':        {'reports': 11, 'alerts': 11, 'sos': 8, 'resolved': 8},
+        'kpis': {
+            'avg_response_time': '12.4 min',
+            'response_trend': '↓ 3.2m faster than baseline',
+            'clearance_rate': '94.8%',
+            'clearance_sub': 'High mission efficiency across sectors',
+            'active_personnel': 48,
+            'personnel_sub': '4 ALS crews, 6 USAR squads deployed',
+            'top_hotspot': 'Yamuna River Sector 14',
+            'hotspot_sub': 'Critical Risk Index: 9.2/10'
+        },
+        'recent_incidents': [
+            {
+                'location': 'Yamuna River Bank, Sector 14',
+                'type': 'Flood',
+                'severity': 'High',
+                'risk_score': 9.2,
+                'assigned': 'NDRF Squad Alpha & ALS Unit #2',
+                'status': 'Active Triage',
+                'status_color': 'danger',
+                'time': 'Today, 08:30'
+            },
+            {
+                'location': 'Brodipet Industrial Complex',
+                'type': 'Fire',
+                'severity': 'High',
+                'risk_score': 8.8,
+                'assigned': 'Fire Brigade & USAR Team #1',
+                'status': 'Under Containment',
+                'status_color': 'warning',
+                'time': 'Today, 11:15'
+            },
+            {
+                'location': 'Hill Zone Ridge Colony',
+                'type': 'Earthquake',
+                'severity': 'High',
+                'risk_score': 8.5,
+                'assigned': 'Tactical Air Chopper #1',
+                'status': 'Evacuation Active',
+                'status_color': 'primary',
+                'time': 'Yesterday, 14:20'
+            },
+            {
+                'location': 'Old Railway Underpass',
+                'type': 'Flood',
+                'severity': 'Medium',
+                'risk_score': 6.5,
+                'assigned': 'ALS Paramedic #1',
+                'status': 'Controlled',
+                'status_color': 'info',
+                'time': 'Yesterday, 16:45'
+            },
+            {
+                'location': 'Market Square Substation',
+                'type': 'Fire',
+                'severity': 'Medium',
+                'risk_score': 6.0,
+                'assigned': 'Local Engine Unit',
+                'status': 'Resolved',
+                'status_color': 'success',
+                'time': '2 days ago'
+            }
+        ],
+        'fleet_readiness': [
+            {'name': 'ALS Paramedic Fleet', 'ready': 7, 'total': 10, 'pct': 70, 'color': 'primary'},
+            {'name': 'NDRF Search & Rescue', 'ready': 3, 'total': 5, 'pct': 60, 'color': 'success'},
+            {'name': 'Tactical Air Choppers', 'ready': 1, 'total': 2, 'pct': 50, 'color': 'info'},
+            {'name': 'Life-Support Rations', 'ready': 650, 'total': 1000, 'pct': 65, 'color': 'warning'}
+        ]
     }
