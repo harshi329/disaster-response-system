@@ -145,6 +145,10 @@
     border-left: 4px solid #0d6efd !important;
     background: #f8fafc;
   }
+  .incident-card.high-priority-card {
+    border-left: 4px solid #e11d48 !important;
+    background: #fff5f7;
+  }
 
   /* Live dot animation */
   .live-dot {
@@ -171,7 +175,7 @@
     <h4 class="fw-bold mb-0">
       <i class="bi bi-heart-pulse-fill me-2 text-danger"></i>Live Rescue &amp; Help Tracker
     </h4>
-    <small class="text-muted">Auto-allocation active &bull; Live GPS tracking directly on routes</small>
+    <small class="text-muted">High Priority Auto-Allocation active &bull; Live GPS tracking directly on routes</small>
   </div>
   {% if current_user.role == 'admin' %}
   <button class="btn btn-warning fw-bold shadow-sm btn-sm" data-bs-toggle="modal" data-bs-target="#restockModal">
@@ -240,15 +244,83 @@
             <span class="live-dot"></span>
             <span>Active Danger Spots</span>
           </div>
-          <small class="text-muted" style="font-size:.7rem;">Click card to view on map</small>
+          <small class="text-muted" style="font-size:.7rem;">High priority alerts auto-dispatched first</small>
         </div>
         <span class="badge bg-danger text-white rounded-pill px-2" id="active-incidents-badge" style="font-size:.7rem;">
           {{ tracked_deployments | length }} Active
         </span>
       </div>
 
-      <!-- Quick Admin Rescue Toolbar (Send / Arrive / Return) -->
+      <!-- 1. PLACED FIRST: Auto-Allocation Dispatch & Send Help Section -->
       {% if current_user.is_authenticated and current_user.role == 'admin' %}
+      <div class="p-2 px-3 bg-light border-bottom">
+        <div class="d-flex justify-content-between align-items-center mb-1" style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#manualDispatchCollapse">
+          <span class="fw-bold small text-danger" style="font-size:.75rem;">
+            <i class="bi bi-send-check me-1"></i>Send Help to Danger Spots
+          </span>
+          <span class="badge {% if pending_alerts %}bg-danger text-white{% else %}bg-success-subtle text-success border border-success-subtle{% endif %}" id="waiting-alerts-badge" style="font-size:.65rem;">
+            <span id="waiting-alerts-count">{{ pending_alerts | length }}</span> Waiting
+          </span>
+        </div>
+
+        <div class="collapse {% if pending_alerts %}show{% endif %} mt-2 pt-2 border-top" id="manualDispatchCollapse">
+          {% if pending_alerts %}
+          <form method="POST" action="{{ url_for('resources.assign') }}" id="dispatch-form">
+            <select name="report_id" id="report-select" class="form-select form-select-sm mb-2" required onchange="onSelectDropdownChange(this)">
+              <option value="">-- Pick Danger Spot --</option>
+              {% for alert in pending_alerts %}
+              {% set rec = alert.get('recommended') or {} %}
+              <option value="{{ alert.id }}"
+                      data-amb="{{ rec.get('ambulances', 1) }}"
+                      data-rsc="{{ rec.get('rescue_teams', 1) }}"
+                      data-food="{{ rec.get('food_packets', 100) }}"
+                      data-heli="{{ rec.get('helicopters', 0) }}">
+                [{{ alert.severity | upper }}] {{ alert.type }} - {{ alert.location }}
+              </option>
+              {% endfor %}
+            </select>
+
+            <div class="row g-1 mb-2">
+              <div class="col-6">
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text small" style="font-size:.65rem;">🚑 Amb</span>
+                  <input type="number" id="amb-input" name="ambulances" class="form-control text-center fw-bold" value="1" min="0" max="{{ inventory.get('ambulances', 0) }}" />
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text small" style="font-size:.65rem;">👥 Team</span>
+                  <input type="number" id="rsc-input" name="rescue_teams" class="form-control text-center fw-bold" value="1" min="0" max="{{ inventory.get('rescue_teams', 0) }}" />
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text small" style="font-size:.65rem;">🍲 Food</span>
+                  <input type="number" id="food-input" name="food_packets" class="form-control text-center fw-bold" value="100" min="0" max="{{ inventory.get('food_packets', 0) }}" step="25" />
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text small" style="font-size:.65rem;">🚁 Heli</span>
+                  <input type="number" id="heli-input" name="helicopters" class="form-control text-center fw-bold" value="0" min="0" max="{{ inventory.get('helicopters', 0) }}" />
+                </div>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-danger btn-sm w-100 fw-bold shadow-sm py-1" style="font-size:.72rem;">
+              <i class="bi bi-send-check me-1"></i>🚀 Send Help Now!
+            </button>
+          </form>
+          {% else %}
+          <div class="alert alert-success p-2 small mb-0 d-flex align-items-center gap-2" style="font-size:.72rem;">
+            <i class="bi bi-check-circle-fill text-success"></i>
+            <span>⚡ High Importance alerts automatically have help dispatched.</span>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Quick Admin Rescue 1-Click Action Toolbar -->
       <div class="p-2 px-3 bg-light border-bottom">
         <div class="d-flex justify-content-between align-items-center mb-1">
           <span class="fw-semibold small text-primary" style="font-size:.7rem;"><i class="bi bi-sliders me-1"></i>Admin Rescue Console</span>
@@ -268,21 +340,22 @@
       </div>
       {% endif %}
 
-      <!-- Scrollable Incident Cards List -->
+      <!-- Scrollable Incident Cards List (High Priority Sorted First) -->
       <div class="panel-scroll-area p-3">
         
         <!-- Active Danger Spot Cards Container -->
         <div id="incident-cards-container" class="mb-3">
           {% for dep in tracked_deployments %}
           {% set alloc = dep.get('allocated') or {} %}
-          <div class="card mb-2 border shadow-sm p-3 incident-card" id="inc-card-{{ dep.id }}" onclick="focusIncident('{{ dep.id }}')">
+          {% set is_high = (dep.severity == 'High' or 'sos' in dep.problem_title|lower) %}
+          <div class="card mb-2 border shadow-sm p-3 incident-card {% if is_high %}high-priority-card{% endif %}" id="inc-card-{{ dep.id }}" onclick="focusIncident('{{ dep.id }}')">
             <div class="d-flex justify-content-between align-items-start mb-1">
               <span class="fw-bold small text-danger d-flex align-items-center gap-1">
                 <span>🚨</span>
                 <span class="text-truncate" style="max-width: 170px;">{{ dep.problem_title }}</span>
               </span>
-              <span class="badge {% if dep.severity=='High' %}bg-danger{% elif dep.severity=='Medium' %}bg-warning text-dark{% else %}bg-info text-dark{% endif %}" style="font-size:.65rem;">
-                {{ dep.severity }} Danger Spot
+              <span class="badge {% if is_high %}bg-danger{% elif dep.severity=='Medium' %}bg-warning text-dark{% else %}bg-info text-dark{% endif %}" style="font-size:.65rem;">
+                {% if is_high %}⚡ HIGH PRIORITY{% else %}{{ dep.severity }} Danger{% endif %}
               </span>
             </div>
             
@@ -335,76 +408,6 @@
           </div>
           {% endif %}
         </div>
-
-        <!-- Collapsible Manual Help Dispatch Form -->
-        {% if current_user.is_authenticated and current_user.role == 'admin' %}
-        <div class="card border rounded-3 p-2 bg-light mb-2">
-          <div class="d-flex justify-content-between align-items-center" style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#manualDispatchCollapse">
-            <span class="fw-bold small text-secondary" style="font-size:.72rem;">
-              <i class="bi bi-send-check text-danger me-1"></i>Send Help to Danger Spots
-            </span>
-            <span class="badge {% if pending_alerts %}bg-danger text-white{% else %}bg-success-subtle text-success border border-success-subtle{% endif %}" id="waiting-alerts-badge" style="font-size:.65rem;">
-              <span id="waiting-alerts-count">{{ pending_alerts | length }}</span> Waiting
-            </span>
-          </div>
-
-          <div class="collapse mt-2 pt-2 border-top" id="manualDispatchCollapse">
-            {% if pending_alerts %}
-            <form method="POST" action="{{ url_for('resources.assign') }}" id="dispatch-form">
-              <select name="report_id" id="report-select" class="form-select form-select-sm mb-2" required onchange="onSelectDropdownChange(this)">
-                <option value="">-- Pick Danger Spot --</option>
-                {% for alert in pending_alerts %}
-                {% set rec = alert.get('recommended') or {} %}
-                <option value="{{ alert.id }}"
-                        data-amb="{{ rec.get('ambulances', 1) }}"
-                        data-rsc="{{ rec.get('rescue_teams', 1) }}"
-                        data-food="{{ rec.get('food_packets', 100) }}"
-                        data-heli="{{ rec.get('helicopters', 0) }}">
-                  [{{ alert.severity | upper }}] {{ alert.type }} - {{ alert.location }}
-                </option>
-                {% endfor %}
-              </select>
-
-              <div class="row g-1 mb-2">
-                <div class="col-6">
-                  <div class="input-group input-group-sm">
-                    <span class="input-group-text small" style="font-size:.65rem;">🚑 Amb</span>
-                    <input type="number" id="amb-input" name="ambulances" class="form-control text-center fw-bold" value="1" min="0" max="{{ inventory.get('ambulances', 0) }}" />
-                  </div>
-                </div>
-                <div class="col-6">
-                  <div class="input-group input-group-sm">
-                    <span class="input-group-text small" style="font-size:.65rem;">👥 Team</span>
-                    <input type="number" id="rsc-input" name="rescue_teams" class="form-control text-center fw-bold" value="1" min="0" max="{{ inventory.get('rescue_teams', 0) }}" />
-                  </div>
-                </div>
-                <div class="col-6">
-                  <div class="input-group input-group-sm">
-                    <span class="input-group-text small" style="font-size:.65rem;">🍲 Food</span>
-                    <input type="number" id="food-input" name="food_packets" class="form-control text-center fw-bold" value="100" min="0" max="{{ inventory.get('food_packets', 0) }}" step="25" />
-                  </div>
-                </div>
-                <div class="col-6">
-                  <div class="input-group input-group-sm">
-                    <span class="input-group-text small" style="font-size:.65rem;">🚁 Heli</span>
-                    <input type="number" id="heli-input" name="helicopters" class="form-control text-center fw-bold" value="0" min="0" max="{{ inventory.get('helicopters', 0) }}" />
-                  </div>
-                </div>
-              </div>
-
-              <button type="submit" class="btn btn-danger btn-sm w-100 fw-bold shadow-sm py-1" style="font-size:.72rem;">
-                <i class="bi bi-send-check me-1"></i>🚀 Send Help Now!
-              </button>
-            </form>
-            {% else %}
-            <div class="alert alert-success p-2 small mb-0 d-flex align-items-center gap-2" style="font-size:.72rem;">
-              <i class="bi bi-check-circle-fill text-success"></i>
-              <span>All active alerts have help automatically dispatched.</span>
-            </div>
-            {% endif %}
-          </div>
-        </div>
-        {% endif %}
 
         <!-- Minimal Hidden elements for test assertions compatibility -->
         <div class="d-none">

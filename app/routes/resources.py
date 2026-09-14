@@ -434,6 +434,20 @@ def index():
                 'notes': a.get('notes', ''),
             })
 
+        def _get_priority(item):
+            # SOS is top priority 0, High severity is 1, Medium is 2, Low is 3
+            if item.get('is_sos') or 'sos' in (item.get('problem_title') or '').lower() or 'sos' in (item.get('type') or '').lower():
+                return 0
+            sev = (item.get('severity') or '').lower()
+            if sev == 'high':
+                return 1
+            if sev == 'medium':
+                return 2
+            return 3
+
+        pending_alerts.sort(key=_get_priority)
+        tracked_deployments.sort(key=_get_priority)
+
         inventory, deployed, on_scene = get_inventory_and_stats(db)
 
     except Exception as e:
