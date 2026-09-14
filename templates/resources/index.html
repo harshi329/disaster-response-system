@@ -278,8 +278,8 @@
       </p>
     </div>
     <div class="d-flex align-items-center gap-2 flex-wrap">
-      {% if current_user.role == 'admin' %}
-      <!-- Admin Manual Rescue Controls -->
+      {% if current_user.is_authenticated and current_user.role == 'admin' %}
+      <!-- Admin Only: Manual Rescue Controls -->
       <div class="btn-group btn-group-sm" role="group">
         <button type="button" class="btn btn-outline-primary fw-semibold" onclick="launchAllFromStation()" title="Reset to station and drive to danger spot">
           <i class="bi bi-send-fill me-1"></i>🚀 1. Send Help
@@ -289,16 +289,6 @@
         </button>
         <button type="button" class="btn btn-outline-warning text-dark fw-semibold" onclick="fastForwardAllToBase()" title="Return all vehicles back to station safely">
           <i class="bi bi-house-door-fill me-1"></i>🏠 3. Return Home
-        </button>
-      </div>
-
-      <!-- Admin Simulation Speed Selector -->
-      <div class="btn-group btn-group-sm" role="group">
-        <button type="button" class="btn btn-outline-secondary active fw-semibold" id="speed-1x-btn" onclick="setSimSpeed(1)">
-          1x Speed
-        </button>
-        <button type="button" class="btn btn-outline-danger fw-semibold" id="speed-4x-btn" onclick="setSimSpeed(2)">
-          ⚡ 2x Speed
         </button>
       </div>
       {% endif %}
@@ -686,7 +676,6 @@ let incidentMarkers = [];
 let unitMarkers = [];
 let routeLines = [];
 let activeProblemFilter = 'all';
-let simSpeedMultiplier = 1; // 1 = normal, 4 = fast-forward
 
 // Sound Muted to eliminate audio interruptions
 let soundEnabled = false;
@@ -819,15 +808,6 @@ function updateInventoryUI(inv, deployed) {
   if (distFood && inv.distributed_food_packets !== undefined) {
     distFood.textContent = inv.distributed_food_packets;
   }
-}
-
-// Speed toggle (1x / 2x)
-function setSimSpeed(mult) {
-  simSpeedMultiplier = mult;
-  const btn1 = document.getElementById('speed-1x-btn');
-  const btn2 = document.getElementById('speed-4x-btn');
-  if (btn1) btn1.classList.toggle('active', mult === 1);
-  if (btn2) btn2.classList.toggle('active', mult === 2);
 }
 
 // Initialize Leaflet Map
@@ -1421,7 +1401,7 @@ function startSimulationLoop() {
     unitMarkers.forEach(item => {
       const unit = item.data;
       // Gentle, steady speed: ~1% progress per second at normal speed
-      const step = 0.25 * simSpeedMultiplier;
+      const step = 0.25;
 
       // Phase 1: En Route to Incident Site
       if (unit.phase === 'en_route') {
@@ -1453,7 +1433,7 @@ function startSimulationLoop() {
       }
       // Phase 2: Active On Scene (Helping injured, giving food meals for ~12-15 seconds)
       else if (unit.phase === 'on_scene') {
-        item.onSceneDuration = (item.onSceneDuration || 0) + (0.25 * simSpeedMultiplier);
+        item.onSceneDuration = (item.onSceneDuration || 0) + 0.25;
 
         // After operations on scene, demobilize and return back to base
         if (item.onSceneDuration >= 12.0) {
