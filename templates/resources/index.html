@@ -317,7 +317,9 @@
               <span class="fw-bold small text-danger" style="font-size:.72rem;">
                 <i class="bi bi-send-check me-1"></i>Send Help to Danger Spots
               </span>
-              <span class="badge bg-danger text-white" style="font-size:.65rem;">{{ pending_alerts | length }} Waiting</span>
+              <span class="badge {% if pending_alerts %}bg-danger text-white{% else %}bg-success-subtle text-success border border-success-subtle{% endif %}" id="waiting-alerts-badge" style="font-size:.65rem;">
+                <span id="waiting-alerts-count">{{ pending_alerts | length }}</span> Waiting
+              </span>
             </div>
 
             {% if pending_alerts %}
@@ -798,7 +800,56 @@ function disappearResolvedIncident(allocationId) {
   const rLines = routeLines.filter(rl => rl.id === allocationId);
   const uItems = unitMarkers.filter(u => u.allocationId === allocationId);
 
-  // 1. Fade out smoothly
+  // 1. Immediately decrement waiting alert badge
+  const waitingCountEl = document.getElementById('waiting-alerts-count');
+  if (waitingCountEl) {
+    const curWait = parseInt(waitingCountEl.textContent || 0);
+    const newWait = Math.max(0, curWait - 1);
+    waitingCountEl.textContent = newWait;
+    const badgeEl = document.getElementById('waiting-alerts-badge');
+    if (badgeEl) {
+      if (newWait === 0) {
+        badgeEl.className = 'badge bg-success-subtle text-success border border-success-subtle';
+        badgeEl.innerHTML = '✅ All Dispatched';
+      } else {
+        badgeEl.className = 'badge bg-danger text-white';
+        badgeEl.innerHTML = `<span id="waiting-alerts-count">${newWait}</span> Waiting`;
+      }
+    }
+  }
+
+  // 2. Remove from Danger Spot dropdowns
+  const filterSelect = document.getElementById('incident-filter-select');
+  if (filterSelect) {
+    const opt = filterSelect.querySelector(`option[value="${allocationId}"]`);
+    if (opt) opt.remove();
+  }
+  const reportSelect = document.getElementById('report-select');
+  if (reportSelect) {
+    const depMatch = deploymentsData.find(d => d.id === allocationId);
+    const repId = depMatch ? depMatch.report_id : allocationId;
+    const opt = reportSelect.querySelector(`option[value="${repId}"]`) || reportSelect.querySelector(`option[value="${allocationId}"]`);
+    if (opt) opt.remove();
+  }
+
+  // 3. Remove vehicle cards and decrement active units count
+  uItems.forEach(u => {
+    const card = document.getElementById(`card-unit-${u.id}`);
+    if (card) {
+      card.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+      card.style.opacity = '0';
+      card.style.transform = 'translateX(-20px)';
+      setTimeout(() => card.remove(), 400);
+    }
+  });
+  const countBadge = document.getElementById('units-count-badge');
+  if (countBadge) {
+    const curUnits = parseInt(countBadge.textContent) || 0;
+    const remUnits = Math.max(0, curUnits - uItems.length);
+    countBadge.textContent = `${remUnits} Active`;
+  }
+
+  // 4. Fade out smoothly on Leaflet map
   uItems.forEach(u => {
     if (u.marker && u.marker._icon) {
       u.marker._icon.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
@@ -816,7 +867,32 @@ function disappearResolvedIncident(allocationId) {
     incObj.marker._icon.style.transform = 'scale(0.2)';
   }
 
-  // 2. Remove from Leaflet layers after fade
+  // 5. Persist resolution to database
+  fetch("{{ url_for('resources.resolve_alert_api') }}", {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ allocation_id: allocationId })
+  }).then(res => res.json()).then(data => {
+    if (data && data.waiting_count !== undefined) {
+      const wCount = document.getElementById('waiting-alerts-count');
+      const wBadge = document.getElementById('waiting-alerts-badge');
+      if (wCount) wCount.textContent = data.waiting_count;
+      if (wBadge) {
+        if (data.waiting_count === 0) {
+          wBadge.className = 'badge bg-success-subtle text-success border border-success-subtle';
+          wBadge.innerHTML = '✅ All Dispatched';
+        } else {
+          wBadge.className = 'badge bg-danger text-white';
+          wBadge.innerHTML = `<span id="waiting-alerts-count">${data.waiting_count}</span> Waiting`;
+        }
+      }
+    }
+    if (data && data.inventory) {
+      updateInventoryUI(data.inventory, data.deployed);
+    }
+  }).catch(e => console.log('Resolve sync notice:', e));
+
+  // 6. Remove from Leaflet layers after fade
   setTimeout(() => {
     uItems.forEach(u => map.removeLayer(u.marker));
     rLines.forEach(rl => {
@@ -832,7 +908,6 @@ function disappearResolvedIncident(allocationId) {
     showToast('returned', '🎉 Alert Resolved & Cleared', 'Help delivered successfully! Area marked safe.');
     updateJourneyTracker();
 
-    // If all clear, update HUD
     if (incidentMarkers.length === 0) {
       const hudTarget = document.getElementById('hud-target-name');
       if (hudTarget) hudTarget.textContent = '🎉 All Areas Safe! No Active Emergencies';
@@ -1428,6 +1503,32 @@ function startSimulationLoop() {
       syncLabel.textContent = `GPS: Active (${now.toLocaleTimeString()})`;
     }
   }, 50);
+
+  // Periodic real-time background sync (updates waiting count and inventory dynamically)
+  setInterval(() => {
+    fetch("{{ url_for('resources.live_status') }}")
+      .then(res => res.json())
+      .then(data => {
+        if (data.inventory) {
+          updateInventoryUI(data.inventory, data.deployed);
+        }
+        if (data.waiting_count !== undefined) {
+          const wCount = document.getElementById('waiting-alerts-count');
+          const wBadge = document.getElementById('waiting-alerts-badge');
+          if (wCount) wCount.textContent = data.waiting_count;
+          if (wBadge) {
+            if (data.waiting_count === 0) {
+              wBadge.className = 'badge bg-success-subtle text-success border border-success-subtle';
+              wBadge.innerHTML = '✅ All Dispatched';
+            } else {
+              wBadge.className = 'badge bg-danger text-white';
+              wBadge.innerHTML = `<span id="waiting-alerts-count">${data.waiting_count}</span> Waiting`;
+            }
+          }
+        }
+      })
+      .catch(() => {});
+  }, 5000);
 }
 
 function onSelectDropdownChange(sel) {

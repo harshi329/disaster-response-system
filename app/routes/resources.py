@@ -639,16 +639,106 @@ def update_unit_status():
     })
 
 
+@resources_bp.route('/resources/api/resolve-alert', methods=['POST'])
+@login_required
+def resolve_alert_api():
+    """Marks an allocation and its underlying disaster report/alert as Resolved/Mission Completed."""
+    data = request.get_json(silent=True) or {}
+    allocation_id = data.get('allocation_id')
+    report_id = data.get('report_id')
+
+    db = get_mongo_db()
+    now_iso = datetime.utcnow().isoformat()
+    username = getattr(current_user, 'username', 'admin')
+
+    loc = None
+    if allocation_id:
+        try:
+            alloc = db.allocations.find_one({'_id': ObjectId(allocation_id)})
+        except Exception:
+            alloc = None
+        if not alloc:
+            alloc = db.allocations.find_one({'_id': allocation_id})
+        if alloc:
+            if not report_id:
+                report_id = alloc.get('report_id')
+            loc = alloc.get('location')
+            db.allocations.update_one(
+                {'_id': alloc['_id']},
+                {'$set': {'status': 'Mission Completed', 'resolved_at': now_iso, 'resolved_by': username}}
+            )
+
+    if report_id:
+        try:
+            db.disaster_reports.update_one(
+                {'_id': ObjectId(report_id)},
+                {'$set': {'status': 'Resolved', 'resolved_at': now_iso, 'resolved_by': username}}
+            )
+        except Exception:
+            try:
+                db.disaster_reports.update_one(
+                    {'_id': report_id},
+                    {'$set': {'status': 'Resolved', 'resolved_at': now_iso, 'resolved_by': username}}
+                )
+            except Exception:
+                pass
+        try:
+            db.alerts.update_one(
+                {'_id': ObjectId(report_id)},
+                {'$set': {'status': 'Resolved', 'resolved_at': now_iso, 'resolved_by': username}}
+            )
+        except Exception:
+            try:
+                db.alerts.update_one(
+                    {'_id': report_id},
+                    {'$set': {'status': 'Resolved', 'resolved_at': now_iso, 'resolved_by': username}}
+                )
+            except Exception:
+                pass
+
+    if loc:
+        db.alerts.update_many(
+            {'location': loc},
+            {'$set': {'status': 'Resolved', 'resolved_at': now_iso, 'resolved_by': username}}
+        )
+        db.disaster_reports.update_many(
+            {'location': loc},
+            {'$set': {'status': 'Resolved', 'resolved_at': now_iso, 'resolved_by': username}}
+        )
+
+    # Count remaining active pending reports and alerts
+    remaining_reports = db.disaster_reports.count_documents({'status': {'$in': ['Active', 'In Progress', 'Pending']}})
+    remaining_alerts = db.alerts.count_documents({'status': {'$in': ['Active', 'Pending', 'Responding']}})
+    waiting_count = remaining_reports + remaining_alerts
+
+    inventory, deployed, on_scene = get_inventory_and_stats(db)
+
+    return jsonify({
+        'success': True,
+        'waiting_count': waiting_count,
+        'inventory': inventory,
+        'deployed': deployed,
+        'on_scene': on_scene
+    })
+
+
 @resources_bp.route('/resources/api/live-status')
 @login_required
 def live_status():
-    """Real-time poll endpoint to synchronize live base inventory and active deployed metrics."""
+    """Real-time poll endpoint to synchronize live base inventory, active deployed metrics, and alert count."""
     db = get_mongo_db()
     inventory, deployed, on_scene = get_inventory_and_stats(db)
+    remaining_reports = db.disaster_reports.count_documents({'status': {'$in': ['Active', 'In Progress', 'Pending']}})
+    remaining_alerts = db.alerts.count_documents({'status': {'$in': ['Active', 'Pending', 'Responding']}})
+    waiting_count = remaining_reports + remaining_alerts
+    active_allocs_count = db.allocations.count_documents({'status': {'$nin': ['Mission Completed', 'Resolved', 'Closed']}})
+
     return jsonify({
         'inventory': inventory,
         'deployed': deployed,
         'on_scene': on_scene,
+        'waiting_count': waiting_count,
+        'active_allocations_count': active_allocs_count
     })
 
 
