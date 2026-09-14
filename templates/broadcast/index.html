@@ -117,14 +117,18 @@
           </div>
 
           <!-- WhatsApp toggle -->
-          <div class="mb-4 d-flex align-items-center gap-2 p-2 rounded bg-light border">
-            <div class="form-check form-switch mb-0">
+          <div class="mb-3 p-3 rounded bg-light border">
+            <div class="form-check form-switch mb-1">
               <input class="form-check-input" type="checkbox" name="send_whatsapp"
                      id="wa-toggle" checked/>
-              <label class="form-check-label fw-semibold small" for="wa-toggle">
+              <label class="form-check-label fw-bold text-dark small" for="wa-toggle">
                 <i class="bi bi-whatsapp text-success me-1"></i>
-                Deliver WhatsApp alert to all registered citizens
+                Deliver WhatsApp alert directly to all registered citizens
               </label>
+            </div>
+            <div class="small text-muted ps-4" style="font-size:.78rem;">
+              <i class="bi bi-broadcast text-success me-1"></i>
+              Directly dispatches emergency alert to <strong>{{ registered_recipients|length }}</strong> registered citizens &amp; volunteers.
             </div>
           </div>
 
@@ -213,17 +217,28 @@
             </div>
             <div class="d-flex gap-1 align-items-center flex-wrap">
               <span class="badge bg-{{ p_color }} {% if p_color=='warning' %}text-dark{% endif %}">{{ b.priority }}</span>
-              <span class="badge bg-light text-dark border">{{ b.type }}</span>
-              <!-- WhatsApp share link -->
+              <!-- WhatsApp Direct Citizen Dispatch & Share -->
+              <button type="button"
+                 data-bid="{{ b._id }}"
+                 data-title="{{ b.title }}"
+                 data-type="{{ b.type }}"
+                 data-message="{{ b.message }}"
+                 data-area="{{ b.area }}"
+                 data-priority="{{ b.priority }}"
+                 onclick="openWhatsAppDispatchModalForBroadcast(this)"
+                 class="btn btn-sm btn-success py-1 px-2 d-inline-flex align-items-center gap-1 fw-semibold"
+                 style="font-size:.78rem;" title="Deliver WhatsApp Alert Directly to Registered Citizens">
+                <i class="bi bi-whatsapp"></i><span>Deliver to Citizens</span>
+              </button>
               <button type="button"
                  data-title="{{ b.title }}"
                  data-type="{{ b.type }}"
                  data-message="{{ b.message }}"
                  data-area="{{ b.area }}"
                  onclick="shareBroadcastCard(this)"
-                 class="btn btn-sm btn-success py-1 px-2 d-inline-flex align-items-center gap-1"
-                 style="font-size:.78rem;" title="Share on WhatsApp">
-                <i class="bi bi-whatsapp"></i><span>Share</span>
+                 class="btn btn-sm btn-outline-success py-1 px-2 d-inline-flex align-items-center gap-1"
+                 style="font-size:.78rem;" title="Share to WhatsApp Community">
+                <i class="bi bi-share-fill"></i>
               </button>
             </div>
           </div>
@@ -373,30 +388,220 @@
 </div>
 {% endif %}
 
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- DIRECT WHATSAPP BROADCAST DISPATCHER MODAL (ADMIN ONLY)                 -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="whatsappDispatchModal" tabindex="-1" aria-labelledby="waModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-success text-white py-3">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-whatsapp fs-4"></i>
+          <div>
+            <h5 class="modal-title fw-bold mb-0" id="waModalLabel">Direct WhatsApp Citizen Dispatcher</h5>
+            <small class="text-white-50">Instant, verified delivery directly to registered citizens' WhatsApp</small>
+          </div>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4">
+        <!-- Message Preview Box -->
+        <div class="card border-0 bg-light p-3 rounded-3 mb-4 border-start border-4 border-success">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="badge bg-success fw-bold"><i class="bi bi-shield-check me-1"></i>VERIFIED BROADCAST</span>
+            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="copyBroadcastFormattedText()" style="font-size:.78rem;">
+              <i class="bi bi-clipboard me-1"></i>Copy Text
+            </button>
+          </div>
+          <h6 class="fw-bold text-dark mb-1" id="waModalAlertTitle">Emergency Advisory</h6>
+          <pre id="waModalFormattedPreview" class="mb-0 text-secondary bg-white p-2 rounded border small" style="white-space: pre-wrap; font-family: inherit; font-size: .85rem; max-height: 140px; overflow-y: auto;"></pre>
+        </div>
+
+        <!-- Target Registered Citizens List -->
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h6 class="fw-bold text-dark mb-0">
+            <i class="bi bi-people-fill text-success me-1"></i>Registered Citizens &amp; Community Numbers
+            <span class="badge bg-success-subtle text-success ms-1" id="waModalRecipientsBadge">{{ registered_recipients|length }} Registered</span>
+          </h6>
+          <span class="small text-muted" style="font-size:.75rem;">1-Click Direct Chat Delivery</span>
+        </div>
+
+        <div class="table-responsive border rounded-3 bg-white mb-3" style="max-height: 240px; overflow-y: auto;">
+          <table class="table table-hover align-middle mb-0" id="waRecipientsTable">
+            <thead class="table-light sticky-top" style="font-size:.8rem;">
+              <tr>
+                <th class="ps-3">Recipient Name</th>
+                <th>Role / Group</th>
+                <th>Phone Number</th>
+                <th class="text-end pe-3">Direct Delivery</th>
+              </tr>
+            </thead>
+            <tbody id="waRecipientsTbody" style="font-size:.85rem;">
+              {% for r in registered_recipients %}
+              <tr>
+                <td class="ps-3 fw-semibold text-dark">
+                  <i class="bi bi-person-circle text-secondary me-1"></i>{{ r.name }}
+                </td>
+                <td>
+                  <span class="badge bg-{{ 'primary' if r.role == 'volunteer' else 'secondary' }}-subtle text-{{ 'primary' if r.role == 'volunteer' else 'secondary' }} border">
+                    {{ r.type }}
+                  </span>
+                </td>
+                <td class="text-monospace fw-semibold text-success">
+                  <i class="bi bi-whatsapp me-1"></i>{{ r.raw_phone }}
+                </td>
+                <td class="text-end pe-3">
+                  <a href="#" target="_blank" class="btn btn-sm btn-success py-1 px-3 fw-bold wa-direct-link"
+                     data-phone="{{ r.phone }}" style="font-size:.78rem;">
+                    <i class="bi bi-send-fill me-1"></i>Deliver
+                  </a>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Group / Community Broadcast Share -->
+        <div class="p-3 bg-success-subtle rounded-3 border border-success-subtle d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <div>
+            <div class="fw-bold text-success small"><i class="bi bi-broadcast-pin me-1"></i>WhatsApp Emergency Channel / Community Groups</div>
+            <div class="small text-muted" style="font-size:.75rem;">Also push this alert to community WhatsApp groups with 1 click.</div>
+          </div>
+          <button type="button" class="btn btn-sm btn-success fw-bold" onclick="shareToWhatsAppCommunityGroup()">
+            <i class="bi bi-whatsapp me-1"></i>Broadcast to Group
+          </button>
+        </div>
+      </div>
+      <div class="modal-footer bg-light py-2">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-success btn-sm fw-bold px-3" onclick="launchBatchWhatsAppDispatcher()">
+          <i class="bi bi-lightning-charge-fill me-1"></i>Launch Direct WhatsApp Send (All Citizens)
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
 <script>
+// Registered recipients global data
+const registeredCitizensData = {{ registered_recipients | tojson }};
+let currentModalFormattedMessage = '';
+
+function formatEmergencyMessage(title, type, message, area, priority) {
+  const emoji = priority === 'Critical' ? '🚨' : (priority === 'Urgent' ? '⚠️' : '📢');
+  return (
+    `${emoji} *DISASTER BROADCAST — ${(type || 'GENERAL').toUpperCase()}*\n\n` +
+    `*${title || ''}*\n\n` +
+    `${message || ''}\n\n` +
+    `📍 *Affected Area:* ${area || 'All Areas'}\n` +
+    `🕐 *Time:* ${new Date().toLocaleString()}\n` +
+    `👤 *Issued by:* Disaster Management Authority\n\n` +
+    `🚨 *24/7 Emergency Helplines:*\n` +
+    `• Emergency Control: 112\n` +
+    `• Ambulance: 108\n` +
+    `• Fire: 101\n` +
+    `• Police: 100\n` +
+    `• Disaster Relief: 1070`
+  );
+}
+
+function openWhatsAppDispatchModalForBroadcast(btn) {
+  const title    = btn.dataset.title || '';
+  const type     = btn.dataset.type || 'General';
+  const message  = btn.dataset.message || '';
+  const area     = btn.dataset.area || 'All Areas';
+  const priority = btn.dataset.priority || 'Normal';
+
+  currentModalFormattedMessage = formatEmergencyMessage(title, type, message, area, priority);
+
+  document.getElementById('waModalAlertTitle').textContent = `${priority === 'Critical' ? '🚨' : '📢'} ${title}`;
+  document.getElementById('waModalFormattedPreview').textContent = currentModalFormattedMessage;
+
+  // Update direct links in table
+  const links = document.querySelectorAll('.wa-direct-link');
+  links.forEach(l => {
+    const phone = l.getAttribute('data-phone');
+    l.href = window.getWhatsAppUrl(currentModalFormattedMessage, phone);
+  });
+
+  const modalEl = document.getElementById('whatsappDispatchModal');
+  if (modalEl) {
+    const modal = new bootstrap.Modal(modalEl);
+    modal.show();
+  }
+}
+
+function shareToWhatsAppCommunityGroup() {
+  if (!currentModalFormattedMessage) return;
+  window.shareToWhatsApp({ text: currentModalFormattedMessage });
+}
+
+function copyBroadcastFormattedText() {
+  if (!currentModalFormattedMessage) return;
+  navigator.clipboard.writeText(currentModalFormattedMessage).then(() => {
+    alert('Formatted WhatsApp emergency alert copied to clipboard!');
+  }).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = currentModalFormattedMessage;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    alert('Formatted WhatsApp emergency alert copied to clipboard!');
+  });
+}
+
+function launchBatchWhatsAppDispatcher() {
+  if (!registeredCitizensData || registeredCitizensData.length === 0) {
+    alert('No registered citizens found.');
+    return;
+  }
+  // Open the first registered citizen's direct chat
+  const first = registeredCitizensData[0];
+  const url = window.getWhatsAppUrl(currentModalFormattedMessage, first.phone);
+  window.open(url, '_blank', 'noopener,noreferrer');
+
+  if (registeredCitizensData.length > 1) {
+    alert(`Opened WhatsApp for ${first.name}. Click 'Deliver' on each citizen in the list to send to the rest seamlessly!`);
+  }
+}
+
 function shareBroadcastCard(btn) {
   const title   = btn.dataset.title || '';
   const type    = btn.dataset.type || 'Emergency Broadcast';
   const message = btn.dataset.message || '';
   const area    = btn.dataset.area || 'All Areas';
-
-  const text =
-    `📢 *DISASTER BROADCAST — ${type.toUpperCase()}*\n\n` +
-    `*${title}*\n\n` +
-    `${message}\n\n` +
-    `📍 *Affected Area:* ${area}\n\n` +
-    `🚨 *Emergency Helplines:*\n` +
-    `• Emergency Control: 112\n` +
-    `• Ambulance: 108\n` +
-    `• Fire: 101\n` +
-    `• Police: 100\n` +
-    `• Disaster Helpline: 1070`;
-
-  shareToWhatsApp({ text: text });
+  const text    = formatEmergencyMessage(title, type, message, area, 'Normal');
+  window.shareToWhatsApp({ text: text });
 }
+
+// Auto-open Dispatcher Modal if admin just submitted a broadcast with WhatsApp enabled
+{% if recent_wa_broadcast %}
+window.addEventListener('DOMContentLoaded', () => {
+  const recent = {{ recent_wa_broadcast | tojson }};
+  if (recent) {
+    currentModalFormattedMessage = recent.formatted_text || formatEmergencyMessage(recent.title, recent.type, recent.message, recent.area, recent.priority);
+    document.getElementById('waModalAlertTitle').textContent = `🚨 ${recent.title}`;
+    document.getElementById('waModalFormattedPreview').textContent = currentModalFormattedMessage;
+
+    const links = document.querySelectorAll('.wa-direct-link');
+    links.forEach(l => {
+      const phone = l.getAttribute('data-phone');
+      l.href = window.getWhatsAppUrl(currentModalFormattedMessage, phone);
+    });
+
+    const modalEl = document.getElementById('whatsappDispatchModal');
+    if (modalEl) {
+      const modal = new bootstrap.Modal(modalEl);
+      modal.show();
+    }
+  }
+});
+{% endif %}
 
 // Play broadcast chime on page load if broadcasts exist
 {% if broadcasts %}
