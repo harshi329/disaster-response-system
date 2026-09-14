@@ -148,6 +148,7 @@ def build_tracked_units(allocated: dict, target_lat: float, target_lng: float, p
         num_physical_units = 1 if cfg['key'] == 'food_packets' else min(qty, 4)
         for i in range(num_physical_units):
             uid = f"{cfg['key'][:3].upper()}-{random.randint(101, 999)}"
+            lead = cfg['default_leads'][i % len(cfg['default_leads'])]
             # Stagger starting progression visibly leaving the Help Station (15% - 35%)
             progress = min(35, max(15, 18 + (unit_idx * 5)))
             unit_idx += 1
