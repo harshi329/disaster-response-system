@@ -171,6 +171,7 @@ def all_sos():
     total    = 0
     active_count = 0
     try:
+        from .resources import resolve_coordinates
         db    = get_mongo_db()
         total = db.sos_alerts.count_documents({})
         sos_list = list(
@@ -181,6 +182,9 @@ def all_sos():
         )
         for s in sos_list:
             s['_id'] = str(s['_id'])
+            r_lat, r_lng = resolve_coordinates(s.get('location', ''), s.get('lat'), s.get('lng'))
+            s['resolved_lat'] = r_lat
+            s['resolved_lng'] = r_lng
         active_count = db.sos_alerts.count_documents({'status': 'Active'})
     except Exception:
         flash('Could not load SOS alerts.', 'warning')

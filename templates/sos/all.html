@@ -3,6 +3,7 @@
 {% block title %}SOS Alerts{% endblock %}
 
 {% block head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <style>
   .sos-row-active   { border-left:4px solid #dc3545 !important; }
   .sos-row-resolved { border-left:4px solid #198754 !important; opacity:.75; }
@@ -11,6 +12,25 @@
     display:inline-block;animation:pulse-dot 1.2s ease-in-out infinite;
   }
   @keyframes pulse-dot{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.5);opacity:.5;}}
+  .sos-map-marker {
+    background: #dc3545;
+    color: #fff;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    box-shadow: 0 0 12px rgba(220, 53, 69, 0.7);
+    animation: sos-marker-pulse 1.5s infinite;
+  }
+  @keyframes sos-marker-pulse {
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+    70% { transform: scale(1.15); box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+  }
 </style>
 {% endblock %}
 
@@ -131,13 +151,15 @@
                   <i class="bi bi-whatsapp me-1"></i>WhatsApp
                 </button>
 
-                <!-- Live Google Maps Button for ALL Active SOS alerts (omitted for Resolved) -->
+                <!-- Live Map Button for ALL Active SOS alerts (Expands map inline below SOS) -->
                 {% if sos.status == 'Active' %}
-                <a href="https://www.google.com/maps/search/?api=1&query={{ (sos.lat ~ ',' ~ sos.lng) if (sos.lat and sos.lng) else (sos.location | urlencode) }}"
-                   target="_blank" rel="noopener noreferrer"
-                   class="btn btn-sm btn-outline-danger" title="Open Live Location in Google Maps">
-                  <i class="bi bi-map me-1"></i>Map
-                </a>
+                <button type="button"
+                   id="map-btn-{{ sos._id }}"
+                   onclick="toggleSOSInlineMap('{{ sos._id }}', {{ sos.resolved_lat | default(28.6139) }}, {{ sos.resolved_lng | default(77.2090) }}, '{{ sos.location | replace("'", "\\'") }}', '{{ sos.sos_type | replace("'", "\\'") }}')"
+                   class="btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1"
+                   title="Open Live Location on Map Below">
+                  <i class="bi bi-geo-alt-fill"></i><span>Live Map</span>
+                </button>
                 {% endif %}
 
                 {% if sos.status=='Active' and current_user.role == 'admin' %}
@@ -150,6 +172,34 @@
                 {% endif %}
               </div>
             </div>
+
+            <!-- Inline Interactive Live Map Container (Expands directly below this SOS alert) -->
+            {% if sos.status == 'Active' %}
+            <div id="sos-map-wrap-{{ sos._id }}" class="mt-3 pt-3 border-top" style="display:none;">
+              <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                <div>
+                  <span class="badge bg-danger-subtle text-danger border border-danger-subtle fw-bold">
+                    <i class="bi bi-geo-alt-fill me-1"></i>Emergency Spot: {{ sos.location }}
+                  </span>
+                  <span class="small text-muted ms-2">GPS: ({{ sos.resolved_lat | default(28.6139) }}, {{ sos.resolved_lng | default(77.2090) }})</span>
+                </div>
+                <div class="d-flex gap-2 align-items-center">
+                  <a href="https://www.google.com/maps/dir/?api=1&destination={{ sos.resolved_lat | default(28.6139) }},{{ sos.resolved_lng | default(77.2090) }}"
+                     target="_blank" rel="noopener noreferrer"
+                     class="btn btn-xs btn-outline-primary py-0 px-2 fw-semibold" style="font-size:.75rem;">
+                    <i class="bi bi-compass me-1"></i>Get Navigation Directions
+                  </a>
+                  <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-2"
+                          onclick="toggleSOSInlineMap('{{ sos._id }}', {{ sos.resolved_lat | default(28.6139) }}, {{ sos.resolved_lng | default(77.2090) }})"
+                          style="font-size:.75rem;">
+                    <i class="bi bi-x-lg me-1"></i>Close Map
+                  </button>
+                </div>
+              </div>
+              <div id="inline-map-{{ sos._id }}" class="rounded-3 border shadow-sm" style="height: 280px; width: 100%; background: #e9ecef; z-index: 1;"></div>
+            </div>
+            {% endif %}
+
           </div>
         </div>
       </div>
@@ -168,7 +218,66 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
+const activeSOSMaps = {};
+
+function toggleSOSInlineMap(sosId, lat, lng, location, sosType) {
+  const wrap = document.getElementById('sos-map-wrap-' + sosId);
+  const btn = document.getElementById('map-btn-' + sosId);
+  if (!wrap) return;
+
+  if (wrap.style.display === 'none' || !wrap.style.display) {
+    wrap.style.display = 'block';
+    if (btn) {
+      btn.classList.add('active', 'btn-danger', 'text-white');
+      btn.classList.remove('btn-outline-danger');
+    }
+
+    setTimeout(() => {
+      if (!activeSOSMaps[sosId]) {
+        const map = L.map('inline-map-' + sosId, {
+          scrollWheelZoom: false
+        }).setView([lat, lng], 14);
+
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        }).addTo(map);
+
+        const icon = L.divIcon({
+          className: 'custom-sos-pin',
+          html: '<div class="sos-map-marker">🚨</div>',
+          iconSize: [32, 32],
+          iconAnchor: [16, 16],
+          popupAnchor: [0, -18]
+        });
+
+        const marker = L.marker([lat, lng], { icon: icon }).addTo(map);
+        marker.bindPopup(`
+          <div class="p-1">
+            <strong class="text-danger">🆘 ${sosType || 'Emergency SOS'}</strong><br>
+            <span class="fw-semibold text-dark">${location || 'Emergency Spot'}</span><br>
+            <small class="text-muted">GPS: ${Number(lat).toFixed(5)}, ${Number(lng).toFixed(5)}</small>
+          </div>
+        `).openPopup();
+
+        activeSOSMaps[sosId] = map;
+      } else {
+        activeSOSMaps[sosId].invalidateSize();
+        activeSOSMaps[sosId].setView([lat, lng], 14);
+      }
+      wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 120);
+  } else {
+    wrap.style.display = 'none';
+    if (btn) {
+      btn.classList.remove('active', 'btn-danger', 'text-white');
+      btn.classList.add('btn-outline-danger');
+    }
+  }
+}
+
 function shareSOSCard(btn) {
   const type     = btn.dataset.type || 'Emergency';
   const location = btn.dataset.location || '';
