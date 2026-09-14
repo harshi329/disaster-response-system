@@ -4,26 +4,29 @@
 {% block head %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <style>
+  /* Command Center & Map Viewport */
   #tracking-map {
-    height: 500px;
+    height: 640px;
     width: 100%;
     border-radius: 0.75rem;
     z-index: 1;
     border: 1px solid #e2e8f0;
     box-shadow: inset 0 0 8px rgba(0,0,0,0.03);
   }
-  @media (max-width: 576px) {
+  @media (max-width: 991px) {
     #tracking-map {
-      height: 380px;
+      height: 440px;
     }
   }
+
+  /* Unit Cards */
   .unit-card {
-    transition: all 0.25s ease;
+    transition: all 0.2s ease;
     border-left: 4px solid #0d6efd !important;
   }
   .unit-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 14px rgba(0,0,0,0.08);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
   }
   .unit-onscene {
     border-left: 4px solid #198754 !important;
@@ -49,14 +52,14 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 38px;
-    height: 38px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
-    font-size: 1.25rem;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.35);
-    border: 2.5px solid #ffffff;
+    font-size: 1.15rem;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+    border: 2px solid #ffffff;
     cursor: pointer;
-    transition: transform 0.15s ease;
+    transition: transform 0.15s ease, opacity 0.2s ease;
     user-select: none;
   }
   .clean-vehicle-badge:hover {
@@ -68,7 +71,7 @@
   .clean-badge-food { background: #d97706; }
   .clean-badge-heli { background: #0284c7; }
   .clean-badge-arrived {
-    box-shadow: 0 0 0 5px #22c55e, 0 4px 12px rgba(0,0,0,0.4) !important;
+    box-shadow: 0 0 0 4px #22c55e, 0 3px 10px rgba(0,0,0,0.35) !important;
     animation: arrived-pulse 1s infinite alternate;
   }
   @keyframes arrived-pulse {
@@ -80,7 +83,7 @@
     opacity: 0.85;
   }
 
-  /* Fixed Station & Incident Pin Markers */
+  /* Fixed Station & Incident Pin Markers (Icons Only, No Permanent Text) */
   .custom-pin {
     display: flex;
     align-items: center;
@@ -90,11 +93,16 @@
     font-size: 1.15rem;
     box-shadow: 0 3px 10px rgba(0,0,0,0.35);
     border: 2.5px solid #fff;
+    cursor: pointer;
+    transition: transform 0.15s ease;
+  }
+  .custom-pin:hover {
+    transform: scale(1.15);
   }
   .pin-problem {
     background: #dc3545;
-    width: 44px;
-    height: 44px;
+    width: 42px;
+    height: 42px;
     position: relative;
   }
   .pin-problem::after {
@@ -108,102 +116,41 @@
   }
   @keyframes pulse-ring {
     0% { transform: scale(0.8); opacity: 0.9; }
-    80%, 100% { transform: scale(2.4); opacity: 0; }
+    80%, 100% { transform: scale(2.2); opacity: 0; }
   }
   .pin-station {
     background: #0f172a;
-    border: 3px solid #38bdf8;
-    width: 46px;
-    height: 46px;
-    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.5);
-    font-size: 1.3rem;
-  }
-  .station-tooltip {
-    background: #0f172a !important;
-    color: #fff !important;
-    border: 1px solid #38bdf8 !important;
-    border-radius: 8px !important;
-    font-weight: 700 !important;
-    font-size: 0.78rem !important;
-    padding: 4px 10px !important;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.3) !important;
-  }
-  .station-tooltip::before {
-    border-top-color: #0f172a !important;
-  }
-  .incident-tooltip {
-    background: #dc3545 !important;
-    color: #fff !important;
-    border: 1.5px solid #fff !important;
-    border-radius: 8px !important;
-    font-weight: 700 !important;
-    font-size: 0.78rem !important;
-    padding: 4px 10px !important;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.3) !important;
-  }
-  .incident-tooltip::before {
-    border-top-color: #dc3545 !important;
+    border: 2.5px solid #38bdf8;
+    width: 44px;
+    height: 44px;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.45);
+    font-size: 1.25rem;
   }
 
-  /* 4-Step Story Journey Tracker */
-  .journey-step {
-    border: 2px solid #e2e8f0;
-    border-radius: 0.75rem;
-    padding: 0.65rem 0.85rem;
-    transition: all 0.25s ease;
-    background: #ffffff;
+  /* Zoom Low Detail Class */
+  .zoom-low-detail .clean-vehicle-badge {
+    width: 26px;
+    height: 26px;
+    font-size: 0.85rem;
+    border-width: 1.5px;
   }
-  .journey-step.active {
-    border-color: #0d6efd !important;
-    background: #eff6ff !important;
-    box-shadow: 0 4px 14px rgba(13, 110, 253, 0.22);
-    transform: translateY(-2px);
+  .zoom-low-detail .custom-pin {
+    width: 32px;
+    height: 32px;
+    font-size: 0.95rem;
   }
-  .journey-step.active-scene {
-    border-color: #198754 !important;
-    background: #f0fdf4 !important;
-    box-shadow: 0 4px 14px rgba(25, 135, 84, 0.25);
-    transform: translateY(-2px);
-  }
-  .journey-step.active-return {
-    border-color: #fd7e14 !important;
-    background: #fff8f0 !important;
-    box-shadow: 0 4px 14px rgba(253, 126, 20, 0.25);
-    transform: translateY(-2px);
-  }
-  .journey-step.active-station {
-    border-color: #475569 !important;
-    background: #f8fafc !important;
-    box-shadow: 0 4px 14px rgba(71, 85, 105, 0.2);
-    transform: translateY(-2px);
-  }
-  .step-icon-circle {
-    width: 36px;
-    height: 36px;
-    min-width: 36px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.1rem;
-    font-weight: bold;
-  }
-  .pin-helicopter {
-    background: #0dcaf0;
-    color: #055160;
-    width: 36px;
-    height: 36px;
-  }
+
+  /* Toast notification */
   #toast-notification-area {
     position: fixed;
     top: 20px;
     right: 20px;
     z-index: 9999;
-    max-width: 390px;
+    max-width: 380px;
   }
   .live-dot {
-    width: 9px;
-    height: 9px;
+    width: 8px;
+    height: 8px;
     background-color: #198754;
     border-radius: 50%;
     display: inline-block;
@@ -220,6 +167,21 @@
     0% { background-color: #d1e7dd; transform: scale(1.08); }
     100% { background-color: transparent; transform: scale(1); }
   }
+
+  /* Side Panel Custom Scroll */
+  .side-panel-scroll {
+    max-height: 640px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 4px;
+  }
+  .side-panel-scroll::-webkit-scrollbar {
+    width: 5px;
+  }
+  .side-panel-scroll::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 4px;
+  }
 </style>
 {% endblock %}
 
@@ -228,22 +190,22 @@
 <div id="toast-notification-area"></div>
 
 <!-- Top Page Header -->
-<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
   <div>
     <h4 class="fw-bold mb-0">
       <i class="bi bi-heart-pulse-fill me-2 text-danger"></i>Live Rescue &amp; Help Tracker
     </h4>
-    <small class="text-muted">See available ambulances, rescue teams, food, and helicopters helping people right now.</small>
+    <small class="text-muted">Live emergency command center &bull; Monitor available vehicles and real-time response.</small>
   </div>
   {% if current_user.role == 'admin' %}
-  <button class="btn btn-warning fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#restockModal">
+  <button class="btn btn-warning fw-bold shadow-sm btn-sm" data-bs-toggle="modal" data-bs-target="#restockModal">
     <i class="bi bi-plus-circle me-1"></i>Add More Vehicles &amp; Food to Station
   </button>
   {% endif %}
 </div>
 
-<!-- 4 Available Resource Counters (Auto-updates dynamically when units deploy or return!) -->
-<div class="row g-3 mb-4">
+<!-- 4 Available Resource Counters (Auto-updates dynamically) -->
+<div class="row g-2 mb-3">
   {% set items_info = [
     ('ambulances', 'Ambulances 🚑', 'truck-front-fill', 'primary', 'Hospital vans for medical help'),
     ('rescue_teams', 'Rescue Teams 👥', 'people-fill', 'success', 'Trained workers saving trapped people'),
@@ -254,33 +216,33 @@
   {% set available_qty = inventory.get(key, 0) %}
   {% set deployed_qty  = deployed.get(key, 0) %}
   <div class="col-6 col-lg-3">
-    <div class="card border-0 shadow-sm p-3 h-100 rounded-3" id="inv-card-{{ key }}">
-      <div class="d-flex justify-content-between align-items-start mb-2">
-        <span class="badge bg-{{ color }}-subtle text-{{ color }} p-2 rounded-3 fs-5">
+    <div class="card border-0 shadow-sm p-2 px-3 h-100 rounded-3" id="inv-card-{{ key }}">
+      <div class="d-flex justify-content-between align-items-center mb-1">
+        <span class="badge bg-{{ color }}-subtle text-{{ color }} p-1 px-2 rounded-2 fs-6">
           <i class="bi bi-{{ icon }}"></i>
         </span>
         {% if available_qty == 0 %}
-          <span class="badge bg-danger" id="badge-avail-{{ key }}">❌ None Left</span>
+          <span class="badge bg-danger" id="badge-avail-{{ key }}" style="font-size:.68rem;">❌ None Left</span>
         {% elif available_qty < 3 %}
-          <span class="badge bg-warning text-dark" id="badge-avail-{{ key }}">⚠️ Low Stock</span>
+          <span class="badge bg-warning text-dark" id="badge-avail-{{ key }}" style="font-size:.68rem;">⚠️ Low Stock</span>
         {% else %}
-          <span class="badge bg-success-subtle text-success border border-success-subtle" id="badge-avail-{{ key }}">✅ Ready to Help</span>
+          <span class="badge bg-success-subtle text-success border border-success-subtle" id="badge-avail-{{ key }}" style="font-size:.68rem;">✅ Ready to Help</span>
         {% endif %}
       </div>
       <div class="d-flex align-items-baseline gap-2 mb-1">
-        <span class="fs-2 fw-bold text-dark" id="count-available-{{ key }}">{{ available_qty }}</span>
-        <span class="text-muted small">Ready at Station</span>
+        <span class="fs-4 fw-bold text-dark" id="count-available-{{ key }}">{{ available_qty }}</span>
+        <span class="text-muted small" style="font-size:.75rem;">Ready at Station</span>
       </div>
-      <div class="fw-semibold small text-secondary mb-2">{{ label }}</div>
-      
+      <div class="fw-semibold small text-secondary mb-1" style="font-size:.78rem;">{{ label }}</div>
+
       <!-- Sub-metric breakdown -->
-      <div class="pt-2 border-top d-flex justify-content-between align-items-center small text-muted" style="font-size:.74rem;">
+      <div class="pt-1 border-top d-flex justify-content-between align-items-center text-muted" style="font-size:.7rem;">
         {% if key == 'food_packets' %}
-          <span><i class="bi bi-check2-all text-success me-1"></i><strong id="count-distributed-food" class="text-success">{{ inventory.get('distributed_food_packets', 0) }}</strong> Given to People</span>
-          <span class="badge bg-light text-dark border">Food Supply</span>
+          <span><i class="bi bi-check2-all text-success me-1"></i><strong id="count-distributed-food" class="text-success">{{ inventory.get('distributed_food_packets', 0) }}</strong> Given</span>
+          <span class="badge bg-light text-dark border">Supply</span>
         {% else %}
-          <span><i class="bi bi-broadcast text-primary me-1"></i><strong id="count-deployed-{{ key }}" class="text-primary">{{ deployed_qty }}</strong> Out Helping People</span>
-          <span class="badge bg-light text-dark border" title="Returns to station when done">Comes Back</span>
+          <span><i class="bi bi-broadcast text-primary me-1"></i><strong id="count-deployed-{{ key }}" class="text-primary">{{ deployed_qty }}</strong> Helping</span>
+          <span class="badge bg-light text-dark border" title="Returns to station when done">Returning Home</span>
         {% endif %}
       </div>
     </div>
@@ -289,337 +251,244 @@
 </div>
 
 <!-- ========================================================================= -->
-<!-- LIVE LOCATION TRACKER (FOR BOTH CITIZEN & ADMIN)                           -->
+<!-- UNIFIED COMMAND CENTER: COMPACT SIDE PANEL (LEFT) + CLEAN MAP (RIGHT)     -->
 <!-- ========================================================================= -->
-<div class="card border-0 shadow-sm mb-4">
-  <div class="card-header bg-white border-0 pt-3 pb-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
-    <div>
-      <h5 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
-        <i class="bi bi-geo-alt-fill text-danger fs-4"></i>
-        <span>🗺️ Live Help Map — Watch Rescue Vehicles Moving</span>
-        <span class="badge bg-light text-dark border ms-2 py-1 px-2 fw-semibold" style="font-size:.75rem;">
-          <span class="live-dot me-1"></span>LIVE TRACKING
-        </span>
-      </h5>
-      <p class="text-muted small mb-0 mt-1">
-        Watch <strong>Ambulances</strong>, <strong>Rescue Teams</strong>, <strong>Food &amp; Water Delivery</strong>, and <strong>Helicopters</strong> moving live on the map to save people.
-      </p>
-    </div>
-    <div class="d-flex align-items-center gap-2 flex-wrap">
+<div class="row g-3">
+  <!-- LEFT COLUMN: COMPACT COMMAND SIDE PANEL -->
+  <div class="col-lg-4 col-xl-4">
+    <div class="side-panel-scroll d-flex flex-column gap-2">
+
+      <!-- 1. Live Mission Status & 4-Stage Ribbon -->
+      <div class="card border-0 shadow-sm p-3 rounded-3 bg-white" id="live-status-card">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <div class="d-flex align-items-center gap-2">
+            <span class="live-dot"></span>
+            <span class="fw-bold text-dark small" id="mission-headline">🚗 Vehicles Rushing to Danger Spot</span>
+          </div>
+          <span class="badge bg-primary text-white rounded-pill px-2 py-1" id="mission-eta-badge" style="font-size:.7rem;">⏱️ ~5s to Arrive</span>
+        </div>
+        <!-- 4-Stage Mini Indicator Pills -->
+        <div class="d-flex align-items-center justify-content-between gap-1 small fw-semibold">
+          <span class="badge bg-white text-secondary border px-2 py-1" id="pill-step-station" style="font-size:.65rem;">🏢 Ready at Station</span>
+          <span class="text-muted" style="font-size:.6rem;">➔</span>
+          <span class="badge bg-primary text-white px-2 py-1 shadow-sm" id="pill-step-enroute" style="font-size:.65rem;">🚗 On The Way</span>
+          <span class="text-muted" style="font-size:.6rem;">➔</span>
+          <span class="badge bg-white text-secondary border px-2 py-1" id="pill-step-onscene" style="font-size:.65rem;">📍 Arrived &amp; Helping</span>
+          <span class="text-muted" style="font-size:.6rem;">➔</span>
+          <span class="badge bg-white text-secondary border px-2 py-1" id="pill-step-returning" style="font-size:.65rem;">🏠 Returning Home</span>
+        </div>
+      </div>
+
+      <!-- 2. Danger Spot Quick Switcher -->
+      <div class="card border-0 shadow-sm p-3 rounded-3 bg-white">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="fw-bold small text-dark"><i class="bi bi-geo-alt-fill text-danger me-1"></i>Select Danger Spot:</span>
+          <span class="badge bg-light text-secondary border" style="font-size:.65rem;">Progressive View</span>
+        </div>
+        <select class="form-select form-select-sm mb-2 fw-semibold" id="incident-filter-select" onchange="filterByProblem(this.value)">
+          <option value="all">🌐 All Danger Spots (Overview)</option>
+          {% for dep in tracked_deployments %}
+          <option value="{{ dep.id }}">🚨 {{ dep.problem_title }} ({{ dep.units | length }} Units)</option>
+          {% endfor %}
+        </select>
+
+        <!-- Selected Danger Spot Summary Card -->
+        <div class="p-2 rounded-2 border bg-light small" id="danger-spot-summary-card">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <span class="fw-bold text-danger" id="summary-spot-title">Active Danger Spot</span>
+            <span class="badge bg-danger" id="summary-spot-sev">High Priority</span>
+          </div>
+          <div class="text-muted" style="font-size:.73rem;" id="summary-spot-loc">
+            <i class="bi bi-compass me-1"></i>Focus on map to view route and active vehicles.
+          </div>
+        </div>
+      </div>
+
       {% if current_user.is_authenticated and current_user.role == 'admin' %}
-      <!-- Admin Only: Manual Rescue Controls -->
-      <div class="btn-group btn-group-sm" role="group">
-        <button type="button" class="btn btn-outline-primary fw-semibold" onclick="launchAllFromStation()" title="Reset to station and drive to danger spot">
-          <i class="bi bi-send-fill me-1"></i>🚀 1. Send Help
-        </button>
-        <button type="button" class="btn btn-outline-success fw-semibold" onclick="fastForwardAllToScene()" title="Arrive at danger spot and help people immediately">
-          <i class="bi bi-geo-alt-fill me-1"></i>📍 2. Arrive &amp; Help
-        </button>
-        <button type="button" class="btn btn-outline-warning text-dark fw-semibold" onclick="fastForwardAllToBase()" title="Return all vehicles back to station safely">
-          <i class="bi bi-house-door-fill me-1"></i>🏠 3. Return Home
-        </button>
+      <!-- 3. ADMIN ONLY: FAST DEMO CONTROLS -->
+      <div class="card border-0 shadow-sm p-3 rounded-3 bg-white">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="fw-bold small text-dark"><i class="bi bi-sliders me-1 text-primary"></i>Admin Rescue Controls</span>
+          <span class="badge bg-primary-subtle text-primary" style="font-size:.65rem;">Admin</span>
+        </div>
+        <div class="btn-group btn-group-sm w-100" role="group">
+          <button type="button" class="btn btn-outline-primary fw-semibold" onclick="launchAllFromStation()" title="Reset to station and drive to danger spot">
+            <i class="bi bi-send-fill me-1"></i>🚀 1. Send Help
+          </button>
+          <button type="button" class="btn btn-outline-success fw-semibold" onclick="fastForwardAllToScene()" title="Arrive at danger spot and help people immediately">
+            <i class="bi bi-geo-alt-fill me-1"></i>📍 2. Arrive &amp; Help
+          </button>
+          <button type="button" class="btn btn-outline-warning text-dark fw-semibold" onclick="fastForwardAllToBase()" title="Return all vehicles back to station safely">
+            <i class="bi bi-house-door-fill me-1"></i>🏠 3. Return Home
+          </button>
+        </div>
+      </div>
+
+      <!-- 4. ADMIN ONLY: QUICK DISPATCH FORM -->
+      <div class="card border border-danger-subtle shadow-sm p-3 rounded-3 bg-white" id="admin-assignment-section">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="fw-bold small text-danger"><i class="bi bi-send-check me-1"></i>Send Help to Danger Spots</span>
+          <span class="badge bg-danger text-white" style="font-size:.65rem;">{{ pending_alerts | length }} Waiting</span>
+        </div>
+
+        {% if pending_alerts %}
+        <form method="POST" action="{{ url_for('resources.assign') }}" id="dispatch-form">
+          <div class="mb-2">
+            <select name="report_id" id="report-select" class="form-select form-select-sm border-danger" required onchange="onSelectDropdownChange(this)">
+              <option value="">-- Choose Danger Spot --</option>
+              {% for alert in pending_alerts %}
+              <option value="{{ alert.id }}"
+                      data-title="{{ alert.type }} at {{ alert.location }}"
+                      data-severity="{{ alert.severity }}"
+                      data-location="{{ alert.location }}"
+                      data-amb="{{ alert.recommended.ambulances }}"
+                      data-rsc="{{ alert.recommended.rescue_teams }}"
+                      data-food="{{ alert.recommended.food_packets }}"
+                      data-heli="{{ alert.recommended.helicopters }}">
+                [{{ alert.severity | upper }}] {{ alert.type }} &bull; {{ alert.location }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Compact 2x2 Resource Stepper Grid -->
+          <div class="row g-2 mb-2">
+            <!-- Ambulances -->
+            <div class="col-6">
+              <div class="p-2 border rounded-2 bg-light">
+                <div class="d-flex justify-content-between text-muted" style="font-size:.68rem;">
+                  <span>🚑 Amb</span>
+                  <span>Stock: {{ inventory.get('ambulances', 0) }}</span>
+                </div>
+                <div class="input-group input-group-sm mt-1">
+                  <button type="button" class="btn btn-outline-secondary py-0 px-2" onclick="stepVal('amb-input', -1)">-</button>
+                  <input type="number" id="amb-input" name="ambulances" class="form-control form-control-sm text-center fw-bold py-0" value="0" min="0" max="{{ inventory.get('ambulances', 0) }}" />
+                  <button type="button" class="btn btn-outline-secondary py-0 px-2" onclick="stepVal('amb-input', 1, {{ inventory.get('ambulances', 0) }})">+</button>
+                </div>
+              </div>
+            </div>
+            <!-- Rescue Teams -->
+            <div class="col-6">
+              <div class="p-2 border rounded-2 bg-light">
+                <div class="d-flex justify-content-between text-muted" style="font-size:.68rem;">
+                  <span>👥 Teams</span>
+                  <span>Stock: {{ inventory.get('rescue_teams', 0) }}</span>
+                </div>
+                <div class="input-group input-group-sm mt-1">
+                  <button type="button" class="btn btn-outline-secondary py-0 px-2" onclick="stepVal('rsc-input', -1)">-</button>
+                  <input type="number" id="rsc-input" name="rescue_teams" class="form-control form-control-sm text-center fw-bold py-0" value="0" min="0" max="{{ inventory.get('rescue_teams', 0) }}" />
+                  <button type="button" class="btn btn-outline-secondary py-0 px-2" onclick="stepVal('rsc-input', 1, {{ inventory.get('rescue_teams', 0) }})">+</button>
+                </div>
+              </div>
+            </div>
+            <!-- Food Packets -->
+            <div class="col-6">
+              <div class="p-2 border rounded-2 bg-light">
+                <div class="d-flex justify-content-between text-muted" style="font-size:.68rem;">
+                  <span>🍲 Meals</span>
+                  <span>Stock: {{ inventory.get('food_packets', 0) }}</span>
+                </div>
+                <div class="input-group input-group-sm mt-1">
+                  <button type="button" class="btn btn-outline-secondary py-0 px-1" onclick="stepVal('food-input', -50)">-</button>
+                  <input type="number" id="food-input" name="food_packets" class="form-control form-control-sm text-center fw-bold py-0" value="0" min="0" max="{{ inventory.get('food_packets', 0) }}" step="25" />
+                  <button type="button" class="btn btn-outline-secondary py-0 px-1" onclick="stepVal('food-input', 50, {{ inventory.get('food_packets', 0) }})">+</button>
+                </div>
+              </div>
+            </div>
+            <!-- Helicopters -->
+            <div class="col-6">
+              <div class="p-2 border rounded-2 bg-light">
+                <div class="d-flex justify-content-between text-muted" style="font-size:.68rem;">
+                  <span>🚁 Heli</span>
+                  <span>Stock: {{ inventory.get('helicopters', 0) }}</span>
+                </div>
+                <div class="input-group input-group-sm mt-1">
+                  <button type="button" class="btn btn-outline-secondary py-0 px-2" onclick="stepVal('heli-input', -1)">-</button>
+                  <input type="number" id="heli-input" name="helicopters" class="form-control form-control-sm text-center fw-bold py-0" value="0" min="0" max="{{ inventory.get('helicopters', 0) }}" />
+                  <button type="button" class="btn btn-outline-secondary py-0 px-2" onclick="stepVal('heli-input', 1, {{ inventory.get('helicopters', 0) }})">+</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-danger btn-sm w-100 fw-bold shadow-sm">
+            <i class="bi bi-send-check me-1"></i>🚀 Send Help Now!
+          </button>
+        </form>
+        {% else %}
+        <div class="alert alert-success p-2 small mb-0 d-flex align-items-center gap-2">
+          <i class="bi bi-check-circle-fill fs-6 text-success"></i>
+          <span>All danger spots currently have help assigned or are safe.</span>
+        </div>
+        {% endif %}
       </div>
       {% endif %}
-      <small class="text-muted d-none d-xxl-block" id="tracker-last-sync">GPS: Active</small>
+
+      <!-- 5. Active Vehicles on Duty (Vehicles on the Way & Helping) -->
+      <div class="card border-0 shadow-sm p-3 rounded-3 bg-white">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="fw-bold small text-dark"><i class="bi bi-truck-front text-primary me-1"></i>Vehicles on the Way &amp; Helping</span>
+          <span class="badge bg-dark rounded-pill" id="units-count-badge" style="font-size:.68rem;">0 Vehicles</span>
+        </div>
+        <div id="units-list-container" class="overflow-auto" style="max-height: 260px;">
+          <!-- Dynamically populated unit cards -->
+        </div>
+      </div>
+
+      <!-- 6. Live Updates Feed -->
+      <div class="card border-0 shadow-sm p-3 rounded-3 bg-white">
+        <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-1">
+          <span class="fw-bold small text-danger"><i class="bi bi-broadcast me-1"></i>Live Help Updates</span>
+          <span class="badge bg-danger-subtle text-danger" style="font-size:.65rem;">Live</span>
+        </div>
+        <div id="activity-log-container" class="overflow-auto" style="max-height: 180px; font-size:.75rem;">
+          <div class="text-muted p-2" id="empty-log-msg">
+            <i class="bi bi-hourglass-split me-1 text-secondary"></i>Watching for live rescue updates...
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 
-  <div class="card-body pt-2">
-    <!-- Sleek Minimalist Live Mission Ribbon (Kid & Citizen Friendly) -->
-    <div class="card border-0 bg-light p-2 mb-3 rounded-3 shadow-sm" id="live-status-card">
-      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-        <div class="d-flex align-items-center gap-2">
-          <span class="live-dot"></span>
-          <span class="fw-bold text-dark fs-6" id="mission-headline">🚗 Emergency Vehicles Rushing to Danger Spot</span>
-          <span class="badge bg-primary text-white rounded-pill px-2 py-1" id="mission-eta-badge">⏱️ ~5s to Arrive</span>
+  <!-- RIGHT COLUMN: CLEAN LIVE MAP VIEWPORT -->
+  <div class="col-lg-8 col-xl-8">
+    <div class="card border-0 shadow-sm h-100 rounded-3 bg-white p-3 d-flex flex-column">
+      <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+        <div>
+          <h5 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
+            <i class="bi bi-geo-alt-fill text-danger fs-5"></i>
+            <span>Live Help Map</span>
+            <span class="badge bg-light text-dark border ms-1 py-1 px-2 fw-semibold" style="font-size:.72rem;">
+              <span class="live-dot me-1"></span>LIVE
+            </span>
+          </h5>
+          <small class="text-muted" style="font-size:.75rem;">
+            Clean live view &bull; Click any icon to view details &bull; Active routes highlighted.
+          </small>
         </div>
-        <!-- Minimal 4-stage indicator pills -->
-        <div class="d-flex align-items-center gap-1 small fw-semibold flex-wrap">
-          <span class="badge bg-white text-secondary border px-2 py-1" id="pill-step-station">🏢 Ready at Station</span>
-          <span class="text-muted d-none d-sm-inline">➔</span>
-          <span class="badge bg-primary text-white px-2 py-1 shadow-sm" id="pill-step-enroute">🚗 On The Way</span>
-          <span class="text-muted d-none d-sm-inline">➔</span>
-          <span class="badge bg-white text-secondary border px-2 py-1" id="pill-step-onscene">📍 Arrived &amp; Helping</span>
-          <span class="text-muted d-none d-sm-inline">➔</span>
-          <span class="badge bg-white text-secondary border px-2 py-1" id="pill-step-returning">🏠 Returning Home</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Filter by Incident Problem -->
-    <div class="d-flex align-items-center gap-2 flex-wrap mb-3 p-2 bg-light rounded-3 border">
-      <span class="small fw-bold text-secondary ps-1"><i class="bi bi-geo-alt-fill text-danger me-1"></i>Where Help is Needed:</span>
-      <button type="button" class="btn btn-sm btn-danger rounded-pill fw-semibold px-3 filter-btn active"
-              data-problem-id="all" onclick="filterByProblem('all', this)">
-        <i class="bi bi-grid-fill me-1"></i>Show All Places
-      </button>
-      {% for dep in tracked_deployments %}
-      <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill fw-semibold px-3 filter-btn"
-              data-problem-id="{{ dep.id }}" onclick="filterByProblem('{{ dep.id }}', this)">
-        <i class="bi bi-exclamation-triangle-fill text-danger me-1"></i>
-        {{ dep.problem_title }} ({{ dep.units | length }} Help Vehicles)
-      </button>
-      {% endfor %}
-    </div>
-
-    <!-- Full-Width Delivery Map (Minimalist View) -->
-    <div class="position-relative mb-4">
-      <div id="tracking-map"></div>
-
-      <!-- Minimalist Map Legend Strip -->
-      <div class="position-absolute bottom-0 start-50 translate-middle-x mb-3 py-1 px-3 bg-white bg-opacity-95 rounded-pill shadow-sm border small"
-           style="z-index: 1000; font-size:.75rem; white-space: nowrap;">
-        <span class="me-2 fw-bold text-dark">Map Guide:</span>
-        <span class="me-2">🏢 Station</span>
-        <span class="me-2">🚨 Danger Spot</span>
-        <span class="me-2">🚑 Ambulance</span>
-        <span class="me-2">👥 Rescue</span>
-        <span class="me-2">🍲 Food</span>
-        <span>🚁 Heli</span>
-      </div>
-    </div>
-
-    <!-- 2 Column Row Below Map: Assigned Vehicles Feed & Live Activity Updates -->
-    <div class="row g-3">
-      <!-- Left: Assigned Help Vehicles -->
-      <div class="col-lg-7">
-        <div class="card border bg-light shadow-sm h-100">
-          <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
-            <span class="fw-bold small text-dark"><i class="bi bi-truck-front text-primary me-1"></i>Vehicles on the Way &amp; Helping</span>
-            <span class="badge bg-dark rounded-pill" id="units-count-badge">0 Vehicles</span>
-          </div>
-          <div class="card-body p-3 overflow-auto" id="units-list-container" style="max-height: 350px;">
-            <!-- Unit items populated dynamically -->
-          </div>
-        </div>
+        <small class="text-muted" id="tracker-last-sync" style="font-size:.72rem;">GPS: Active</small>
       </div>
 
-      <!-- Right: Live Help Activity Updates -->
-      <div class="col-lg-5">
-        <div class="card border shadow-sm bg-white h-100">
-          <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center border-bottom">
-            <span class="fw-bold small text-danger"><i class="bi bi-broadcast me-1"></i>Live Help Updates</span>
-            <span class="badge bg-danger-subtle text-danger" style="font-size:.68rem;">Live</span>
-          </div>
-          <div class="card-body p-3 overflow-auto" id="activity-log-container" style="max-height: 350px; font-size:.78rem;">
-            <div class="text-muted p-2" id="empty-log-msg">
-              <i class="bi bi-hourglass-split me-1 text-secondary"></i>Watching for live rescue updates...
-            </div>
-          </div>
+      <!-- Leaflet Map Container -->
+      <div class="position-relative flex-grow-1">
+        <div id="tracking-map"></div>
+
+        <!-- Floating Minimalist Legend Strip (Non-intrusive) -->
+        <div class="position-absolute bottom-0 start-50 translate-middle-x mb-3 py-1 px-3 bg-white bg-opacity-95 rounded-pill shadow-sm border small"
+             style="z-index: 1000; font-size:.72rem; white-space: nowrap;">
+          <span class="me-2 fw-bold text-dark">Guide:</span>
+          <span class="me-2">🏢 Station</span>
+          <span class="me-2">🚨 Danger Spot</span>
+          <span class="me-2">🚑 Ambulance</span>
+          <span class="me-2">👥 Rescue</span>
+          <span class="me-2">🍲 Food</span>
+          <span>🚁 Heli</span>
         </div>
       </div>
     </div>
   </div>
 </div>
-
-<!-- ========================================================================= -->
-<!-- ADMIN ONLY: PENDING INCIDENTS & TACTICAL RESOURCE MOBILIZATION           -->
-<!-- ========================================================================= -->
-{% if current_user.role == 'admin' %}
-<div class="card border-0 shadow-sm mb-4" id="admin-assignment-section">
-  <div class="card-header bg-danger text-white py-3">
-    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-      <div>
-        <h5 class="fw-bold mb-0 text-white d-flex align-items-center gap-2">
-          <i class="bi bi-send-check fs-4"></i>
-          <span>🚨 Send Help to Danger Spots (Admin Only)</span>
-        </h5>
-        <small class="text-white-50">Pick a place in trouble below and send ambulances, rescue workers, food, or helicopters.</small>
-      </div>
-      <span class="badge bg-white text-danger fw-bold px-3 py-2">
-        {{ pending_alerts | length }} Danger Spot{{ 's' if pending_alerts | length != 1 }} Waiting for Help
-      </span>
-    </div>
-  </div>
-
-  <div class="card-body p-4">
-    <!-- Step 1: Visual Cards of Pending Incidents -->
-    <div class="mb-4">
-      <h6 class="fw-bold mb-2 text-dark">
-        <i class="bi bi-exclamation-octagon-fill text-danger me-1"></i>Step 1: Pick Where Help is Needed:
-      </h6>
-
-      {% if pending_alerts %}
-      <div class="row g-3">
-        {% for alert in pending_alerts %}
-        <div class="col-md-6 col-lg-4">
-          <div class="card h-100 border p-3 shadow-sm alert-card-clickable rounded-3"
-               id="alert-card-{{ alert.id }}"
-               style="cursor: pointer;"
-               onclick="selectAlertForAssign('{{ alert.id }}', '{{ alert.type }} at {{ alert.location }}', '{{ alert.severity }}', '{{ alert.location }}', {{ alert.recommended.ambulances }}, {{ alert.recommended.rescue_teams }}, {{ alert.recommended.food_packets }}, {{ alert.recommended.helicopters }})">
-            <div class="d-flex justify-content-between align-items-start mb-2">
-              <span class="badge {% if alert.severity == 'High' %}bg-danger{% elif alert.severity == 'Medium' %}bg-warning text-dark{% else %}bg-info text-dark{% endif %} px-2 py-1">
-                {{ alert.severity | upper }} DANGER
-              </span>
-              <small class="text-muted" style="font-size:.72rem;">
-                <i class="bi bi-clock me-1"></i>{{ alert.timestamp | format_dt(10) }}
-              </small>
-            </div>
-
-            <h6 class="fw-bold mb-1 text-dark">
-              {% if 'flood' in alert.type|lower %}<i class="bi bi-water text-primary me-1"></i>
-              {% elif 'fire' in alert.type|lower %}<i class="bi bi-fire text-danger me-1"></i>
-              {% elif 'earthquake' in alert.type|lower %}<i class="bi bi-building-down text-warning me-1"></i>
-              {% else %}<i class="bi bi-exclamation-triangle-fill text-danger me-1"></i>{% endif %}
-              {{ alert.type }} — {{ alert.location }}
-            </h6>
-
-            <p class="text-muted small mb-2" style="font-size:.8rem; min-height: 36px;">
-              {{ alert.description }}
-            </p>
-
-            <div class="bg-light p-2 rounded-2 small mb-3 border" style="font-size:.74rem;">
-              <span class="fw-semibold text-secondary d-block mb-1">Suggested Help Needed:</span>
-              <span class="badge bg-primary-subtle text-primary me-1">🚑 {{ alert.recommended.ambulances }} Amb</span>
-              <span class="badge bg-success-subtle text-success me-1">👥 {{ alert.recommended.rescue_teams }} Team</span>
-              <span class="badge bg-warning-subtle text-dark me-1">🍲 {{ alert.recommended.food_packets }} Meals</span>
-              {% if alert.recommended.helicopters > 0 %}
-              <span class="badge bg-info-subtle text-dark">🚁 {{ alert.recommended.helicopters }} Heli</span>
-              {% endif %}
-            </div>
-
-            <button type="button" class="btn btn-danger btn-sm w-100 fw-bold mt-auto"
-                    onclick="event.stopPropagation(); selectAlertForAssign('{{ alert.id }}', '{{ alert.type }} at {{ alert.location }}', '{{ alert.severity }}', '{{ alert.location }}', {{ alert.recommended.ambulances }}, {{ alert.recommended.rescue_teams }}, {{ alert.recommended.food_packets }}, {{ alert.recommended.helicopters }});">
-              <i class="bi bi-send-fill me-1"></i>Send Help Here
-            </button>
-          </div>
-        </div>
-        {% endfor %}
-      </div>
-      {% else %}
-      <div class="alert alert-success d-flex align-items-center gap-2 mb-0">
-        <i class="bi bi-check-circle-fill fs-5"></i>
-        <span>All danger spots currently have help on the way or are safe now.</span>
-      </div>
-      {% endif %}
-    </div>
-
-    <hr class="my-4" />
-
-    <!-- Step 2: Configure and Deploy Resources -->
-    <div>
-      <h6 class="fw-bold mb-3 text-dark">
-        <i class="bi bi-sliders text-danger me-1"></i>Step 2: Choose How Many Vehicles &amp; Supplies to Send:
-      </h6>
-
-      <!-- Selected Incident Banner -->
-      <div class="alert alert-danger d-flex align-items-center justify-content-between flex-wrap gap-2 py-2 px-3 mb-3 rounded-3" id="target-alert-banner">
-        <div class="d-flex align-items-center gap-2">
-          <i class="bi bi-geo-alt-fill fs-4 text-danger"></i>
-          <div>
-            <span class="fw-bold d-block text-danger" id="target-alert-title">Select a danger spot from Step 1 above</span>
-            <small class="text-muted" id="target-alert-meta">Click any card above to fill recommended help automatically</small>
-          </div>
-        </div>
-        <div class="d-flex gap-2">
-          <button type="button" class="btn btn-sm btn-outline-danger" onclick="applyPreset('high')">
-            <i class="bi bi-lightning-charge-fill me-1"></i>Send Full Emergency Team
-          </button>
-          <button type="button" class="btn btn-sm btn-outline-secondary" onclick="applyPreset('medium')">
-            Send Normal Team
-          </button>
-        </div>
-      </div>
-
-      <form method="POST" action="{{ url_for('resources.assign') }}" id="dispatch-form">
-        <!-- Target Dropdown (Synced with card selection) -->
-        <div class="mb-3">
-          <label class="form-label fw-semibold small text-muted">Place where help is needed</label>
-          <select name="report_id" id="report-select" class="form-select border-danger" required onchange="onSelectDropdownChange(this)">
-            <option value="">-- Choose where to send help --</option>
-            {% for alert in pending_alerts %}
-            <option value="{{ alert.id }}"
-                    data-title="{{ alert.type }} at {{ alert.location }}"
-                    data-severity="{{ alert.severity }}"
-                    data-location="{{ alert.location }}"
-                    data-amb="{{ alert.recommended.ambulances }}"
-                    data-rsc="{{ alert.recommended.rescue_teams }}"
-                    data-food="{{ alert.recommended.food_packets }}"
-                    data-heli="{{ alert.recommended.helicopters }}">
-              [{{ alert.severity | upper }} DANGER] {{ alert.type }} at {{ alert.location }} — ({{ alert.timestamp | format_dt(10) }})
-            </option>
-            {% endfor %}
-          </select>
-        </div>
-
-        <!-- 4 Resource Quantity Steppers -->
-        <div class="row g-3 mb-3">
-          <!-- Ambulances -->
-          <div class="col-6 col-md-3">
-            <div class="p-3 border rounded-3 bg-light">
-              <label class="form-label fw-semibold small mb-1 d-flex justify-content-between">
-                <span><i class="bi bi-truck-front-fill text-primary me-1"></i>Ambulances 🚑</span>
-                <span class="badge bg-primary-subtle text-primary">In Stock: {{ inventory.get('ambulances', 0) }}</span>
-              </label>
-              <div class="input-group input-group-sm">
-                <button type="button" class="btn btn-outline-secondary" onclick="stepVal('amb-input', -1)">-</button>
-                <input type="number" id="amb-input" name="ambulances" class="form-control text-center fw-bold" value="0" min="0" max="{{ inventory.get('ambulances', 0) }}" />
-                <button type="button" class="btn btn-outline-secondary" onclick="stepVal('amb-input', 1, {{ inventory.get('ambulances', 0) }})">+</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Rescue Teams -->
-          <div class="col-6 col-md-3">
-            <div class="p-3 border rounded-3 bg-light">
-              <label class="form-label fw-semibold small mb-1 d-flex justify-content-between">
-                <span><i class="bi bi-people-fill text-success me-1"></i>Rescue Teams 👥</span>
-                <span class="badge bg-success-subtle text-success">In Stock: {{ inventory.get('rescue_teams', 0) }}</span>
-              </label>
-              <div class="input-group input-group-sm">
-                <button type="button" class="btn btn-outline-secondary" onclick="stepVal('rsc-input', -1)">-</button>
-                <input type="number" id="rsc-input" name="rescue_teams" class="form-control text-center fw-bold" value="0" min="0" max="{{ inventory.get('rescue_teams', 0) }}" />
-                <button type="button" class="btn btn-outline-secondary" onclick="stepVal('rsc-input', 1, {{ inventory.get('rescue_teams', 0) }})">+</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Food Packets -->
-          <div class="col-6 col-md-3">
-            <div class="p-3 border rounded-3 bg-light">
-              <label class="form-label fw-semibold small mb-1 d-flex justify-content-between">
-                <span><i class="bi bi-box-seam-fill text-warning me-1"></i>Food &amp; Water Meals 🍲</span>
-                <span class="badge bg-warning-subtle text-dark">In Stock: {{ inventory.get('food_packets', 0) }}</span>
-              </label>
-              <div class="input-group input-group-sm">
-                <button type="button" class="btn btn-outline-secondary" onclick="stepVal('food-input', -50)">-50</button>
-                <input type="number" id="food-input" name="food_packets" class="form-control text-center fw-bold" value="0" min="0" max="{{ inventory.get('food_packets', 0) }}" step="25" />
-                <button type="button" class="btn btn-outline-secondary" onclick="stepVal('food-input', 50, {{ inventory.get('food_packets', 0) }})">+50</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Helicopters -->
-          <div class="col-6 col-md-3">
-            <div class="p-3 border rounded-3 bg-light">
-              <label class="form-label fw-semibold small mb-1 d-flex justify-content-between">
-                <span><i class="bi bi-airplane-fill text-info me-1"></i>Helicopters 🚁</span>
-                <span class="badge bg-info-subtle text-dark">In Stock: {{ inventory.get('helicopters', 0) }}</span>
-              </label>
-              <div class="input-group input-group-sm">
-                <button type="button" class="btn btn-outline-secondary" onclick="stepVal('heli-input', -1)">-</button>
-                <input type="number" id="heli-input" name="helicopters" class="form-control text-center fw-bold" value="0" min="0" max="{{ inventory.get('helicopters', 0) }}" />
-                <button type="button" class="btn btn-outline-secondary" onclick="stepVal('heli-input', 1, {{ inventory.get('helicopters', 0) }})">+</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Operational Notes -->
-        <div class="mb-3">
-          <label class="form-label fw-semibold small text-muted">Special Instructions (Optional)</label>
-          <input type="text" name="notes" class="form-control" placeholder="e.g. Bring life jackets, medical kits, and food packets" />
-        </div>
-
-        <!-- Submit Button -->
-        <button type="submit" class="btn btn-danger w-100 fw-bold py-2 shadow-sm fs-6">
-          <i class="bi bi-send-check me-2"></i>🚀 Send Help Now!
-        </button>
-      </form>
-    </div>
-  </div>
-</div>
-{% endif %}
 
 <!-- Restock Modal -->
 <div class="modal fade" id="restockModal" tabindex="-1">
@@ -673,10 +542,7 @@ let unitMarkers = [];
 let routeLines = [];
 let activeProblemFilter = 'all';
 
-// Sound Muted to eliminate audio interruptions
-let soundEnabled = false;
-
-// Quiet on-page log update - NEVER creates screen-blocking popups or beeps!
+// Quiet on-page log update
 function logIncidentEvent(type, title, message) {
   const logContainer = document.getElementById('activity-log-container');
   if (logContainer) {
@@ -703,26 +569,23 @@ function logIncidentEvent(type, title, message) {
         <span class="badge ${badgeBg} mt-1">${tag}</span>
         <div class="flex-grow-1">
           <div class="fw-bold text-dark">${title}</div>
-          <div class="text-muted" style="font-size:.7rem;">${message} &bull; <span class="text-secondary">${timeStr}</span></div>
+          <div class="text-muted" style="font-size:.68rem;">${message} &bull; <span class="text-secondary">${timeStr}</span></div>
         </div>
       </div>
     `;
     logContainer.insertAdjacentHTML('afterbegin', logEntry);
 
-    // Keep log clean and compact (max 6 entries)
     const rows = logContainer.querySelectorAll('.incident-log-entry');
-    if (rows.length > 6) {
-      for (let i = 6; i < rows.length; i++) rows[i].remove();
+    if (rows.length > 5) {
+      for (let i = 5; i < rows.length; i++) rows[i].remove();
     }
   }
 }
 
-// Single brief unobtrusive toast - ONLY for manual demo clicks (never spams during auto loop)
+// Single brief toast
 function showToast(type, title, message) {
   const toastArea = document.getElementById('toast-notification-area');
   if (!toastArea) return;
-
-  // Clear any existing toast immediately so they NEVER stack up!
   toastArea.innerHTML = '';
 
   let bgClass = 'bg-primary text-white';
@@ -754,11 +617,7 @@ function showToast(type, title, message) {
     </div>
   `;
   toastArea.insertAdjacentHTML('beforeend', toastHtml);
-
-  // Auto dismiss quickly in 2 seconds
-  setTimeout(() => {
-    toastArea.innerHTML = '';
-  }, 2000);
+  setTimeout(() => { toastArea.innerHTML = ''; }, 2000);
 }
 
 // Update Top Inventory Counters Dynamically
@@ -771,7 +630,6 @@ function updateInventoryUI(inv, deployed) {
       const oldVal = parseInt(elAvail.textContent) || 0;
       elAvail.textContent = inv[k];
       if (inv[k] > oldVal) {
-        // Flash card green when asset is replenished!
         const card = document.getElementById(`inv-card-${k}`);
         if (card) {
           card.classList.add('counter-flash');
@@ -806,14 +664,15 @@ function updateInventoryUI(inv, deployed) {
   }
 }
 
-// Initialize Leaflet Map
+// Initialize Leaflet Map with Progressive Disclosure
 function initMap() {
   const mapElement = document.getElementById('tracking-map');
   if (!mapElement) return;
 
   map = L.map('tracking-map', {
     zoomControl: true,
-    scrollWheelZoom: true
+    scrollWheelZoom: true,
+    closePopupOnClick: true
   }).setView([28.6139, 77.2090], 12);
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -821,20 +680,43 @@ function initMap() {
     attribution: '&copy; OpenStreetMap contributors'
   }).addTo(map);
 
+  // Progressive disclosure zoom listener
+  map.on('zoomend', handleZoomProgressiveDisclosure);
+
   renderDeployments();
   startSimulationLoop();
+}
+
+function handleZoomProgressiveDisclosure() {
+  if (!map) return;
+  const currentZoom = map.getZoom();
+  const mapContainer = document.getElementById('tracking-map');
+
+  if (currentZoom < 12) {
+    if (mapContainer) mapContainer.classList.add('zoom-low-detail');
+    routeLines.forEach(rl => {
+      if (rl.corridor) rl.corridor.setStyle({ opacity: 0.15, weight: 5 });
+      if (rl.center) rl.center.setStyle({ weight: 2 });
+    });
+  } else {
+    if (mapContainer) mapContainer.classList.remove('zoom-low-detail');
+    updateRouteStyles();
+  }
 }
 
 function clearMapLayers() {
   incidentMarkers.forEach(m => map.removeLayer(m));
   unitMarkers.forEach(m => map.removeLayer(m.marker));
-  routeLines.forEach(l => map.removeLayer(l));
+  routeLines.forEach(rl => {
+    if (rl.corridor) map.removeLayer(rl.corridor);
+    if (rl.center) map.removeLayer(rl.center);
+  });
   incidentMarkers = [];
   unitMarkers = [];
   routeLines = [];
 }
 
-// Calculate lateral lane offset perpendicular to route (prevents vehicle markers overlapping)
+// Calculate lateral lane offset perpendicular to route
 function getLaneOffset(depot, target, unitIndex, totalUnits) {
   if (totalUnits <= 1) return { lat: 0, lng: 0 };
   const dx = target[0] - depot[0];
@@ -851,7 +733,7 @@ function getLaneOffset(depot, target, unitIndex, totalUnits) {
   };
 }
 
-// Generate Uber/Swiggy style pill HTML for vehicle markers
+// Generate Compact Vehicle HTML Badge
 function getUnitPillHtml(unit) {
   let badgeClass = 'clean-badge-amb';
   let icon = '🚑';
@@ -877,18 +759,34 @@ function getUnitPillHtml(unit) {
   return `<div class="clean-vehicle-badge ${badgeClass} ${extraClass}" id="pin-${unit.unit_id}">${icon}</div>`;
 }
 
-// Update vehicle marker icon with latest badge HTML
 function updateMarkerPill(item) {
   if (!item || !item.marker || !item.data) return;
   item.marker.setIcon(L.divIcon({
     className: 'custom-pill-marker-wrapper',
     html: getUnitPillHtml(item.data),
-    iconSize: [38, 38],
-    iconAnchor: [19, 19]
+    iconSize: [36, 36],
+    iconAnchor: [18, 18]
   }));
 }
 
-// Render incidents, units, and trajectories with prominent Station and Danger Spot markers
+// Update route visibility & prominence (Progressive Disclosure)
+function updateRouteStyles() {
+  routeLines.forEach(rl => {
+    const isProminent = (activeProblemFilter === 'all' && rl.isFirst) || (activeProblemFilter === rl.allocationId);
+    if (isProminent) {
+      if (rl.corridor) rl.corridor.setStyle({ color: '#93c5fd', weight: 8, opacity: 0.5 });
+      if (rl.center) rl.center.setStyle({ color: '#2563eb', weight: 3.5, opacity: 0.95 });
+    } else if (activeProblemFilter === 'all') {
+      if (rl.corridor) rl.corridor.setStyle({ color: '#cbd5e1', weight: 4, opacity: 0.2 });
+      if (rl.center) rl.center.setStyle({ color: '#94a3b8', weight: 2, opacity: 0.4 });
+    } else {
+      if (rl.corridor) rl.corridor.setStyle({ opacity: 0 });
+      if (rl.center) rl.center.setStyle({ opacity: 0 });
+    }
+  });
+}
+
+// Render incidents, units, and trajectories with clean icons & no permanent text labels
 function renderDeployments() {
   if (!map) return;
   clearMapLayers();
@@ -898,50 +796,48 @@ function renderDeployments() {
   if (unitsContainer) unitsContainer.innerHTML = '';
   let visibleUnitsCount = 0;
 
+  let firstProcessed = false;
+
   deploymentsData.forEach(dep => {
-    if (activeProblemFilter !== 'all' && dep.id !== activeProblemFilter) {
-      return;
-    }
+    const isFilteredOut = (activeProblemFilter !== 'all' && dep.id !== activeProblemFilter);
+    if (isFilteredOut) return;
+
+    const isFirstRoute = !firstProcessed;
+    firstProcessed = true;
 
     const targetCoords = [dep.target_lat, dep.target_lng];
     bounds.push(targetCoords);
 
-    // Compute Help Station (Home Base) Coordinates
     const depotCoords = (dep.units && dep.units.length > 0)
       ? [dep.units[0].origin_lat, dep.units[0].origin_lng]
       : [+(dep.target_lat - 0.035).toFixed(6), +(dep.target_lng - 0.026).toFixed(6)];
     bounds.push(depotCoords);
 
-    // 1. HELP STATION (HOME BASE) PIN
+    // 1. HELP STATION PIN (Icon only, no permanent text on map)
     const stationIcon = L.divIcon({
       className: 'custom-pill-marker-wrapper',
-      html: `<div class="custom-pin pin-station" title="Help Station (Home Base)">🏢</div>`,
-      iconSize: [46, 46],
-      iconAnchor: [23, 23]
+      html: `<div class="custom-pin pin-station" title="Help Station">🏢</div>`,
+      iconSize: [44, 44],
+      iconAnchor: [22, 22]
     });
 
     const stMarker = L.marker(depotCoords, { icon: stationIcon, zIndexOffset: 1000 }).addTo(map);
     stMarker.bindPopup(`
-      <div style="font-family: sans-serif; min-width: 200px;">
+      <div style="font-family: sans-serif; min-width: 190px;">
         <span class="badge bg-dark mb-1">🏢 HOME BASE</span>
         <h6 class="fw-bold mb-1 mt-1 text-primary">Help Station (Base)</h6>
-        <div class="small text-muted mb-1"><i class="bi bi-geo-alt me-1"></i>Central Emergency Station</div>
-        <div class="small text-dark">All rescue teams, ambulances, and food supplies start here and return here.</div>
+        <div class="small text-muted mb-1"><i class="bi bi-geo-alt me-1"></i>Central Emergency Depot</div>
+        <div class="small text-dark">Vehicles deploy from and return here safely.</div>
       </div>
-    `);
-    stMarker.bindTooltip('🏢 Help Station (Base)', {
-      direction: 'top',
-      offset: [0, -24],
-      className: 'station-tooltip'
-    });
+    `, { autoClose: true, closeOnClick: true });
     incidentMarkers.push(stMarker);
 
-    // 2. INCIDENT SITE (DANGER SPOT) PIN
+    // 2. DANGER SPOT PIN (Icon only with pulsing ring, no permanent text on map)
     const problemIcon = L.divIcon({
       className: 'custom-pill-marker-wrapper',
       html: `<div class="custom-pin pin-problem" title="${dep.problem_title}">🚨</div>`,
-      iconSize: [44, 44],
-      iconAnchor: [22, 22]
+      iconSize: [42, 42],
+      iconAnchor: [21, 21]
     });
 
     const incMarker = L.marker(targetCoords, { icon: problemIcon, zIndexOffset: 1000 }).addTo(map);
@@ -950,35 +846,35 @@ function renderDeployments() {
         <span class="badge bg-danger mb-1">${dep.severity.toUpperCase()} DANGER</span>
         <h6 class="fw-bold mb-1 mt-1 text-danger">${dep.problem_title}</h6>
         <div class="small text-muted mb-1"><i class="bi bi-geo-alt me-1"></i>${dep.location}</div>
-        <div class="small text-dark"><strong>Help sent by:</strong> ${dep.assigned_by}</div>
+        <div class="small text-dark"><strong>Assigned:</strong> ${dep.units ? dep.units.length : 0} vehicles helping</div>
       </div>
-    `);
-    incMarker.bindTooltip(`🚨 Danger Spot: ${dep.problem_title}`, {
-      direction: 'top',
-      offset: [0, -24],
-      className: 'incident-tooltip'
-    });
+    `, { autoClose: true, closeOnClick: true });
     incidentMarkers.push(incMarker);
 
-    // 3. 1 Bold Clean Route Corridor Connecting Station & Danger Spot (Uber / Swiggy Style)
+    // 3. Route Corridor & Center Line (Progressive disclosure styling)
     const routeCorridor = L.polyline([depotCoords, targetCoords], {
       color: '#93c5fd',
-      weight: 10,
+      weight: 8,
       opacity: 0.45,
       lineCap: 'round',
       lineJoin: 'round'
     }).addTo(map);
-    routeLines.push(routeCorridor);
 
     const routeCenterLine = L.polyline([depotCoords, targetCoords], {
       color: '#2563eb',
-      weight: 4,
+      weight: 3.5,
       opacity: 0.9,
       lineCap: 'round'
     }).addTo(map);
-    routeLines.push(routeCenterLine);
 
-    // 4. Help Vehicles (Non-overlapping Lateral Parallel Lanes)
+    routeLines.push({
+      allocationId: dep.id,
+      corridor: routeCorridor,
+      center: routeCenterLine,
+      isFirst: isFirstRoute
+    });
+
+    // 4. Vehicles
     const units = dep.units || [];
     const totalUnits = units.length;
 
@@ -997,17 +893,13 @@ function renderDeployments() {
       const unitIcon = L.divIcon({
         className: 'custom-pill-marker-wrapper',
         html: getUnitPillHtml(unit),
-        iconSize: [38, 38],
-        iconAnchor: [19, 19]
+        iconSize: [36, 36],
+        iconAnchor: [18, 18]
       });
 
       const uMarker = L.marker(curCoords, { icon: unitIcon, zIndexOffset: 500 }).addTo(map);
-      uMarker.bindTooltip(`${unit.name} (${unit.status})`, {
-        direction: 'top',
-        offset: [0, -20]
-      });
       uMarker.bindPopup(`
-        <div style="font-family: sans-serif; min-width: 210px;">
+        <div style="font-family: sans-serif; min-width: 200px;">
           <div class="d-flex align-items-center justify-content-between mb-1">
             <span class="badge bg-dark">${unit.unit_id}</span>
             <span class="badge bg-primary" id="popup-status-${unit.unit_id}">${unit.status}</span>
@@ -1015,12 +907,11 @@ function renderDeployments() {
           <h6 class="fw-bold mb-1 text-primary">${unit.name}</h6>
           <div class="small text-muted mb-1"><i class="bi bi-person-fill me-1"></i>${unit.lead_name}</div>
           <hr class="my-1" />
-          <div class="small"><strong>Going to:</strong> ${unit.problem_title}</div>
+          <div class="small"><strong>Destination:</strong> ${unit.problem_title}</div>
           <div class="small"><strong>Speed:</strong> ${unit.speed}</div>
-          <div class="small" id="popup-dist-${unit.unit_id}"><strong>Distance:</strong> ${unit.distance_km} km away</div>
-          <div class="small text-danger fw-bold" id="popup-eta-${unit.unit_id}"><strong>⏱️ Reaching in:</strong> ~${unit.eta_mins} mins</div>
+          <div class="small text-danger fw-bold mt-1" id="popup-eta-${unit.unit_id}"><strong>⏱️ Arrival:</strong> ~${unit.eta_mins} mins</div>
         </div>
-      `);
+      `, { autoClose: true, closeOnClick: true });
 
       unitMarkers.push({
         id: unit.unit_id,
@@ -1035,7 +926,7 @@ function renderDeployments() {
         onSceneDuration: 0,
       });
 
-      // Append unit card to list below map
+      // Unit card inside Left Side Panel
       if (unitsContainer) {
         let badgeClass = 'bg-primary';
         let cardClass = '';
@@ -1060,44 +951,40 @@ function renderDeployments() {
           <div class="card mb-2 border shadow-sm p-2 unit-card ${cardClass}" id="card-unit-${unit.unit_id}">
             <div class="d-flex justify-content-between align-items-start mb-1">
               <span class="fw-bold small text-dark d-flex align-items-center gap-1">
-                <i class="bi ${unit.icon}" style="color:${unit.color}; font-size:1.05rem;"></i>
-                <span>${unit.name}</span>
+                <i class="bi ${unit.icon}" style="color:${unit.color}; font-size:.95rem;"></i>
+                <span style="font-size:.78rem;">${unit.name}</span>
               </span>
-              <span class="badge ${badgeClass}" id="badge-status-${unit.unit_id}" style="font-size:.68rem;">${displayStatus}</span>
+              <span class="badge ${badgeClass}" id="badge-status-${unit.unit_id}" style="font-size:.65rem;">${displayStatus}</span>
             </div>
-            <div class="text-muted mb-1" style="font-size:.72rem;">
+            <div class="text-muted mb-1" style="font-size:.7rem;">
               <i class="bi bi-geo-alt me-1 text-danger"></i>${unit.problem_title}
             </div>
-            <div class="d-flex justify-content-between align-items-center text-muted" style="font-size:.7rem;">
-              <span><i class="bi bi-person-badge me-1"></i>${unit.lead_name.split(':')[0]}</span>
-              <span class="text-danger fw-semibold" id="eta-text-${unit.unit_id}"><i class="bi bi-clock me-1"></i>~${unit.eta_mins}m away (${unit.distance_km}km)</span>
-            </div>
 
-            <!-- Progress Bar with clear Station to Danger endpoints -->
-            <div class="d-flex justify-content-between text-muted mt-1" style="font-size: 0.65rem;">
-              <span>🏢 Station (Base)</span>
+            <!-- Mini Progress Bar -->
+            <div class="d-flex justify-content-between text-muted" style="font-size: 0.62rem;">
+              <span>🏢 Station</span>
               <span class="fw-bold text-primary" id="prog-pct-${unit.unit_id}">${Math.round(unit.progress)}%</span>
-              <span>🚨 Danger Spot</span>
+              <span>🚨 Danger</span>
             </div>
-            <div class="progress mb-2" style="height: 6px;">
+            <div class="progress mb-2" style="height: 5px;">
               <div class="progress-bar progress-bar-striped progress-bar-animated ${unit.phase==='on_scene'?'bg-success':(unit.phase==='returning'?'bg-warning':'bg-primary')}"
                    style="width: ${unit.progress}%" id="prog-${unit.unit_id}"></div>
             </div>
 
             <div class="d-flex justify-content-between align-items-center gap-1">
-              <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size:.72rem;"
+              <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size:.68rem;"
                       onclick="focusUnit('${unit.unit_id}')">
-                <i class="bi bi-geo-alt me-1"></i>Show on Map
+                <i class="bi bi-geo-alt me-1"></i>Focus
               </button>
               ${IS_ADMIN ? `
               <div class="d-flex gap-1 align-items-center">
-                <button type="button" class="btn btn-xs btn-outline-success py-0 px-2 fw-semibold" style="font-size:.68rem;"
-                        title="Make this vehicle arrive immediately"
+                <button type="button" class="btn btn-xs btn-outline-success py-0 px-2 fw-semibold" style="font-size:.65rem;"
+                        title="Arrive immediately"
                         onclick="quickReachUnit('${unit.unit_id}')">
                   📍 Arrive
                 </button>
-                <button type="button" class="btn btn-xs btn-outline-warning text-dark py-0 px-2 fw-semibold" style="font-size:.68rem;"
-                        title="Bring this vehicle back to station immediately"
+                <button type="button" class="btn btn-xs btn-outline-warning text-dark py-0 px-2 fw-semibold" style="font-size:.65rem;"
+                        title="Return to station immediately"
                         onclick="quickReturnUnit('${unit.unit_id}')">
                   🏠 Return
                 </button>
@@ -1112,19 +999,21 @@ function renderDeployments() {
   });
 
   const countBadge = document.getElementById('units-count-badge');
-  if (countBadge) countBadge.textContent = `${visibleUnitsCount} Vehicles Active`;
+  if (countBadge) countBadge.textContent = `${visibleUnitsCount} Active`;
 
   if (visibleUnitsCount === 0 && unitsContainer) {
     unitsContainer.innerHTML = `
-      <div class="text-center text-muted py-4">
-        <i class="bi bi-truck fs-2 d-block opacity-25 mb-1"></i>
-        <span class="small">No help vehicles currently sent for this incident.</span>
+      <div class="text-center text-muted py-3">
+        <i class="bi bi-truck fs-3 d-block opacity-25 mb-1"></i>
+        <span class="small">No active vehicles deployed for this view.</span>
       </div>
     `;
   }
 
+  updateRouteStyles();
+
   if (bounds.length > 0) {
-    map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
+    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
   }
 
   updateJourneyTracker();
@@ -1135,11 +1024,12 @@ function focusUnit(unitId) {
   const item = unitMarkers.find(u => u.id === unitId);
   if (!item || !map) return;
 
+  map.closePopup();
   const latLng = item.marker.getLatLng();
-  map.flyTo(latLng, 14, { duration: 1.1 });
+  map.flyTo(latLng, 14, { duration: 0.8 });
   setTimeout(() => {
     item.marker.openPopup();
-  }, 1200);
+  }, 900);
 
   document.querySelectorAll('.unit-card').forEach(c => c.style.outline = 'none');
   const card = document.getElementById(`card-unit-${unitId}`);
@@ -1149,23 +1039,40 @@ function focusUnit(unitId) {
   }
 }
 
-// Incident Filter
-function filterByProblem(problemId, btn) {
+// Danger Spot Filter
+function filterByProblem(problemId) {
   activeProblemFilter = problemId;
 
-  document.querySelectorAll('.filter-btn').forEach(b => {
-    b.classList.remove('btn-danger', 'active');
-    b.classList.add('btn-outline-secondary');
-  });
-  if (btn) {
-    btn.classList.remove('btn-outline-secondary');
-    btn.classList.add('btn-danger', 'active');
+  const sel = document.getElementById('incident-filter-select');
+  if (sel && sel.value !== problemId) sel.value = problemId;
+
+  const titleEl = document.getElementById('summary-spot-title');
+  const sevEl = document.getElementById('summary-spot-sev');
+  const locEl = document.getElementById('summary-spot-loc');
+
+  if (problemId === 'all') {
+    if (titleEl) titleEl.textContent = 'All Danger Spots Overview';
+    if (sevEl) {
+      sevEl.className = 'badge bg-secondary';
+      sevEl.textContent = 'Multi-Site';
+    }
+    if (locEl) locEl.textContent = 'Viewing all active emergency response routes across the district.';
+  } else {
+    const dep = deploymentsData.find(d => d.id === problemId);
+    if (dep) {
+      if (titleEl) titleEl.textContent = dep.problem_title;
+      if (sevEl) {
+        sevEl.className = dep.severity === 'High' ? 'badge bg-danger' : 'badge bg-warning text-dark';
+        sevEl.textContent = `${dep.severity.toUpperCase()} DANGER`;
+      }
+      if (locEl) locEl.textContent = `Location: ${dep.location} • ${dep.units ? dep.units.length : 0} vehicles assigned`;
+    }
   }
 
   renderDeployments();
 }
 
-// Async API Sync to persist unit phase & auto-update inventory on backend
+// Sync backend
 async function syncUnitStatus(item, phase) {
   try {
     const res = await fetch('/resources/api/unit-status', {
@@ -1188,7 +1095,7 @@ async function syncUnitStatus(item, phase) {
   }
 }
 
-// Trigger Automated On Scene Arrival
+// State transition handlers
 function triggerOnScene(item) {
   const unit = item.data;
   unit.phase = 'on_scene';
@@ -1204,48 +1111,36 @@ function triggerOnScene(item) {
   item.marker.setLatLng([unit.current_lat, unit.current_lng]);
   updateMarkerPill(item);
 
-  // Update DOM
   const badge = document.getElementById(`badge-status-${unit.unit_id}`);
   if (badge) {
     badge.className = 'badge bg-success';
     badge.textContent = '📍 Arrived & Helping';
   }
   const card = document.getElementById(`card-unit-${unit.unit_id}`);
-  if (card) {
-    card.className = 'card mb-2 border shadow-sm p-2 unit-card unit-onscene';
-  }
+  if (card) card.className = 'card mb-2 border shadow-sm p-2 unit-card unit-onscene';
   const bar = document.getElementById(`prog-${unit.unit_id}`);
   if (bar) {
     bar.className = 'progress-bar bg-success';
     bar.style.width = '100%';
   }
-  const etaText = document.getElementById(`eta-text-${unit.unit_id}`);
-  if (etaText) {
-    etaText.className = 'text-success fw-bold';
-    etaText.innerHTML = '<i class="bi bi-check-circle me-1"></i>Arrived &amp; Helping People Now';
-  }
-  const subStatus = document.getElementById(`sub-status-${unit.unit_id}`);
-  if (subStatus) subStatus.textContent = 'Helping People';
 
-  // Quiet log entry & update backend (no interrupting screen popups!)
   logIncidentEvent(
     'on_scene',
     `${unit.name} Arrived`,
-    `Arrived at ${item.problemLocation || 'incident spot'}. Helping people now.`
+    `Arrived at ${item.problemLocation || 'danger spot'}. Assisting victims now.`
   );
 
   if (unit.type === 'food_packets') {
     logIncidentEvent(
       'on_scene',
-      `Food Meals Given Out`,
-      `${unit.quantity} food & water meals given out to families.`
+      `Food Meals Distributed`,
+      `${unit.quantity} emergency food and clean water meals distributed.`
     );
   }
 
   syncUnitStatus(item, 'on_scene');
 }
 
-// Trigger Automated Demobilization & Return
 function triggerDemobilizing(item) {
   const unit = item.data;
   unit.phase = 'returning';
@@ -1259,31 +1154,19 @@ function triggerDemobilizing(item) {
     badge.textContent = '🏠 Coming Back';
   }
   const card = document.getElementById(`card-unit-${unit.unit_id}`);
-  if (card) {
-    card.className = 'card mb-2 border shadow-sm p-2 unit-card unit-returning';
-  }
+  if (card) card.className = 'card mb-2 border shadow-sm p-2 unit-card unit-returning';
   const bar = document.getElementById(`prog-${unit.unit_id}`);
-  if (bar) {
-    bar.className = 'progress-bar bg-warning';
-  }
-  const etaText = document.getElementById(`eta-text-${unit.unit_id}`);
-  if (etaText) {
-    etaText.className = 'text-warning text-dark fw-bold';
-    etaText.innerHTML = '<i class="bi bi-arrow-left me-1"></i>Coming Back to Station';
-  }
-  const subStatus = document.getElementById(`sub-status-${unit.unit_id}`);
-  if (subStatus) subStatus.textContent = 'Coming Back';
+  if (bar) bar.className = 'progress-bar bg-warning';
 
   logIncidentEvent(
     'returning',
-    `${unit.name} Coming Back`,
-    `Help finished at ${item.problemLocation || 'incident spot'}. Returning back to station.`
+    `${unit.name} Returning`,
+    `Operations finished at ${item.problemLocation || 'danger spot'}. Heading back to station.`
   );
 
   syncUnitStatus(item, 'returning');
 }
 
-// Trigger Safe Return & Inventory Replenishment at Staging Base
 function triggerStationedAtBase(item) {
   const unit = item.data;
   unit.phase = 'returned';
@@ -1305,33 +1188,23 @@ function triggerStationedAtBase(item) {
     badge.textContent = '✅ Ready at Station';
   }
   const card = document.getElementById(`card-unit-${unit.unit_id}`);
-  if (card) {
-    card.className = 'card mb-2 border shadow-sm p-2 unit-card unit-stationed';
-  }
+  if (card) card.className = 'card mb-2 border shadow-sm p-2 unit-card unit-stationed';
   const bar = document.getElementById(`prog-${unit.unit_id}`);
   if (bar) {
     bar.className = 'progress-bar bg-secondary';
     bar.style.width = '0%';
   }
-  const etaText = document.getElementById(`eta-text-${unit.unit_id}`);
-  if (etaText) {
-    etaText.className = 'text-muted';
-    etaText.innerHTML = '<i class="bi bi-house-door me-1"></i>Ready at Station';
-  }
-  const subStatus = document.getElementById(`sub-status-${unit.unit_id}`);
-  if (subStatus) subStatus.textContent = 'Ready to Help Again';
 
   logIncidentEvent(
     'returned',
-    `${unit.name} Back at Station`,
-    `Safely returned to station. Ready to help again (+1 available).`
+    `${unit.name} at Station`,
+    `Safely arrived back at base. Ready for next dispatch.`
   );
 
-  // Sync with backend to restore inventory in database & UI
   syncUnitStatus(item, 'returned');
 }
 
-// Dynamic Live Mission Ribbon Updater (Minimalist & Instant)
+// Live Mission Ribbon Updater
 function updateJourneyTracker() {
   const headline = document.getElementById('mission-headline');
   const etaBadge = document.getElementById('mission-eta-badge');
@@ -1351,35 +1224,34 @@ function updateJourneyTracker() {
     else if (p === 'en_route') enrouteCount++;
   });
 
-  // Reset pill styles
   [pStation, pEnroute, pOnscene, pReturning].forEach(p => {
     if (p) p.className = 'badge bg-white text-secondary border px-2 py-1';
   });
 
   if (onsceneCount > 0) {
     if (pOnscene) pOnscene.className = 'badge bg-success text-white px-2 py-1 shadow-sm';
-    if (headline) headline.textContent = '📍 Vehicles Arrived at Danger Spot — Helping People Now!';
+    if (headline) headline.textContent = '📍 Vehicles Arrived — Helping People Now!';
     if (etaBadge) {
       etaBadge.className = 'badge bg-success text-white fw-bold';
-      etaBadge.textContent = '✅ Helping People (~3s)';
+      etaBadge.textContent = '✅ Helping (~3s)';
     }
   } else if (returningCount > 0) {
     if (pReturning) pReturning.className = 'badge bg-warning text-dark px-2 py-1 shadow-sm';
-    if (headline) headline.textContent = '🏠 Help Complete — Vehicles Returning Home to Station!';
+    if (headline) headline.textContent = '🏠 Help Finished — Returning to Station!';
     if (etaBadge) {
       etaBadge.className = 'badge bg-warning text-dark fw-bold';
-      etaBadge.textContent = '⏱️ ~5s to Station';
+      etaBadge.textContent = '⏱️ ~5s to Base';
     }
   } else if (enrouteCount > 0) {
     if (pEnroute) pEnroute.className = 'badge bg-primary text-white px-2 py-1 shadow-sm';
-    if (headline) headline.textContent = '🚗 Emergency Vehicles on the Way to Danger Spot!';
+    if (headline) headline.textContent = '🚗 Emergency Vehicles on the Way!';
     if (etaBadge) {
       etaBadge.className = 'badge bg-primary text-white fw-bold';
       etaBadge.textContent = '⏱️ ~5s to Arrive';
     }
   } else {
     if (pStation) pStation.className = 'badge bg-dark text-white px-2 py-1 shadow-sm';
-    if (headline) headline.textContent = '🏢 All Vehicles Ready at Station for Next Emergency';
+    if (headline) headline.textContent = '🏢 All Vehicles Ready at Station';
     if (etaBadge) {
       etaBadge.className = 'badge bg-secondary text-white fw-bold';
       etaBadge.textContent = 'Ready';
@@ -1387,7 +1259,7 @@ function updateJourneyTracker() {
   }
 }
 
-// 1-Click Action 1: Launch all from Station (Completes in 5 seconds)
+// 1-Click Action 1: Launch all from Station (5s transit)
 function launchAllFromStation() {
   unitMarkers.forEach(item => {
     item.data.phase = 'en_route';
@@ -1417,17 +1289,16 @@ function launchAllFromStation() {
     if (pct) pct.textContent = '0%';
   });
   updateJourneyTracker();
-  showToast('on_scene', '🚀 Vehicles Launched', 'Vehicles rushing to danger spot (5s arrival).');
+  showToast('on_scene', '🚀 Help Dispatched', 'Vehicles rushing to danger spots (5s transit).');
 }
 
-// Quick Reach / Return for Individual Units (Admin Only)
 function quickReachUnit(unitId) {
   const item = unitMarkers.find(u => u.id === unitId);
   if (!item) return;
   item.data.progress = 100;
   triggerOnScene(item);
   updateJourneyTracker();
-  showToast('on_scene', 'Vehicle Arrived', `${item.data.name} reached the scene and is helping.`);
+  showToast('on_scene', 'Vehicle Arrived', `${item.data.name} reached danger spot.`);
 }
 
 function quickReturnUnit(unitId) {
@@ -1436,10 +1307,10 @@ function quickReturnUnit(unitId) {
   item.data.progress = 0;
   triggerStationedAtBase(item);
   updateJourneyTracker();
-  showToast('returned', 'Vehicle Returned', `${item.data.name} is safely back at station.`);
+  showToast('returned', 'Vehicle Returned', `${item.data.name} is safely back at base.`);
 }
 
-// 1-Click Action 2: Arrive & Help Immediately
+// 1-Click Action 2: Arrive & Help
 function fastForwardAllToScene() {
   let count = 0;
   unitMarkers.forEach(item => {
@@ -1449,10 +1320,10 @@ function fastForwardAllToScene() {
     count++;
   });
   updateJourneyTracker();
-  showToast('on_scene', '📍 Help Arrived', `${count || 'All'} vehicles reached danger spot.`);
+  showToast('on_scene', '📍 Help Arrived', `${count || 'All'} vehicles reached the scene.`);
 }
 
-// 1-Click Action 3: Return Home in 5 Seconds
+// 1-Click Action 3: Return Home
 function fastForwardAllToBase() {
   let count = 0;
   unitMarkers.forEach(item => {
@@ -1471,18 +1342,17 @@ function fastForwardAllToBase() {
     count++;
   });
   updateJourneyTracker();
-  showToast('returned', '🏠 Returning Home', `${count || 'All'} vehicles heading back to station (5s).`);
+  showToast('returned', '🏠 Returning Home', `${count || 'All'} vehicles returning to station.`);
 }
 
-// Fast & Smooth Rescue Simulation (5-Second Fluid Cycle for Demos)
+// Fluid 5-Second Simulation Engine
 function startSimulationLoop() {
   setInterval(() => {
     unitMarkers.forEach(item => {
       const unit = item.data;
-      // 5-second journey: 50ms interval with 1.0% step = exactly 5.0 seconds for 0% to 100%!
       const step = 1.0;
 
-      // Phase 1: En Route to Incident Site (5 seconds)
+      // Phase 1: En Route (5s)
       if (unit.phase === 'en_route') {
         if (unit.progress < 100) {
           unit.progress = Math.min(100, +(unit.progress + step).toFixed(1));
@@ -1503,25 +1373,17 @@ function startSimulationLoop() {
             if (bar) bar.style.width = `${unit.progress}%`;
             const pctText = document.getElementById(`prog-pct-${unit.unit_id}`);
             if (pctText) pctText.textContent = `${Math.round(unit.progress)}%`;
-
-            const etaText = document.getElementById(`eta-text-${unit.unit_id}`);
-            if (etaText) {
-              const secLeft = Math.ceil((100 - unit.progress) * 0.05);
-              etaText.innerHTML = `<i class="bi bi-clock me-1"></i>Reaching in ~${secLeft}s (${unit.distance_km}km)`;
-            }
           }
         }
       }
-      // Phase 2: Active On Scene (Helping injured & giving food for ~3 seconds)
+      // Phase 2: On Scene (Helping for ~3s)
       else if (unit.phase === 'on_scene') {
         item.onSceneDuration = (item.onSceneDuration || 0) + 0.05;
-
-        // After 3 seconds helping, demobilize and return back to base
         if (item.onSceneDuration >= 3.0) {
           triggerDemobilizing(item);
         }
       }
-      // Phase 3: Demobilizing — Returning Safely to Base (5 seconds)
+      // Phase 3: Returning (5s)
       else if (unit.phase === 'returning') {
         if (unit.progress > 0) {
           unit.progress = Math.max(0, +(unit.progress - step).toFixed(1));
@@ -1542,12 +1404,6 @@ function startSimulationLoop() {
             if (bar) bar.style.width = `${unit.progress}%`;
             const pctText = document.getElementById(`prog-pct-${unit.unit_id}`);
             if (pctText) pctText.textContent = `${Math.round(unit.progress)}%`;
-
-            const etaText = document.getElementById(`eta-text-${unit.unit_id}`);
-            if (etaText) {
-              const secLeft = Math.ceil(unit.progress * 0.05);
-              etaText.innerHTML = `<i class="bi bi-arrow-left me-1"></i>Returning to station in ~${secLeft}s`;
-            }
           }
         }
       }
@@ -1563,53 +1419,20 @@ function startSimulationLoop() {
   }, 50);
 }
 
-// Admin Assignment UI Helpers
-function selectAlertForAssign(alertId, title, severity, location, recAmb, recRsc, recFood, recHeli) {
-  document.querySelectorAll('.alert-card-clickable').forEach(c => {
-    c.style.border = '1px solid #dee2e6';
-    c.style.background = '#fff';
-  });
-  const card = document.getElementById(`alert-card-${alertId}`);
-  if (card) {
-    card.style.border = '2px solid #dc3545';
-    card.style.background = '#fff5f5';
-  }
-
-  const titleEl = document.getElementById('target-alert-title');
-  const metaEl = document.getElementById('target-alert-meta');
-  if (titleEl) titleEl.textContent = `Selected: ${title} (${severity.toUpperCase()} DANGER)`;
-  if (metaEl) metaEl.textContent = `Location: ${location} | Recommended vehicles and food filled in below`;
-
-  const sel = document.getElementById('report-select');
-  if (sel) {
-    sel.value = alertId;
-  }
-
-  setFieldValue('amb-input', recAmb || 1);
-  setFieldValue('rsc-input', recRsc || 1);
-  setFieldValue('food-input', recFood || 100);
-  setFieldValue('heli-input', recHeli || (severity === 'High' ? 1 : 0));
-
-  const banner = document.getElementById('target-alert-banner');
-  if (banner) {
-    banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
-}
-
+// Admin Dropdown Sync
 function onSelectDropdownChange(sel) {
   const opt = sel.options[sel.selectedIndex];
   if (!opt || !opt.value) return;
 
-  const alertId = opt.value;
-  const title = opt.dataset.title || opt.textContent;
-  const severity = opt.dataset.severity || 'High';
-  const location = opt.dataset.location || '';
   const recAmb = parseInt(opt.dataset.amb || 1);
   const recRsc = parseInt(opt.dataset.rsc || 1);
   const recFood = parseInt(opt.dataset.food || 100);
   const recHeli = parseInt(opt.dataset.heli || 0);
 
-  selectAlertForAssign(alertId, title, severity, location, recAmb, recRsc, recFood, recHeli);
+  setFieldValue('amb-input', recAmb);
+  setFieldValue('rsc-input', recRsc);
+  setFieldValue('food-input', recFood);
+  setFieldValue('heli-input', recHeli);
 }
 
 function setFieldValue(fieldId, val) {
@@ -1626,20 +1449,6 @@ function stepVal(fieldId, step, maxLimit) {
   cur += step;
   const max = maxLimit !== undefined ? maxLimit : parseInt(input.max || 999999);
   input.value = Math.min(Math.max(0, cur), max);
-}
-
-function applyPreset(level) {
-  if (level === 'high') {
-    setFieldValue('amb-input', 2);
-    setFieldValue('rsc-input', 2);
-    setFieldValue('food-input', 200);
-    setFieldValue('heli-input', 1);
-  } else {
-    setFieldValue('amb-input', 1);
-    setFieldValue('rsc-input', 1);
-    setFieldValue('food-input', 100);
-    setFieldValue('heli-input', 0);
-  }
 }
 
 document.addEventListener('DOMContentLoaded', initMap);
