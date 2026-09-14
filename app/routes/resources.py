@@ -274,6 +274,49 @@ def index():
                 'is_alert': True,
             })
 
+        # Load active SOS Alerts with tailored needed resources
+        active_sos = list(
+            db.sos_alerts.find({'status': 'Active'})
+            .sort('created_at', -1).limit(20)
+        )
+        for s in active_sos:
+            loc = s.get('location', 'Unknown')
+            if loc.lower() in seen_locations:
+                continue
+            seen_locations.add(loc.lower())
+            s_id = str(s['_id'])
+            sos_type = s.get('sos_type', 'General Emergency')
+            lat, lng = resolve_coordinates(loc, s.get('lat'), s.get('lng'))
+            people = int(s.get('people') or 1) if str(s.get('people')).isdigit() else 1
+
+            # Tailored specific resources only for what is actually needed
+            if 'medical' in sos_type.lower():
+                rec = {'ambulances': 1, 'rescue_teams': 0, 'food_packets': 0, 'helicopters': 0}
+            elif 'trapped' in sos_type.lower() or 'stuck' in sos_type.lower():
+                rec = {'ambulances': 1, 'rescue_teams': 1, 'food_packets': 25, 'helicopters': 0}
+            elif 'fire' in sos_type.lower():
+                rec = {'ambulances': 1, 'rescue_teams': 1, 'food_packets': 0, 'helicopters': 0}
+            elif 'flood' in sos_type.lower():
+                rec = {'ambulances': 1, 'rescue_teams': 1, 'food_packets': 50 * max(1, people), 'helicopters': 1 if people > 3 else 0}
+            elif 'earthquake' in sos_type.lower():
+                rec = {'ambulances': 1, 'rescue_teams': 2, 'food_packets': 50 * max(1, people), 'helicopters': 0}
+            else:
+                rec = {'ambulances': 1, 'rescue_teams': 1, 'food_packets': 50, 'helicopters': 0}
+
+            pending_alerts.append({
+                'id': s_id,
+                'type': f"🆘 {sos_type}",
+                'location': loc,
+                'severity': 'High',
+                'description': s.get('message') or f"SOS from {s.get('name')}: {sos_type}",
+                'timestamp': s.get('created_at') or datetime.utcnow().isoformat(),
+                'status': 'Active',
+                'lat': lat,
+                'lng': lng,
+                'recommended': rec,
+                'is_sos': True,
+            })
+
         # 2. Load Allocations and build Tracked Deployments (Filter out resolved ones)
         raw_allocations = list(db.allocations.find({'status': {'$nin': ['Mission Completed', 'Resolved', 'Closed']}}).sort('_id', -1).limit(20))
 
@@ -626,6 +669,31 @@ def update_unit_status():
         {'$set': {'units': units, 'status': alloc_status}}
     )
 
+    # If all units returned or mission completed, automatically mark the SOS alert as Resolved as well
+    if alloc_status == 'Mission Completed':
+        rep_id = alloc.get('report_id')
+        loc = alloc.get('location')
+        now_iso = datetime.utcnow().isoformat()
+        if rep_id:
+            try:
+                db.sos_alerts.update_one(
+                    {'_id': ObjectId(rep_id)},
+                    {'$set': {'status': 'Resolved', 'resolved_at': now_iso, 'resolved_by': 'Auto Rescue Dispatch'}}
+                )
+            except Exception:
+                try:
+                    db.sos_alerts.update_one(
+                        {'_id': rep_id},
+                        {'$set': {'status': 'Resolved', 'resolved_at': now_iso, 'resolved_by': 'Auto Rescue Dispatch'}}
+                    )
+                except Exception:
+                    pass
+        if loc:
+            db.sos_alerts.update_many(
+                {'location': loc},
+                {'$set': {'status': 'Resolved', 'resolved_at': now_iso, 'resolved_by': 'Auto Rescue Dispatch'}}
+            )
+
     inventory, deployed, on_scene = get_inventory_and_stats(db)
 
     return jsonify({
@@ -642,7 +710,7 @@ def update_unit_status():
 @resources_bp.route('/resources/api/resolve-alert', methods=['POST'])
 @login_required
 def resolve_alert_api():
-    """Marks an allocation and its underlying disaster report/alert as Resolved/Mission Completed."""
+    """Marks an allocation and its underlying disaster report/alert/SOS as Resolved/Mission Completed."""
     data = request.get_json(silent=True) or {}
     allocation_id = data.get('allocation_id')
     report_id = data.get('report_id')
@@ -682,6 +750,7 @@ def resolve_alert_api():
                 )
             except Exception:
                 pass
+
         try:
             db.alerts.update_one(
                 {'_id': ObjectId(report_id)},
@@ -690,6 +759,20 @@ def resolve_alert_api():
         except Exception:
             try:
                 db.alerts.update_one(
+                    {'_id': report_id},
+                    {'$set': {'status': 'Resolved', 'resolved_at': now_iso, 'resolved_by': username}}
+                )
+            except Exception:
+                pass
+
+        try:
+            db.sos_alerts.update_one(
+                {'_id': ObjectId(report_id)},
+                {'$set': {'status': 'Resolved', 'resolved_at': now_iso, 'resolved_by': username}}
+            )
+        except Exception:
+            try:
+                db.sos_alerts.update_one(
                     {'_id': report_id},
                     {'$set': {'status': 'Resolved', 'resolved_at': now_iso, 'resolved_by': username}}
                 )
@@ -705,11 +788,16 @@ def resolve_alert_api():
             {'location': loc},
             {'$set': {'status': 'Resolved', 'resolved_at': now_iso, 'resolved_by': username}}
         )
+        db.sos_alerts.update_many(
+            {'location': loc},
+            {'$set': {'status': 'Resolved', 'resolved_at': now_iso, 'resolved_by': username}}
+        )
 
-    # Count remaining active pending reports and alerts
+    # Count remaining active pending reports, alerts, and SOS
     remaining_reports = db.disaster_reports.count_documents({'status': {'$in': ['Active', 'In Progress', 'Pending']}})
     remaining_alerts = db.alerts.count_documents({'status': {'$in': ['Active', 'Pending', 'Responding']}})
-    waiting_count = remaining_reports + remaining_alerts
+    remaining_sos = db.sos_alerts.count_documents({'status': 'Active'})
+    waiting_count = remaining_reports + remaining_alerts + remaining_sos
 
     inventory, deployed, on_scene = get_inventory_and_stats(db)
 
@@ -730,7 +818,8 @@ def live_status():
     inventory, deployed, on_scene = get_inventory_and_stats(db)
     remaining_reports = db.disaster_reports.count_documents({'status': {'$in': ['Active', 'In Progress', 'Pending']}})
     remaining_alerts = db.alerts.count_documents({'status': {'$in': ['Active', 'Pending', 'Responding']}})
-    waiting_count = remaining_reports + remaining_alerts
+    remaining_sos = db.sos_alerts.count_documents({'status': 'Active'})
+    waiting_count = remaining_reports + remaining_alerts + remaining_sos
     active_allocs_count = db.allocations.count_documents({'status': {'$nin': ['Mission Completed', 'Resolved', 'Closed']}})
 
     return jsonify({

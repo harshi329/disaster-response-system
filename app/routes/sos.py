@@ -81,6 +81,49 @@ def submit():
             db = get_mongo_db()
             result = db.sos_alerts.insert_one(sos_doc.copy())
             sos_id = str(result.inserted_id)
+
+            # Auto-allocate tailored necessary resources for this SOS alert
+            try:
+                from .resources import build_tracked_units, resolve_coordinates
+                people_num = int(people) if str(people).isdigit() else 1
+                if 'medical' in sos_type.lower():
+                    needed = {'ambulances': 1, 'rescue_teams': 0, 'food_packets': 0, 'helicopters': 0}
+                elif 'trapped' in sos_type.lower() or 'stuck' in sos_type.lower():
+                    needed = {'ambulances': 1, 'rescue_teams': 1, 'food_packets': 25, 'helicopters': 0}
+                elif 'fire' in sos_type.lower():
+                    needed = {'ambulances': 1, 'rescue_teams': 1, 'food_packets': 0, 'helicopters': 0}
+                elif 'flood' in sos_type.lower():
+                    needed = {'ambulances': 1, 'rescue_teams': 1, 'food_packets': 50 * max(1, people_num), 'helicopters': 1 if people_num > 3 else 0}
+                elif 'earthquake' in sos_type.lower():
+                    needed = {'ambulances': 1, 'rescue_teams': 2, 'food_packets': 50 * max(1, people_num), 'helicopters': 0}
+                else:
+                    needed = {'ambulances': 1, 'rescue_teams': 1, 'food_packets': 50, 'helicopters': 0}
+
+                t_lat, t_lng = resolve_coordinates(location, sos_doc.get('lat'), sos_doc.get('lng'))
+                sos_units = build_tracked_units(
+                    allocated=needed,
+                    target_lat=t_lat,
+                    target_lng=t_lng,
+                    problem_title=f"🆘 {sos_type} at {location}",
+                    assigned_by='Auto AI Dispatch'
+                )
+                alloc_doc = {
+                    'report_id': sos_id,
+                    'problem_title': f"🆘 {sos_type} at {location}",
+                    'location': location,
+                    'severity': 'High',
+                    'target_lat': t_lat,
+                    'target_lng': t_lng,
+                    'allocated': needed,
+                    'insufficient': [],
+                    'units': sos_units,
+                    'assigned_by': 'Auto AI Dispatch',
+                    'notes': f"Auto-dispatched for SOS from {name} ({people} people): {message[:100]}",
+                    'status': 'En Route'
+                }
+                db.allocations.insert_one(alloc_doc)
+            except Exception:
+                pass
         except Exception:
             pass
 
@@ -158,15 +201,25 @@ def all_sos():
 def resolve(sos_id):
     try:
         db = get_mongo_db()
+        now_iso = datetime.utcnow().isoformat()
         db.sos_alerts.update_one(
             {'_id': ObjectId(sos_id)},
             {'$set': {
                 'status':      'Resolved',
-                'resolved_at': datetime.utcnow().isoformat(),
+                'resolved_at': now_iso,
                 'resolved_by': current_user.username,
             }}
         )
-        flash('SOS marked as resolved.', 'success')
+        # Also mark matching resource allocation as Mission Completed
+        db.allocations.update_many(
+            {'report_id': sos_id},
+            {'$set': {
+                'status':      'Mission Completed',
+                'resolved_at': now_iso,
+                'resolved_by': current_user.username,
+            }}
+        )
+        flash('SOS marked as resolved and resources cleared.', 'success')
     except Exception:
         flash('Could not update SOS status.', 'danger')
     return redirect(url_for('sos.all_sos'))
