@@ -1,43 +1,74 @@
 {% extends 'base.html' %}
-{% block title %}Admin — Resource Inventory{% endblock %}
+{% block title %}Admin — Station Supplies &amp; Vehicles{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
   <div>
-    <h4 class="fw-bold mb-0"><i class="bi bi-boxes text-warning me-2"></i>Resource Inventory</h4>
-    <small class="text-muted">Set current inventory levels</small>
+    <h4 class="fw-bold mb-0">
+      <i class="bi bi-boxes text-warning me-2"></i>🏢 Station Supplies &amp; Vehicles (Admin)
+    </h4>
+    <small class="text-muted">Set how many ambulances, rescue teams, food packs, and helicopters are ready at the station.</small>
   </div>
-  <a href="{{ url_for('admin.users') }}" class="btn btn-outline-danger btn-sm">
-    <i class="bi bi-people me-1"></i>Manage Users
-  </a>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('resources.index') }}" class="btn btn-outline-primary btn-sm">
+      <i class="bi bi-geo-alt me-1"></i>Live Help Tracker
+    </a>
+    <a href="{{ url_for('admin.users') }}" class="btn btn-outline-danger btn-sm">
+      <i class="bi bi-people me-1"></i>Manage Users
+    </a>
+  </div>
 </div>
 
 <div class="row justify-content-center">
-  <div class="col-md-6">
-    <div class="card shadow-sm">
+  <div class="col-md-8 col-lg-6">
+    <div class="card border-0 shadow-sm rounded-3">
+      <div class="card-header bg-warning text-dark py-3">
+        <h6 class="fw-bold mb-0">
+          <i class="bi bi-pencil-square me-2"></i>Edit Ready Station Supplies
+        </h6>
+      </div>
       <div class="card-body p-4">
         <form method="POST">
           {% set fields = [
-            ('ambulances',   'bi-ambulance',      'Ambulances',    'danger'),
-            ('rescue_teams', 'bi-people-fill',    'Rescue Teams',  'primary'),
-            ('food_packets', 'bi-box-seam',       'Food Packets',  'success'),
-            ('helicopters',  'bi-helicopter',     'Helicopters',   'warning'),
+            ('ambulances',   'bi-truck-front-fill', 'Ambulances 🚑',         'primary', 'Hospital vans for medical help', 1),
+            ('rescue_teams', 'bi-people-fill',      'Rescue Teams 👥',       'success', 'Trained workers saving trapped people', 1),
+            ('food_packets', 'bi-box-seam-fill',    'Food & Water Meals 🍲', 'warning', 'Emergency meals and drinking water packs', 50),
+            ('helicopters',  'bi-airplane-fill',    'Rescue Helicopters 🚁', 'info',    'Air rescue for floods and cut-off places', 1),
           ] %}
-          {% for name, icon, label, color in fields %}
-          <div class="mb-4">
-            <label class="form-label fw-semibold">
-              <i class="bi {{ icon }} text-{{ color }} me-2"></i>{{ label }}
-            </label>
-            <input type="number" name="{{ name }}" class="form-control"
-                   value="{{ inventory.get(name, 0) }}" min="0" required />
+          {% for name, icon, label, color, desc, step in fields %}
+          <div class="mb-3 p-3 bg-light rounded-3 border">
+            <div class="d-flex justify-content-between align-items-start mb-1">
+              <label class="form-label fw-bold mb-0 text-dark">
+                <i class="bi {{ icon }} text-{{ color }} me-1"></i>{{ label }}
+              </label>
+              <small class="text-muted">{{ desc }}</small>
+            </div>
+            <div class="input-group mt-2">
+              <button type="button" class="btn btn-outline-secondary" onclick="stepAdminVal('input-{{ name }}', -{{ step }})">-{{ step if step > 1 else '' }}</button>
+              <input type="number" id="input-{{ name }}" name="{{ name }}" class="form-control text-center fw-bold fs-5"
+                     value="{{ inventory.get(name, 0) }}" min="0" step="{{ step }}" required />
+              <button type="button" class="btn btn-outline-secondary" onclick="stepAdminVal('input-{{ name }}', {{ step }})">+{{ step if step > 1 else '' }}</button>
+            </div>
           </div>
           {% endfor %}
-          <button type="submit" class="btn btn-warning w-100 fw-bold">
-            <i class="bi bi-save me-2"></i>Update Inventory
+
+          <button type="submit" class="btn btn-warning w-100 fw-bold py-2 shadow-sm fs-6 mt-2">
+            <i class="bi bi-check2-circle me-2"></i>Save Supplies to Station
           </button>
         </form>
       </div>
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function stepAdminVal(id, delta) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const cur = parseInt(el.value || 0);
+  el.value = Math.max(0, cur + delta);
+}
+</script>
 {% endblock %}

@@ -497,19 +497,19 @@ def assign():
 
         summary_items = []
         if allocated.get('ambulances'):
-            summary_items.append(f"{allocated['ambulances']} ALS Ambulance(s)")
+            summary_items.append(f"{allocated['ambulances']} Ambulance(s) 🚑")
         if allocated.get('rescue_teams'):
-            summary_items.append(f"{allocated['rescue_teams']} Rescue Squad(s)")
+            summary_items.append(f"{allocated['rescue_teams']} Rescue Team(s) 👥")
         if allocated.get('food_packets'):
-            summary_items.append(f"{allocated['food_packets']} Ration Package(s)")
+            summary_items.append(f"{allocated['food_packets']} Food & Water Meal(s) 🍲")
         if allocated.get('helicopters'):
-            summary_items.append(f"{allocated['helicopters']} Air Rescue Chopper(s)")
+            summary_items.append(f"{allocated['helicopters']} Helicopter(s) 🚁")
 
-        disp_text = ", ".join(summary_items) if summary_items else "Resources"
+        disp_text = ", ".join(summary_items) if summary_items else "Help"
         if insufficient:
-            flash(f"Partially deployed: {disp_text} mobilized for {problem_title}. Insufficient base inventory for: {', '.join(insufficient)}.", 'warning')
+            flash(f"Help sent: {disp_text} dispatched for {problem_title}. Need more station stock for: {', '.join(insufficient)}.", 'warning')
         else:
-            flash(f"Tactically mobilized & deployed: {disp_text} to {problem_title}! Live telemetry is tracking their progress below.", 'success')
+            flash(f"Help is on the way! Dispatched: {disp_text} to {problem_title}. Watch them move live on the map below!", 'success')
 
     except Exception as e:
         flash(f"Could not mobilize resources: {e}", 'danger')
@@ -634,7 +634,7 @@ def restock():
             {'$inc': updates},
             upsert=True
         )
-        flash('Staging Base Inventory replenished successfully.', 'success')
+        flash('Supplies and vehicles added to station successfully!', 'success')
     except Exception as e:
         flash(f'Could not restock: {e}', 'danger')
     return redirect(url_for('resources.index'))
