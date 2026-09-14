@@ -5,6 +5,9 @@
 <style>
   #gmap-frame { width:100%; height:calc(100vh - 260px); min-height:500px;
                 border:none; border-radius:.75rem; }
+  @media (max-width: 576px) {
+    #gmap-frame { min-height: 380px; height: 380px; }
+  }
   .incident-row:hover { background:#fff5f5; cursor:pointer; }
 </style>
 {% endblock %}
@@ -22,7 +25,7 @@
 <!-- Search bar — opens Google Maps -->
 <div class="card border-0 shadow-sm mb-3">
   <div class="card-body p-3">
-    <form id="search-form" class="d-flex gap-2" onsubmit="searchGoogleMaps(event)">
+    <form id="search-form" class="d-flex flex-column flex-sm-row gap-2" onsubmit="searchGoogleMaps(event)">
       <div class="input-group">
         <span class="input-group-text bg-danger text-white border-danger">
           <i class="bi bi-search"></i>
@@ -31,13 +34,15 @@
                placeholder="Search any village, city, area, street…"
                autocomplete="off"/>
       </div>
-      <button type="submit" class="btn btn-danger px-4 fw-bold">
-        <i class="bi bi-geo-alt me-1"></i>Search
-      </button>
-      <a href="https://maps.google.com" target="_blank"
-         class="btn btn-outline-secondary px-3" title="Open Google Maps">
-        <i class="bi bi-box-arrow-up-right"></i>
-      </a>
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-danger px-4 fw-bold flex-grow-1 flex-sm-grow-0">
+          <i class="bi bi-geo-alt me-1"></i>Search
+        </button>
+        <a href="https://maps.google.com" target="_blank"
+           class="btn btn-outline-secondary px-3" title="Open Google Maps">
+          <i class="bi bi-box-arrow-up-right"></i>
+        </a>
+      </div>
     </form>
     <!-- Quick city links -->
     <div class="d-flex gap-2 flex-wrap mt-2">

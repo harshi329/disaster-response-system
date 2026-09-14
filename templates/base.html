@@ -22,13 +22,21 @@
 <body>
 
 {% if current_user.is_authenticated %}
+<!-- Mobile / Tablet Backdrop Overlay -->
+<div id="sidebar-overlay" class="sidebar-overlay"></div>
+
 <div class="d-flex" id="wrapper">
 
   <!-- ── Sidebar ──────────────────────────────────────────────────────── -->
   <nav id="sidebar" class="bg-dark text-white d-flex flex-column p-3">
-    <div class="sidebar-brand mb-3">
-      <i class="bi bi-shield-exclamation fs-4 text-danger"></i>
-      <span class="ms-2 fw-bold">Disaster Response</span>
+    <div class="sidebar-brand mb-3 d-flex align-items-center justify-content-between">
+      <div class="d-flex align-items-center">
+        <i class="bi bi-shield-exclamation fs-4 text-danger"></i>
+        <span class="ms-2 fw-bold">Disaster Response</span>
+      </div>
+      <button type="button" class="btn btn-sm btn-link text-white-50 d-lg-none p-0 text-decoration-none" id="sidebar-close-btn" aria-label="Close sidebar">
+        <i class="bi bi-x-lg fs-5"></i>
+      </button>
     </div>
 
     <ul class="nav flex-column gap-1 flex-grow-1" style="font-size:.88rem;">
@@ -159,31 +167,34 @@
   <div id="page-content" class="flex-grow-1 bg-light" style="min-width:0;">
 
     <!-- Top bar -->
-    <div class="topbar bg-white border-bottom px-4 py-2 d-flex align-items-center justify-content-between gap-3">
+    <div class="topbar bg-white border-bottom px-3 px-md-4 py-2 d-flex align-items-center justify-content-between gap-2 gap-md-3">
       <div class="d-flex align-items-center gap-2">
+        <button id="sidebar-toggle" class="btn btn-sm btn-light border d-lg-none" type="button" aria-label="Toggle navigation" title="Open navigation menu">
+          <i class="bi bi-list fs-5"></i>
+        </button>
         {% if current_user.role == 'admin' %}
           <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">
-            <i class="bi bi-shield-lock-fill me-1"></i>Admin Console
+            <i class="bi bi-shield-lock-fill me-1"></i><span class="d-none d-sm-inline">Admin Console</span><span class="d-inline d-sm-none">Admin</span>
           </span>
         {% elif current_user.role == 'volunteer' %}
           <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
-            <i class="bi bi-person-heart me-1"></i>Volunteer Hub
+            <i class="bi bi-person-heart me-1"></i><span class="d-none d-sm-inline">Volunteer Hub</span><span class="d-inline d-sm-none">Volunteer</span>
           </span>
         {% else %}
           <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
-            <i class="bi bi-person-fill me-1"></i>Citizen Portal
+            <i class="bi bi-person-fill me-1"></i><span class="d-none d-sm-inline">Citizen Portal</span><span class="d-inline d-sm-none">Citizen</span>
           </span>
         {% endif %}
       </div>
 
-      <div class="d-flex align-items-center gap-3">
+      <div class="d-flex align-items-center gap-2 gap-md-3">
         <!-- Broadcast bell -->
         <div class="dropdown">
-          <button class="btn btn-sm btn-light position-relative" id="bc-bell" data-bs-toggle="dropdown">
+          <button class="btn btn-sm btn-light position-relative" id="bc-bell" data-bs-toggle="dropdown" aria-expanded="false" title="Broadcast Advisories">
             <i class="bi bi-megaphone fs-5"></i>
             <span id="bc-bell-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark" style="display:none;font-size:.65rem;"></span>
           </button>
-          <div class="dropdown-menu dropdown-menu-end shadow" style="width:320px;max-height:360px;overflow-y:auto;" id="bc-dropdown">
+          <div class="dropdown-menu dropdown-menu-end shadow" style="width:300px;max-width:90vw;max-height:360px;overflow-y:auto;" id="bc-dropdown">
             <div class="dropdown-header fw-semibold">📢 Broadcasts</div>
             <div id="bc-items"><div class="dropdown-item text-muted small">No new broadcasts.</div></div>
             <div class="dropdown-divider"></div>
@@ -196,18 +207,18 @@
 
         <!-- User profile & Topbar Logout button -->
         <div class="d-flex align-items-center gap-2 ps-2 border-start">
-          <span class="small d-none d-sm-inline text-secondary">
+          <span class="small d-none d-sm-inline text-secondary text-truncate" style="max-width:120px;">
             <i class="bi bi-person-circle me-1"></i><strong>{{ current_user.username }}</strong>
           </span>
           <a href="{{ url_for('auth.logout') }}" class="btn btn-sm btn-outline-danger d-flex align-items-center gap-1" title="Log out">
             <i class="bi bi-box-arrow-right"></i>
-            <span>Logout</span>
+            <span class="d-none d-sm-inline">Logout</span>
           </a>
         </div>
       </div>
     </div>
 
-    <div class="p-4">
+    <div class="p-3 p-md-4 main-content-container">
       {% with messages = get_flashed_messages(with_categories=true) %}
         {% for cat, msg in messages %}
           <div class="alert alert-{{ cat }} alert-dismissible fade show" role="alert">
@@ -278,12 +289,46 @@ async function refreshBroadcasts() {
           <div class="text-muted" style="font-size:.78rem;">${b.message.slice(0,80)}…</div>
           <div class="text-muted" style="font-size:.72rem;">${b.created_at.slice(0,16)}</div>
         </div>`).join('');
-    } else {
-      items.innerHTML = '<div class="dropdown-item text-muted small">No new broadcasts.</div>';
     }
   } catch(e) {}
 }
 refreshBroadcasts(); setInterval(refreshBroadcasts, 30000);
+
+// ── Responsive Mobile / Tablet Drawer Controller ────────────────────────
+const sidebar = document.getElementById('sidebar');
+const sidebarToggle = document.getElementById('sidebar-toggle');
+const sidebarClose = document.getElementById('sidebar-close-btn');
+const sidebarOverlay = document.getElementById('sidebar-overlay');
+
+function openSidebar() {
+  if (sidebar) sidebar.classList.add('show');
+  if (sidebarOverlay) sidebarOverlay.classList.add('show');
+  document.body.classList.add('sidebar-open');
+}
+
+function closeSidebar() {
+  if (sidebar) sidebar.classList.remove('show');
+  if (sidebarOverlay) sidebarOverlay.classList.remove('show');
+  document.body.classList.remove('sidebar-open');
+}
+
+if (sidebarToggle) sidebarToggle.addEventListener('click', openSidebar);
+if (sidebarClose) sidebarClose.addEventListener('click', closeSidebar);
+if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
+
+// Close drawer when clicking any link inside sidebar on mobile/tablet
+document.querySelectorAll('#sidebar .nav-link, #sidebar .sos-sidebar-btn').forEach(link => {
+  link.addEventListener('click', () => {
+    if (window.innerWidth < 992) closeSidebar();
+  });
+});
+
+// Close drawer on Escape key
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && sidebar && sidebar.classList.contains('show')) {
+    closeSidebar();
+  }
+});
 </script>
 {% endif %}
 
