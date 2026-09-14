@@ -1,7 +1,7 @@
 import os
 import re
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
-from flask_login import login_user, logout_user, login_required
+from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from authlib.integrations.flask_client import OAuth
 from ..database import get_mongo_db
@@ -41,6 +41,10 @@ def _flash_otp_sent(email: str):
 @auth_bp.route('/', methods=['GET', 'POST'])
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
+    # If user is already authenticated, immediately display dashboard
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard.index'))
+
     if request.method == 'POST':
         identifier = request.form.get('username', '').strip()
         password   = request.form.get('password', '').strip()
@@ -59,7 +63,7 @@ def login():
             flash('Invalid username or password.', 'danger')
             return render_template('auth/login.html')
 
-        # Direct login for all roles (citizen, volunteer, admin) — NO OTP required!
+        # Direct login for all roles (citizen, volunteer, admin) — immediately display dashboard!
         role = row.get('role', 'citizen')
         user = User(row['_id'], row['username'], row['email'], row.get('phone'), role)
         login_user(user)
@@ -118,6 +122,9 @@ def resend_otp():
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard.index'))
+
     if request.method == 'POST':
         username = request.form.get('username', '').strip()[:50]
         password = request.form.get('password', '').strip()
@@ -153,8 +160,10 @@ def register():
                         'phone': phone or existing_email.get('phone', ''),
                     }}
                 )
-                flash('Password set for your account! You can now log in with your email and password.', 'success')
-                return redirect(url_for('auth.login'))
+                user = User(existing_email['_id'], existing_email['username'], existing_email['email'], phone or existing_email.get('phone', ''), existing_email.get('role', 'citizen'))
+                login_user(user)
+                flash('Password set successfully! Welcome to your dashboard.', 'success')
+                return redirect(url_for('dashboard.index'))
             else:
                 flash('An account with this email already exists. Please log in or use "Forgot Password".', 'danger')
                 return render_template('auth/register.html')
@@ -166,15 +175,17 @@ def register():
             return render_template('auth/register.html')
 
         try:
-            db.users.insert_one({
+            ins_res = db.users.insert_one({
                 'username': username,
                 'password': hashed,
                 'email':    email,
                 'phone':    phone,
                 'role':     'citizen',
             })
-            flash('Account created! Please log in.', 'success')
-            return redirect(url_for('auth.login'))
+            user = User(ins_res.inserted_id, username, email, phone, 'citizen')
+            login_user(user)
+            flash(f'Account created successfully! Welcome, {username}!', 'success')
+            return redirect(url_for('dashboard.index'))
         except Exception:
             flash('Could not create account. Username or email may already be in use.', 'danger')
 
