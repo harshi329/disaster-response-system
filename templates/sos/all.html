@@ -117,12 +117,6 @@
 
               <!-- Action buttons -->
               <div class="d-flex gap-2 align-items-start flex-wrap">
-                {% if sos.lat and sos.lng %}
-                <a href="{{ url_for('map_view.index') }}" class="btn btn-sm btn-outline-primary" title="View on map">
-                  <i class="bi bi-map"></i>
-                </a>
-                {% endif %}
-
                 <!-- WhatsApp Share — opens WhatsApp with SOS details, works for ANY number -->
                 <button type="button"
                    data-type="{{ sos.sos_type }}"
@@ -136,6 +130,15 @@
                    class="btn btn-sm btn-success" title="Share on WhatsApp">
                   <i class="bi bi-whatsapp me-1"></i>WhatsApp
                 </button>
+
+                <!-- Live Google Maps Button for ALL Active SOS alerts (omitted for Resolved) -->
+                {% if sos.status == 'Active' %}
+                <a href="https://www.google.com/maps/search/?api=1&query={{ (sos.lat ~ ',' ~ sos.lng) if (sos.lat and sos.lng) else (sos.location | urlencode) }}"
+                   target="_blank" rel="noopener noreferrer"
+                   class="btn btn-sm btn-outline-danger" title="Open Live Location in Google Maps">
+                  <i class="bi bi-map me-1"></i>Map
+                </a>
+                {% endif %}
 
                 {% if sos.status=='Active' and current_user.role == 'admin' %}
                 <form method="POST" action="{{ url_for('sos.resolve', sos_id=sos._id) }}"

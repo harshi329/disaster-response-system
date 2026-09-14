@@ -99,43 +99,43 @@ def build_tracked_units(allocated: dict, target_lat: float, target_lng: float, p
     unit_configs = [
         {
             'key': 'ambulances',
-            'name_prefix': 'ALS Paramedic Unit',
-            'type_label': 'Emergency Medical Service',
+            'name_prefix': 'Ambulance',
+            'type_label': 'Medical Help',
             'icon': 'bi-truck-front-fill',
             'color': '#0d6efd',
             'speed': 60,
-            'lead_title': 'Chief Paramedic',
-            'default_leads': ['R. Sharma, EMT-P', 'A. Verma, EMT-P', 'P. Nair, MD', 'S. Gupta, EMT'],
+            'lead_title': 'Driver / Doctor',
+            'default_leads': ['Dr. Sharma', 'Dr. Verma', 'P. Nair', 'S. Gupta'],
         },
         {
             'key': 'rescue_teams',
-            'name_prefix': 'NDRF Tactical Rescue Squad',
-            'type_label': 'Search & Rescue (USAR)',
+            'name_prefix': 'Rescue Team',
+            'type_label': 'Rescue Squad',
             'icon': 'bi-people-fill',
             'color': '#198754',
             'speed': 48,
-            'lead_title': 'Squad Commander',
-            'default_leads': ['Capt. Vikram Singh', 'Maj. Sandeep Rao', 'Insp. Joshi'],
+            'lead_title': 'Team Lead',
+            'default_leads': ['Capt. Vikram', 'Maj. Sandeep', 'Insp. Joshi'],
         },
         {
             'key': 'food_packets',
-            'name_prefix': 'Life-Support Rations Unit',
-            'type_label': 'Relief Nutrition Supplies',
+            'name_prefix': 'Food & Water Delivery',
+            'type_label': 'Food & Water',
             'icon': 'bi-box-seam-fill',
             'color': '#ffc107',
             'speed': 40,
-            'lead_title': 'Relief Logistics Officer',
-            'default_leads': ['M. Khan (Civil Supplies)', 'D. Reddy (Rations Lead)'],
+            'lead_title': 'Delivery Lead',
+            'default_leads': ['M. Khan', 'D. Reddy'],
         },
         {
             'key': 'helicopters',
-            'name_prefix': 'Tactical Air Rescue Chopper',
-            'type_label': 'Air Rescue & Evacuation Wing',
+            'name_prefix': 'Rescue Helicopter',
+            'type_label': 'Air Rescue',
             'icon': 'bi-airplane-fill',
             'color': '#0dcaf0',
             'speed': 160,
-            'lead_title': 'Flight Operations Commander',
-            'default_leads': ['Wing Cdr. Roy', 'Capt. Malhotra'],
+            'lead_title': 'Pilot',
+            'default_leads': ['Pilot Roy', 'Pilot Malhotra'],
         },
     ]
 
@@ -164,12 +164,12 @@ def build_tracked_units(allocated: dict, target_lat: float, target_lng: float, p
                 'unit_id': uid,
                 'type': cfg['key'],
                 'type_label': cfg['type_label'],
-                'name': f"{cfg['name_prefix']} #{uid}" if cfg['key'] != 'food_packets' else f"{cfg['name_prefix']} ({qty} Rations)",
+                'name': f"{cfg['name_prefix']} #{uid}" if cfg['key'] != 'food_packets' else f"{cfg['name_prefix']} ({qty} Meals)",
                 'icon': cfg['icon'],
                 'color': cfg['color'],
                 'quantity': qty if cfg['key'] == 'food_packets' else 1,
                 'phase': 'en_route',
-                'status': 'En Route — In Transit',
+                'status': 'On the Way',
                 'speed': f"{cfg['speed']} km/h",
                 'eta_mins': eta_mins,
                 'distance_km': dist_km,
@@ -555,7 +555,7 @@ def update_unit_status():
             u['phase'] = new_phase
 
             if new_phase == 'on_scene':
-                u['status'] = 'On Scene — Operations Active'
+                u['status'] = 'Arrived & Helping'
                 u['progress'] = 100
                 if u.get('type') == 'food_packets' and not u.get('distributed'):
                     u['distributed'] = True
@@ -566,10 +566,10 @@ def update_unit_status():
                     )
 
             elif new_phase == 'returning':
-                u['status'] = 'Demobilizing — Returning to Base'
+                u['status'] = 'Coming Back'
 
             elif new_phase == 'returned':
-                u['status'] = 'Mission Accomplished — Stationed at Base'
+                u['status'] = 'Ready at Station'
                 u['progress'] = 0
                 # Reusable asset replenishment: restores available fleet stock
                 if u.get('type') in ('ambulances', 'rescue_teams', 'helicopters') and not u.get('returned_to_stock'):

@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}Tactical Resource Management &amp; Live Telemetry – Disaster Response{% endblock %}
+{% block title %}Live Rescue &amp; Help Tracker – Disaster Response{% endblock %}
 
 {% block head %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -127,13 +127,13 @@
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
   <div>
     <h4 class="fw-bold mb-0">
-      <i class="bi bi-shield-shaded me-2 text-danger"></i>Tactical Resource Readiness &amp; Live Telemetry
+      <i class="bi bi-heart-pulse-fill me-2 text-danger"></i>Live Rescue &amp; Help Tracker
     </h4>
-    <small class="text-muted">Command Staging Base inventory, active field deployments, and live GPS telemetry of emergency response units.</small>
+    <small class="text-muted">See available ambulances, rescue teams, food, and helicopters helping people right now.</small>
   </div>
   {% if current_user.role == 'admin' %}
   <button class="btn btn-warning fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#restockModal">
-    <i class="bi bi-plus-circle me-1"></i>Replenish Base Staging Supplies
+    <i class="bi bi-plus-circle me-1"></i>Add More Vehicles &amp; Food to Station
   </button>
   {% endif %}
 </div>
@@ -141,10 +141,10 @@
 <!-- 4 Available Resource Counters (Auto-updates dynamically when units deploy or return!) -->
 <div class="row g-3 mb-4">
   {% set items_info = [
-    ('ambulances', 'ALS Paramedic Units', 'truck-front-fill', 'primary', 'Advanced life-support emergency medical ambulances'),
-    ('rescue_teams', 'NDRF Search & Rescue', 'people-fill', 'success', 'Urban search, extraction & disaster rescue squads'),
-    ('food_packets', 'Life-Support Rations', 'box-seam-fill', 'warning', 'Ready-to-eat emergency meals & ration supplies'),
-    ('helicopters', 'Air Rescue Choppers', 'airplane-fill', 'info', 'Tactical aero-medical evacuation & reconnaissance')
+    ('ambulances', 'Ambulances 🚑', 'truck-front-fill', 'primary', 'Hospital vans for medical help'),
+    ('rescue_teams', 'Rescue Teams 👥', 'people-fill', 'success', 'Trained workers saving trapped people'),
+    ('food_packets', 'Food & Water Meals 🍲', 'box-seam-fill', 'warning', 'Emergency meals and clean water packs'),
+    ('helicopters', 'Rescue Helicopters 🚁', 'airplane-fill', 'info', 'Air rescue for hard to reach places')
   ] %}
   {% for key, label, icon, color, desc in items_info %}
   {% set available_qty = inventory.get(key, 0) %}
@@ -156,27 +156,27 @@
           <i class="bi bi-{{ icon }}"></i>
         </span>
         {% if available_qty == 0 %}
-          <span class="badge bg-danger" id="badge-avail-{{ key }}">Fleet Depleted</span>
+          <span class="badge bg-danger" id="badge-avail-{{ key }}">❌ None Left</span>
         {% elif available_qty < 3 %}
-          <span class="badge bg-warning text-dark" id="badge-avail-{{ key }}">Low Fleet</span>
+          <span class="badge bg-warning text-dark" id="badge-avail-{{ key }}">⚠️ Low Stock</span>
         {% else %}
-          <span class="badge bg-success-subtle text-success border border-success-subtle" id="badge-avail-{{ key }}">Ready at Base</span>
+          <span class="badge bg-success-subtle text-success border border-success-subtle" id="badge-avail-{{ key }}">✅ Ready to Help</span>
         {% endif %}
       </div>
       <div class="d-flex align-items-baseline gap-2 mb-1">
         <span class="fs-2 fw-bold text-dark" id="count-available-{{ key }}">{{ available_qty }}</span>
-        <span class="text-muted small">Available at Base</span>
+        <span class="text-muted small">Ready at Station</span>
       </div>
       <div class="fw-semibold small text-secondary mb-2">{{ label }}</div>
       
       <!-- Sub-metric breakdown -->
       <div class="pt-2 border-top d-flex justify-content-between align-items-center small text-muted" style="font-size:.74rem;">
         {% if key == 'food_packets' %}
-          <span><i class="bi bi-check2-all text-success me-1"></i><strong id="count-distributed-food" class="text-success">{{ inventory.get('distributed_food_packets', 0) }}</strong> Distributed</span>
-          <span class="badge bg-light text-dark border">Consumable</span>
+          <span><i class="bi bi-check2-all text-success me-1"></i><strong id="count-distributed-food" class="text-success">{{ inventory.get('distributed_food_packets', 0) }}</strong> Given to People</span>
+          <span class="badge bg-light text-dark border">Food Supply</span>
         {% else %}
-          <span><i class="bi bi-broadcast text-primary me-1"></i><strong id="count-deployed-{{ key }}" class="text-primary">{{ deployed_qty }}</strong> Active in Field</span>
-          <span class="badge bg-light text-dark border" title="Returns to base inventory upon mission completion">Reusable Asset</span>
+          <span><i class="bi bi-broadcast text-primary me-1"></i><strong id="count-deployed-{{ key }}" class="text-primary">{{ deployed_qty }}</strong> Out Helping People</span>
+          <span class="badge bg-light text-dark border" title="Returns to station when done">Comes Back</span>
         {% endif %}
       </div>
     </div>
@@ -191,50 +191,50 @@
   <div class="card-header bg-white border-0 pt-3 pb-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
     <div>
       <h5 class="fw-bold mb-0 text-dark d-flex align-items-center gap-2">
-        <i class="bi bi-radar text-danger fs-4"></i>
-        <span>Tactical Location Telemetry — Emergency Deployments</span>
+        <i class="bi bi-geo-alt-fill text-danger fs-4"></i>
+        <span>🗺️ Live Help Map — Watch Rescue Vehicles Moving</span>
         <span class="badge bg-light text-dark border ms-2 py-1 px-2 fw-semibold" style="font-size:.75rem;">
-          <span class="live-dot me-1"></span>REAL-TIME TELEMETRY
+          <span class="live-dot me-1"></span>LIVE TRACKING
         </span>
       </h5>
       <p class="text-muted small mb-0 mt-1">
-        Live GPS telemetry of mobilized <strong>ALS Ambulances</strong>, <strong>NDRF Rescue Squads</strong>, <strong>Life-Support Rations</strong>, and <strong>Air Rescue Choppers</strong> deployed across disaster sectors.
+        Watch <strong>Ambulances</strong>, <strong>Rescue Teams</strong>, <strong>Food &amp; Water Delivery</strong>, and <strong>Helicopters</strong> moving live on the map to save people.
       </p>
     </div>
     <div class="d-flex align-items-center gap-2 flex-wrap">
       <!-- Simulation Speed Selector -->
       <div class="btn-group btn-group-sm" role="group">
         <button type="button" class="btn btn-outline-secondary active fw-semibold" id="speed-1x-btn" onclick="setSimSpeed(1)">
-          <i class="bi bi-play-fill"></i> Fast (1x)
+          <i class="bi bi-play-fill"></i> Normal (1x)
         </button>
         <button type="button" class="btn btn-outline-danger fw-semibold" id="speed-4x-btn" onclick="setSimSpeed(4)">
-          <i class="bi bi-lightning-charge-fill"></i> Turbo (4x)
+          <i class="bi bi-lightning-charge-fill"></i> Fast (4x)
         </button>
       </div>
       <!-- Instant Fast Demo Buttons -->
-      <button type="button" class="btn btn-sm btn-success fw-bold py-1 px-2" onclick="fastForwardAllToScene()" title="Fast forward all en-route units to arrive on scene immediately">
-        <i class="bi bi-geo-alt-fill me-1"></i>⚡ Arrive on Scene
+      <button type="button" class="btn btn-sm btn-success fw-bold py-1 px-2" onclick="fastForwardAllToScene()" title="Make all vehicles reach the people immediately">
+        <i class="bi bi-geo-alt-fill me-1"></i>⚡ Reach People Now
       </button>
-      <button type="button" class="btn btn-sm btn-warning text-dark fw-bold py-1 px-2" onclick="fastForwardAllToBase()" title="Fast forward all units to safely return & replenish base inventory immediately">
-        <i class="bi bi-house-door-fill me-1"></i>⚡ Return &amp; Replenish
+      <button type="button" class="btn btn-sm btn-warning text-dark fw-bold py-1 px-2" onclick="fastForwardAllToBase()" title="Bring all vehicles safely back to station">
+        <i class="bi bi-house-door-fill me-1"></i>⚡ Return to Station
       </button>
-      <small class="text-muted d-none d-xl-block" id="tracker-last-sync">GPS Synced</small>
+      <small class="text-muted d-none d-xl-block" id="tracker-last-sync">GPS: Active</small>
     </div>
   </div>
 
   <div class="card-body pt-1">
     <!-- Filter by Incident Problem -->
     <div class="d-flex align-items-center gap-2 flex-wrap mb-3 p-2 bg-light rounded-3 border">
-      <span class="small fw-bold text-secondary ps-1"><i class="bi bi-funnel me-1"></i>Incident Sector:</span>
+      <span class="small fw-bold text-secondary ps-1"><i class="bi bi-geo-alt-fill text-danger me-1"></i>Where Help is Needed:</span>
       <button type="button" class="btn btn-sm btn-danger rounded-pill fw-semibold px-3 filter-btn active"
               data-problem-id="all" onclick="filterByProblem('all', this)">
-        <i class="bi bi-grid-fill me-1"></i>All Active Incident Sites
+        <i class="bi bi-grid-fill me-1"></i>Show All Places
       </button>
       {% for dep in tracked_deployments %}
       <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill fw-semibold px-3 filter-btn"
               data-problem-id="{{ dep.id }}" onclick="filterByProblem('{{ dep.id }}', this)">
         <i class="bi bi-exclamation-triangle-fill text-danger me-1"></i>
-        {{ dep.problem_title }} ({{ dep.units | length }} Tactical Units)
+        {{ dep.problem_title }} ({{ dep.units | length }} Help Vehicles)
       </button>
       {% endfor %}
     </div>
@@ -246,44 +246,44 @@
         <div class="position-relative">
           <div id="tracking-map"></div>
 
-          <!-- Professional Map Legend -->
+          <!-- Child & Citizen Friendly Map Legend -->
           <div class="position-absolute bottom-0 start-0 m-3 p-2 bg-white bg-opacity-95 rounded-3 shadow-sm border small"
                style="z-index: 1000; font-size:.75rem;">
-            <div class="fw-bold mb-1 text-dark">Tactical Map Symbols</div>
+            <div class="fw-bold mb-1 text-dark">Map Guide</div>
             <div class="d-flex flex-wrap gap-2">
-              <span class="d-flex align-items-center gap-1"><span class="badge bg-danger p-1">🔴</span> Incident Command Site</span>
-              <span class="d-flex align-items-center gap-1"><span class="badge bg-primary p-1">🚑</span> ALS Paramedic Unit</span>
-              <span class="d-flex align-items-center gap-1"><span class="badge bg-success p-1">👥</span> NDRF Rescue Squad</span>
-              <span class="d-flex align-items-center gap-1"><span class="badge bg-warning text-dark p-1">📦</span> Life-Support Rations</span>
-              <span class="d-flex align-items-center gap-1"><span class="badge bg-info text-dark p-1">🚁</span> Air Rescue Chopper</span>
-              <span class="d-flex align-items-center gap-1"><span class="badge bg-dark p-1">🏢</span> Staging Base</span>
+              <span class="d-flex align-items-center gap-1"><span class="badge bg-danger p-1">🔴</span> Danger Spot (Help Needed)</span>
+              <span class="d-flex align-items-center gap-1"><span class="badge bg-primary p-1">🚑</span> Ambulance</span>
+              <span class="d-flex align-items-center gap-1"><span class="badge bg-success p-1">👥</span> Rescue Team</span>
+              <span class="d-flex align-items-center gap-1"><span class="badge bg-warning text-dark p-1">🍲</span> Food &amp; Water</span>
+              <span class="d-flex align-items-center gap-1"><span class="badge bg-info text-dark p-1">🚁</span> Helicopter</span>
+              <span class="d-flex align-items-center gap-1"><span class="badge bg-dark p-1">🏢</span> Help Station (Base)</span>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Right Column: Assigned Tactical Units & Telemetry Log -->
+      <!-- Right Column: Assigned Help Vehicles & Activity Updates -->
       <div class="col-lg-4 d-flex flex-column gap-3">
-        <!-- Assigned Teams Status List -->
+        <!-- Assigned Vehicles Status List -->
         <div class="card border flex-grow-1 bg-light shadow-sm">
           <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
-            <span class="fw-bold small text-dark"><i class="bi bi-shield-check me-1 text-primary"></i>Active Tactical Units</span>
-            <span class="badge bg-dark rounded-pill" id="units-count-badge">0 Units</span>
+            <span class="fw-bold small text-dark"><i class="bi bi-truck-front text-primary me-1"></i>Vehicles on the Way &amp; Helping</span>
+            <span class="badge bg-dark rounded-pill" id="units-count-badge">0 Vehicles</span>
           </div>
           <div class="card-body p-2 overflow-auto" id="units-list-container" style="max-height: 275px;">
             <!-- Unit items populated dynamically -->
           </div>
         </div>
 
-        <!-- Live Operations Incident Log -->
+        <!-- Live Help Activity Updates -->
         <div class="card border shadow-sm bg-white">
           <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center border-bottom">
-            <span class="fw-bold small text-danger"><i class="bi bi-activity me-1"></i>Field Operations Incident Log</span>
-            <span class="badge bg-danger-subtle text-danger" style="font-size:.68rem;">Automated</span>
+            <span class="fw-bold small text-danger"><i class="bi bi-broadcast me-1"></i>Live Help Updates</span>
+            <span class="badge bg-danger-subtle text-danger" style="font-size:.68rem;">Live</span>
           </div>
           <div class="card-body p-2 overflow-auto" id="activity-log-container" style="max-height: 160px; font-size:.75rem;">
             <div class="text-muted p-2" id="empty-log-msg">
-              <i class="bi bi-hourglass-split me-1 text-secondary"></i>Synchronizing automated telemetry stream...
+              <i class="bi bi-hourglass-split me-1 text-secondary"></i>Watching for live rescue updates...
             </div>
           </div>
         </div>
@@ -302,12 +302,12 @@
       <div>
         <h5 class="fw-bold mb-0 text-white d-flex align-items-center gap-2">
           <i class="bi bi-send-check fs-4"></i>
-          <span>Emergency Incident Response &amp; Tactical Resource Mobilization</span>
+          <span>🚨 Send Help to Danger Spots (Admin Only)</span>
         </h5>
-        <small class="text-white-50">Select a pending disaster incident to mobilize and deploy tactical units and supplies.</small>
+        <small class="text-white-50">Pick a place in trouble below and send ambulances, rescue workers, food, or helicopters.</small>
       </div>
       <span class="badge bg-white text-danger fw-bold px-3 py-2">
-        {{ pending_alerts | length }} Pending Incident{{ 's' if pending_alerts | length != 1 }}
+        {{ pending_alerts | length }} Danger Spot{{ 's' if pending_alerts | length != 1 }} Waiting for Help
       </span>
     </div>
   </div>
@@ -316,7 +316,7 @@
     <!-- Step 1: Visual Cards of Pending Incidents -->
     <div class="mb-4">
       <h6 class="fw-bold mb-2 text-dark">
-        <i class="bi bi-exclamation-octagon-fill text-danger me-1"></i>Step 1: Choose an Active Incident that Requires Mobilization:
+        <i class="bi bi-exclamation-octagon-fill text-danger me-1"></i>Step 1: Pick Where Help is Needed:
       </h6>
 
       {% if pending_alerts %}
@@ -329,7 +329,7 @@
                onclick="selectAlertForAssign('{{ alert.id }}', '{{ alert.type }} at {{ alert.location }}', '{{ alert.severity }}', '{{ alert.location }}', {{ alert.recommended.ambulances }}, {{ alert.recommended.rescue_teams }}, {{ alert.recommended.food_packets }}, {{ alert.recommended.helicopters }})">
             <div class="d-flex justify-content-between align-items-start mb-2">
               <span class="badge {% if alert.severity == 'High' %}bg-danger{% elif alert.severity == 'Medium' %}bg-warning text-dark{% else %}bg-info text-dark{% endif %} px-2 py-1">
-                {{ alert.severity | upper }} PRIORITY
+                {{ alert.severity | upper }} DANGER
               </span>
               <small class="text-muted" style="font-size:.72rem;">
                 <i class="bi bi-clock me-1"></i>{{ alert.timestamp | format_dt(10) }}
@@ -349,18 +349,18 @@
             </p>
 
             <div class="bg-light p-2 rounded-2 small mb-3 border" style="font-size:.74rem;">
-              <span class="fw-semibold text-secondary d-block mb-1">Recommended Response Taskforce:</span>
-              <span class="badge bg-primary-subtle text-primary me-1">{{ alert.recommended.ambulances }} Amb</span>
-              <span class="badge bg-success-subtle text-success me-1">{{ alert.recommended.rescue_teams }} Squad</span>
-              <span class="badge bg-warning-subtle text-dark me-1">{{ alert.recommended.food_packets }} Rations</span>
+              <span class="fw-semibold text-secondary d-block mb-1">Suggested Help Needed:</span>
+              <span class="badge bg-primary-subtle text-primary me-1">🚑 {{ alert.recommended.ambulances }} Amb</span>
+              <span class="badge bg-success-subtle text-success me-1">👥 {{ alert.recommended.rescue_teams }} Team</span>
+              <span class="badge bg-warning-subtle text-dark me-1">🍲 {{ alert.recommended.food_packets }} Meals</span>
               {% if alert.recommended.helicopters > 0 %}
-              <span class="badge bg-info-subtle text-dark">{{ alert.recommended.helicopters }} Chopper</span>
+              <span class="badge bg-info-subtle text-dark">🚁 {{ alert.recommended.helicopters }} Heli</span>
               {% endif %}
             </div>
 
             <button type="button" class="btn btn-danger btn-sm w-100 fw-bold mt-auto"
                     onclick="event.stopPropagation(); selectAlertForAssign('{{ alert.id }}', '{{ alert.type }} at {{ alert.location }}', '{{ alert.severity }}', '{{ alert.location }}', {{ alert.recommended.ambulances }}, {{ alert.recommended.rescue_teams }}, {{ alert.recommended.food_packets }}, {{ alert.recommended.helicopters }});">
-              <i class="bi bi-crosshair me-1"></i>Select Incident for Mobilization
+              <i class="bi bi-send-fill me-1"></i>Send Help Here
             </button>
           </div>
         </div>
@@ -369,7 +369,7 @@
       {% else %}
       <div class="alert alert-success d-flex align-items-center gap-2 mb-0">
         <i class="bi bi-check-circle-fill fs-5"></i>
-        <span>All emergency incidents currently have active operational deployments or are stabilized.</span>
+        <span>All danger spots currently have help on the way or are safe now.</span>
       </div>
       {% endif %}
     </div>
@@ -379,7 +379,7 @@
     <!-- Step 2: Configure and Deploy Resources -->
     <div>
       <h6 class="fw-bold mb-3 text-dark">
-        <i class="bi bi-sliders text-danger me-1"></i>Step 2: Configure Tactical Units &amp; Mobilize Taskforce:
+        <i class="bi bi-sliders text-danger me-1"></i>Step 2: Choose How Many Vehicles &amp; Supplies to Send:
       </h6>
 
       <!-- Selected Incident Banner -->
@@ -387,16 +387,16 @@
         <div class="d-flex align-items-center gap-2">
           <i class="bi bi-geo-alt-fill fs-4 text-danger"></i>
           <div>
-            <span class="fw-bold d-block text-danger" id="target-alert-title">Select an incident from Step 1 above</span>
-            <small class="text-muted" id="target-alert-meta">Choose an incident card to automatically load location and recommended taskforce</small>
+            <span class="fw-bold d-block text-danger" id="target-alert-title">Select a danger spot from Step 1 above</span>
+            <small class="text-muted" id="target-alert-meta">Click any card above to fill recommended help automatically</small>
           </div>
         </div>
         <div class="d-flex gap-2">
           <button type="button" class="btn btn-sm btn-outline-danger" onclick="applyPreset('high')">
-            <i class="bi bi-lightning-charge-fill me-1"></i>Deploy Full Emergency Taskforce
+            <i class="bi bi-lightning-charge-fill me-1"></i>Send Full Emergency Team
           </button>
           <button type="button" class="btn btn-sm btn-outline-secondary" onclick="applyPreset('medium')">
-            Deploy Standard Response Team
+            Send Normal Team
           </button>
         </div>
       </div>
@@ -404,9 +404,9 @@
       <form method="POST" action="{{ url_for('resources.assign') }}" id="dispatch-form">
         <!-- Target Dropdown (Synced with card selection) -->
         <div class="mb-3">
-          <label class="form-label fw-semibold small text-muted">Target Incident Command Location</label>
+          <label class="form-label fw-semibold small text-muted">Place where help is needed</label>
           <select name="report_id" id="report-select" class="form-select border-danger" required onchange="onSelectDropdownChange(this)">
-            <option value="">-- Choose target incident or report --</option>
+            <option value="">-- Choose where to send help --</option>
             {% for alert in pending_alerts %}
             <option value="{{ alert.id }}"
                     data-title="{{ alert.type }} at {{ alert.location }}"
@@ -416,7 +416,7 @@
                     data-rsc="{{ alert.recommended.rescue_teams }}"
                     data-food="{{ alert.recommended.food_packets }}"
                     data-heli="{{ alert.recommended.helicopters }}">
-              [{{ alert.severity | upper }}] {{ alert.type }} at {{ alert.location }} — ({{ alert.timestamp | format_dt(10) }})
+              [{{ alert.severity | upper }} DANGER] {{ alert.type }} at {{ alert.location }} — ({{ alert.timestamp | format_dt(10) }})
             </option>
             {% endfor %}
           </select>
@@ -428,7 +428,7 @@
           <div class="col-6 col-md-3">
             <div class="p-3 border rounded-3 bg-light">
               <label class="form-label fw-semibold small mb-1 d-flex justify-content-between">
-                <span><i class="bi bi-truck-front-fill text-primary me-1"></i>ALS Ambulances</span>
+                <span><i class="bi bi-truck-front-fill text-primary me-1"></i>Ambulances 🚑</span>
                 <span class="badge bg-primary-subtle text-primary">In Stock: {{ inventory.get('ambulances', 0) }}</span>
               </label>
               <div class="input-group input-group-sm">
@@ -443,7 +443,7 @@
           <div class="col-6 col-md-3">
             <div class="p-3 border rounded-3 bg-light">
               <label class="form-label fw-semibold small mb-1 d-flex justify-content-between">
-                <span><i class="bi bi-people-fill text-success me-1"></i>Rescue Squads</span>
+                <span><i class="bi bi-people-fill text-success me-1"></i>Rescue Teams 👥</span>
                 <span class="badge bg-success-subtle text-success">In Stock: {{ inventory.get('rescue_teams', 0) }}</span>
               </label>
               <div class="input-group input-group-sm">
@@ -458,7 +458,7 @@
           <div class="col-6 col-md-3">
             <div class="p-3 border rounded-3 bg-light">
               <label class="form-label fw-semibold small mb-1 d-flex justify-content-between">
-                <span><i class="bi bi-box-seam-fill text-warning me-1"></i>Ration Packages</span>
+                <span><i class="bi bi-box-seam-fill text-warning me-1"></i>Food &amp; Water Meals 🍲</span>
                 <span class="badge bg-warning-subtle text-dark">In Stock: {{ inventory.get('food_packets', 0) }}</span>
               </label>
               <div class="input-group input-group-sm">
@@ -473,7 +473,7 @@
           <div class="col-6 col-md-3">
             <div class="p-3 border rounded-3 bg-light">
               <label class="form-label fw-semibold small mb-1 d-flex justify-content-between">
-                <span><i class="bi bi-airplane-fill text-info me-1"></i>Air Rescue Choppers</span>
+                <span><i class="bi bi-airplane-fill text-info me-1"></i>Helicopters 🚁</span>
                 <span class="badge bg-info-subtle text-dark">In Stock: {{ inventory.get('helicopters', 0) }}</span>
               </label>
               <div class="input-group input-group-sm">
@@ -487,13 +487,13 @@
 
         <!-- Operational Notes -->
         <div class="mb-3">
-          <label class="form-label fw-semibold small text-muted">Tactical Operational Directives / Notes (Optional)</label>
-          <input type="text" name="notes" class="form-control" placeholder="e.g. Priority medical evacuation, low-lying riverside sector flood rescue" />
+          <label class="form-label fw-semibold small text-muted">Special Instructions (Optional)</label>
+          <input type="text" name="notes" class="form-control" placeholder="e.g. Bring life jackets, medical kits, and food packets" />
         </div>
 
         <!-- Submit Button -->
         <button type="submit" class="btn btn-danger w-100 fw-bold py-2 shadow-sm fs-6">
-          <i class="bi bi-send-check me-2"></i>Mobilize &amp; Deploy Taskforce to Incident Site
+          <i class="bi bi-send-check me-2"></i>🚀 Send Help Now!
         </button>
       </form>
     </div>
@@ -506,34 +506,34 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header bg-warning text-dark">
-        <h5 class="modal-title fw-bold"><i class="bi bi-plus-circle me-2"></i>Replenish Staging Base Inventory</h5>
+        <h5 class="modal-title fw-bold"><i class="bi bi-plus-circle me-2"></i>Add More Vehicles &amp; Food to Station</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <form method="POST" action="{{ url_for('resources.restock') }}">
         <div class="modal-body">
-          <p class="text-muted small mb-3">Add newly procured or refurbished tactical supplies into Command Staging Base stock:</p>
+          <p class="text-muted small mb-3">Add newly arrived vehicles or food packages into our main station inventory:</p>
           <div class="row g-3">
             <div class="col-6">
-              <label class="form-label small fw-semibold">Add ALS Ambulances</label>
+              <label class="form-label small fw-semibold">Add Ambulances 🚑</label>
               <input type="number" name="ambulances" class="form-control" value="2" min="0" />
             </div>
             <div class="col-6">
-              <label class="form-label small fw-semibold">Add Rescue Squads</label>
+              <label class="form-label small fw-semibold">Add Rescue Teams 👥</label>
               <input type="number" name="rescue_teams" class="form-control" value="2" min="0" />
             </div>
             <div class="col-6">
-              <label class="form-label small fw-semibold">Add Life-Support Rations</label>
+              <label class="form-label small fw-semibold">Add Food &amp; Water Meals 🍲</label>
               <input type="number" name="food_packets" class="form-control" value="500" min="0" step="50" />
             </div>
             <div class="col-6">
-              <label class="form-label small fw-semibold">Add Air Rescue Choppers</label>
+              <label class="form-label small fw-semibold">Add Helicopters 🚁</label>
               <input type="number" name="helicopters" class="form-control" value="1" min="0" />
             </div>
           </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-warning fw-bold">Confirm Replenishment</button>
+          <button type="submit" class="btn btn-warning fw-bold">Save &amp; Add to Station</button>
         </div>
       </form>
     </div>
@@ -565,17 +565,17 @@ function logIncidentEvent(type, title, message) {
 
     const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     let badgeBg = 'bg-primary';
-    let tag = 'TACTICAL';
+    let tag = 'HELP';
 
     if (type === 'on_scene') {
       badgeBg = 'bg-success';
-      tag = 'ON SCENE';
+      tag = 'ARRIVED';
     } else if (type === 'returning') {
       badgeBg = 'bg-warning text-dark';
-      tag = 'DEMOBILIZING';
+      tag = 'RETURNING';
     } else if (type === 'returned') {
       badgeBg = 'bg-secondary';
-      tag = 'REPLENISHED';
+      tag = 'AT STATION';
     }
 
     const logEntry = `
@@ -664,13 +664,13 @@ function updateInventoryUI(inv, deployed) {
     if (badge && inv[k] !== undefined) {
       if (inv[k] === 0) {
         badge.className = 'badge bg-danger';
-        badge.textContent = 'Fleet Depleted';
+        badge.textContent = '❌ None Left';
       } else if (inv[k] < 3) {
         badge.className = 'badge bg-warning text-dark';
-        badge.textContent = 'Low Fleet';
+        badge.textContent = '⚠️ Low Stock';
       } else {
         badge.className = 'badge bg-success-subtle text-success border border-success-subtle';
-        badge.textContent = 'Ready at Base';
+        badge.textContent = '✅ Ready to Help';
       }
     }
 
@@ -750,15 +750,15 @@ function renderDeployments() {
     const incMarker = L.marker(targetCoords, { icon: problemIcon }).addTo(map);
     incMarker.bindPopup(`
       <div style="font-family: sans-serif; min-width: 190px;">
-        <span class="badge bg-danger mb-1">${dep.severity.toUpperCase()} PRIORITY</span>
+        <span class="badge bg-danger mb-1">${dep.severity.toUpperCase()} DANGER</span>
         <h6 class="fw-bold mb-1 mt-1 text-danger">${dep.problem_title}</h6>
         <div class="small text-muted mb-1"><i class="bi bi-geo-alt me-1"></i>${dep.location}</div>
-        <div class="small text-dark"><strong>Mobilized by:</strong> ${dep.assigned_by}</div>
+        <div class="small text-dark"><strong>Help sent by:</strong> ${dep.assigned_by}</div>
       </div>
     `);
     incidentMarkers.push(incMarker);
 
-    // Tactical Units
+    // Help Vehicles
     (dep.units || []).forEach(unit => {
       visibleUnitsCount++;
       const curCoords = [unit.current_lat, unit.current_lng];
@@ -799,10 +799,10 @@ function renderDeployments() {
           <h6 class="fw-bold mb-1 text-primary">${unit.name}</h6>
           <div class="small text-muted mb-1"><i class="bi bi-person-fill me-1"></i>${unit.lead_name}</div>
           <hr class="my-1" />
-          <div class="small"><strong>Destination:</strong> ${unit.problem_title}</div>
+          <div class="small"><strong>Going to:</strong> ${unit.problem_title}</div>
           <div class="small"><strong>Speed:</strong> ${unit.speed}</div>
-          <div class="small" id="popup-dist-${unit.unit_id}"><strong>Distance:</strong> ${unit.distance_km} km</div>
-          <div class="small text-danger fw-bold" id="popup-eta-${unit.unit_id}"><strong>ETA:</strong> ~${unit.eta_mins} mins</div>
+          <div class="small" id="popup-dist-${unit.unit_id}"><strong>Distance:</strong> ${unit.distance_km} km away</div>
+          <div class="small text-danger fw-bold" id="popup-eta-${unit.unit_id}"><strong>⏱️ Reaching in:</strong> ~${unit.eta_mins} mins</div>
         </div>
       `);
 
@@ -823,15 +823,21 @@ function renderDeployments() {
       if (unitsContainer) {
         let badgeClass = 'bg-primary';
         let cardClass = '';
+        let displayStatus = unit.status;
         if (unit.phase === 'on_scene') {
           badgeClass = 'bg-success';
           cardClass = 'unit-onscene';
+          displayStatus = '📍 Arrived & Helping';
         } else if (unit.phase === 'returning') {
           badgeClass = 'bg-warning text-dark';
           cardClass = 'unit-returning';
+          displayStatus = '🏠 Coming Back';
         } else if (unit.phase === 'returned') {
           badgeClass = 'bg-secondary';
           cardClass = 'unit-stationed';
+          displayStatus = '✅ Ready at Station';
+        } else {
+          displayStatus = '🚗 On the Way';
         }
 
         const cardHtml = `
@@ -841,14 +847,14 @@ function renderDeployments() {
                 <i class="bi ${unit.icon}" style="color:${unit.color};"></i>
                 <span>${unit.name}</span>
               </span>
-              <span class="badge ${badgeClass}" id="badge-status-${unit.unit_id}" style="font-size:.68rem;">${unit.status}</span>
+              <span class="badge ${badgeClass}" id="badge-status-${unit.unit_id}" style="font-size:.68rem;">${displayStatus}</span>
             </div>
             <div class="text-muted mb-1" style="font-size:.72rem;">
               <i class="bi bi-geo-alt me-1"></i>${unit.problem_title}
             </div>
             <div class="d-flex justify-content-between align-items-center text-muted" style="font-size:.7rem;">
               <span><i class="bi bi-person-badge me-1"></i>${unit.lead_name.split(':')[0]}</span>
-              <span class="text-danger fw-semibold" id="eta-text-${unit.unit_id}"><i class="bi bi-clock me-1"></i>ETA: ~${unit.eta_mins}m (${unit.distance_km}km)</span>
+              <span class="text-danger fw-semibold" id="eta-text-${unit.unit_id}"><i class="bi bi-clock me-1"></i>~${unit.eta_mins}m away (${unit.distance_km}km)</span>
             </div>
             <!-- Progress Bar -->
             <div class="progress mt-1 mb-2" style="height: 6px;">
@@ -858,18 +864,18 @@ function renderDeployments() {
             <div class="d-flex justify-content-between align-items-center gap-1">
               <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size:.72rem;"
                       onclick="focusUnit('${unit.unit_id}')">
-                <i class="bi bi-crosshair me-1"></i>Track
+                <i class="bi bi-geo-alt me-1"></i>Show on Map
               </button>
               <div class="d-flex gap-1 align-items-center">
                 <button type="button" class="btn btn-xs btn-outline-success py-0 px-1 fw-semibold" style="font-size:.68rem;"
-                        title="Fast forward this unit to scene arrival immediately"
+                        title="Make this vehicle arrive immediately"
                         onclick="quickReachUnit('${unit.unit_id}')">
-                  ⚡ Scene
+                  ⚡ Arrive
                 </button>
                 <button type="button" class="btn btn-xs btn-outline-warning text-dark py-0 px-1 fw-semibold" style="font-size:.68rem;"
-                        title="Fast forward this unit to base return & inventory replenishment immediately"
+                        title="Bring this vehicle back to station immediately"
                         onclick="quickReturnUnit('${unit.unit_id}')">
-                  ⚡ Base
+                  ⚡ Return
                 </button>
               </div>
             </div>
@@ -881,13 +887,13 @@ function renderDeployments() {
   });
 
   const countBadge = document.getElementById('units-count-badge');
-  if (countBadge) countBadge.textContent = `${visibleUnitsCount} Tactical Units`;
+  if (countBadge) countBadge.textContent = `${visibleUnitsCount} Vehicles Active`;
 
   if (visibleUnitsCount === 0 && unitsContainer) {
     unitsContainer.innerHTML = `
       <div class="text-center text-muted py-4">
-        <i class="bi bi-radar fs-2 d-block opacity-25 mb-1"></i>
-        <span class="small">No tactical units currently mobilized for this incident.</span>
+        <i class="bi bi-truck fs-2 d-block opacity-25 mb-1"></i>
+        <span class="small">No help vehicles currently sent for this incident.</span>
       </div>
     `;
   }
@@ -959,7 +965,7 @@ async function syncUnitStatus(item, phase) {
 function triggerOnScene(item) {
   const unit = item.data;
   unit.phase = 'on_scene';
-  unit.status = 'On Scene — Operations Active';
+  unit.status = '📍 Arrived & Helping';
   unit.progress = 100;
   unit.distance_km = 0.0;
   unit.eta_mins = 0;
@@ -972,7 +978,7 @@ function triggerOnScene(item) {
   const badge = document.getElementById(`badge-status-${unit.unit_id}`);
   if (badge) {
     badge.className = 'badge bg-success';
-    badge.textContent = '🟢 On Scene';
+    badge.textContent = '📍 Arrived & Helping';
   }
   const card = document.getElementById(`card-unit-${unit.unit_id}`);
   if (card) {
@@ -986,23 +992,23 @@ function triggerOnScene(item) {
   const etaText = document.getElementById(`eta-text-${unit.unit_id}`);
   if (etaText) {
     etaText.className = 'text-success fw-bold';
-    etaText.innerHTML = '<i class="bi bi-check-circle me-1"></i>On Scene — Operations Active';
+    etaText.innerHTML = '<i class="bi bi-check-circle me-1"></i>Arrived &amp; Helping People Now';
   }
   const subStatus = document.getElementById(`sub-status-${unit.unit_id}`);
-  if (subStatus) subStatus.textContent = 'Active on Scene';
+  if (subStatus) subStatus.textContent = 'Helping People';
 
   // Quiet log entry & update backend (no interrupting screen popups!)
   logIncidentEvent(
     'on_scene',
-    `${unit.name} Arrived on Scene`,
-    `Arrived at ${item.problemLocation || 'incident site'}. Triage & disaster operations active.`
+    `${unit.name} Arrived`,
+    `Arrived at ${item.problemLocation || 'incident spot'}. Helping people now.`
   );
 
   if (unit.type === 'food_packets') {
     logIncidentEvent(
       'on_scene',
-      `Relief Rations Distributed`,
-      `${unit.quantity} life-support ration packages distributed to disaster victims.`
+      `Food Meals Given Out`,
+      `${unit.quantity} food & water meals given out to families.`
     );
   }
 
@@ -1013,12 +1019,12 @@ function triggerOnScene(item) {
 function triggerDemobilizing(item) {
   const unit = item.data;
   unit.phase = 'returning';
-  unit.status = 'Demobilizing — Returning to Base';
+  unit.status = '🏠 Coming Back';
 
   const badge = document.getElementById(`badge-status-${unit.unit_id}`);
   if (badge) {
     badge.className = 'badge bg-warning text-dark';
-    badge.textContent = '🟠 Returning';
+    badge.textContent = '🏠 Coming Back';
   }
   const card = document.getElementById(`card-unit-${unit.unit_id}`);
   if (card) {
@@ -1031,15 +1037,15 @@ function triggerDemobilizing(item) {
   const etaText = document.getElementById(`eta-text-${unit.unit_id}`);
   if (etaText) {
     etaText.className = 'text-warning text-dark fw-bold';
-    etaText.innerHTML = '<i class="bi bi-arrow-left me-1"></i>In Transit to Base';
+    etaText.innerHTML = '<i class="bi bi-arrow-left me-1"></i>Coming Back to Station';
   }
   const subStatus = document.getElementById(`sub-status-${unit.unit_id}`);
-  if (subStatus) subStatus.textContent = 'Demobilizing';
+  if (subStatus) subStatus.textContent = 'Coming Back';
 
   logIncidentEvent(
     'returning',
-    `${unit.name} Demobilizing`,
-    `Mission concluded at ${item.problemLocation || 'incident site'}. En route back to Command Staging Base.`
+    `${unit.name} Coming Back`,
+    `Help finished at ${item.problemLocation || 'incident spot'}. Returning back to station.`
   );
 
   syncUnitStatus(item, 'returning');
@@ -1049,7 +1055,7 @@ function triggerDemobilizing(item) {
 function triggerStationedAtBase(item) {
   const unit = item.data;
   unit.phase = 'returned';
-  unit.status = 'Stationed at Base — Ready';
+  unit.status = '✅ Ready at Station';
   unit.progress = 0;
   unit.distance_km = 0.0;
   unit.eta_mins = 0;
@@ -1061,7 +1067,7 @@ function triggerStationedAtBase(item) {
   const badge = document.getElementById(`badge-status-${unit.unit_id}`);
   if (badge) {
     badge.className = 'badge bg-secondary';
-    badge.textContent = '⚪ At Base';
+    badge.textContent = '✅ Ready at Station';
   }
   const card = document.getElementById(`card-unit-${unit.unit_id}`);
   if (card) {
@@ -1075,15 +1081,15 @@ function triggerStationedAtBase(item) {
   const etaText = document.getElementById(`eta-text-${unit.unit_id}`);
   if (etaText) {
     etaText.className = 'text-muted';
-    etaText.innerHTML = '<i class="bi bi-house-door me-1"></i>Stationed at Base';
+    etaText.innerHTML = '<i class="bi bi-house-door me-1"></i>Ready at Station';
   }
   const subStatus = document.getElementById(`sub-status-${unit.unit_id}`);
-  if (subStatus) subStatus.textContent = 'Available for Redeployment';
+  if (subStatus) subStatus.textContent = 'Ready to Help Again';
 
   logIncidentEvent(
     'returned',
-    `Asset Replenished: ${unit.name}`,
-    `Returned to Command Staging Base. Available fleet count restored (+1).`
+    `${unit.name} Back at Station`,
+    `Safely returned to station. Ready to help again (+1 available).`
   );
 
   // Sync with backend to restore inventory in database & UI
@@ -1096,7 +1102,7 @@ function quickReachUnit(unitId) {
   if (!item) return;
   item.data.progress = 100;
   triggerOnScene(item);
-  showToast('on_scene', 'Tactical Unit Arrived', `${item.data.name} arrived on scene.`);
+  showToast('on_scene', 'Vehicle Arrived', `${item.data.name} reached the scene and is helping.`);
 }
 
 function quickReturnUnit(unitId) {
@@ -1104,7 +1110,7 @@ function quickReturnUnit(unitId) {
   if (!item) return;
   item.data.progress = 0;
   triggerStationedAtBase(item);
-  showToast('returned', 'Tactical Unit Returned', `${item.data.name} returned to Base. Fleet replenished.`);
+  showToast('returned', 'Vehicle Returned', `${item.data.name} is safely back at station.`);
 }
 
 function fastForwardAllToScene() {
@@ -1116,7 +1122,7 @@ function fastForwardAllToScene() {
       count++;
     }
   });
-  showToast('on_scene', '⚡ Units Arrived on Scene', `${count || 'All'} tactical units reached incident site.`);
+  showToast('on_scene', '⚡ Reached People', `${count || 'All'} vehicles arrived and are helping.`);
 }
 
 function fastForwardAllToBase() {
@@ -1128,7 +1134,7 @@ function fastForwardAllToBase() {
       count++;
     }
   });
-  showToast('returned', '⚡ Units Returned to Base', `${count || 'All'} units returned to Base. Inventory replenished.`);
+  showToast('returned', '⚡ Returned to Station', `${count || 'All'} vehicles are back at station.`);
 }
 
 // Fully Automated Fast GPS Simulation Lifecycle (Reaches & returns rapidly for easy demo!)
@@ -1159,7 +1165,7 @@ function startSimulationLoop() {
 
             const etaText = document.getElementById(`eta-text-${unit.unit_id}`);
             if (etaText) {
-              etaText.innerHTML = `<i class="bi bi-clock me-1"></i>ETA: ~${unit.eta_mins}m (${unit.distance_km}km)`;
+              etaText.innerHTML = `<i class="bi bi-clock me-1"></i>~${unit.eta_mins}m away (${unit.distance_km}km)`;
             }
           }
         }
@@ -1194,7 +1200,7 @@ function startSimulationLoop() {
 
             const etaText = document.getElementById(`eta-text-${unit.unit_id}`);
             if (etaText) {
-              etaText.innerHTML = `<i class="bi bi-arrow-left me-1"></i>Returning (${unit.distance_km}km to Base)`;
+              etaText.innerHTML = `<i class="bi bi-arrow-left me-1"></i>Coming back (${unit.distance_km}km to station)`;
             }
           }
         }
@@ -1204,7 +1210,7 @@ function startSimulationLoop() {
     const syncLabel = document.getElementById('tracker-last-sync');
     if (syncLabel) {
       const now = new Date();
-      syncLabel.textContent = `GPS Synced: ${now.toLocaleTimeString()}`;
+      syncLabel.textContent = `GPS: Active (${now.toLocaleTimeString()})`;
     }
   }, 850);
 }
@@ -1223,8 +1229,8 @@ function selectAlertForAssign(alertId, title, severity, location, recAmb, recRsc
 
   const titleEl = document.getElementById('target-alert-title');
   const metaEl = document.getElementById('target-alert-meta');
-  if (titleEl) titleEl.textContent = `Selected: ${title} (${severity.toUpperCase()} Priority)`;
-  if (metaEl) metaEl.textContent = `Location: ${location} | Pre-filled recommended taskforce staged below`;
+  if (titleEl) titleEl.textContent = `Selected: ${title} (${severity.toUpperCase()} DANGER)`;
+  if (metaEl) metaEl.textContent = `Location: ${location} | Recommended vehicles and food filled in below`;
 
   const sel = document.getElementById('report-select');
   if (sel) {
