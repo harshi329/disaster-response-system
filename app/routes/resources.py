@@ -274,12 +274,49 @@ def index():
                 'is_alert': True,
             })
 
-        # 2. Load Allocations and build Tracked Deployments
-        raw_allocations = list(db.allocations.find({'status': {'$ne': 'Mission Completed'}}).sort('_id', -1).limit(20))
-        if not raw_allocations:
-            raw_allocations = list(db.allocations.find().sort('_id', -1).limit(20))
+        # 2. Load Allocations and build Tracked Deployments (Filter out resolved ones)
+        raw_allocations = list(db.allocations.find({'status': {'$nin': ['Mission Completed', 'Resolved', 'Closed']}}).sort('_id', -1).limit(20))
 
-        # If no allocations exist yet, auto-seed a realistic deployment for the top active report
+        # Automatic Resource Allocation for any active alert without an allocation
+        allocated_report_ids = {str(a.get('report_id', '')) for a in raw_allocations if a.get('report_id')}
+        for alert in pending_alerts:
+            if str(alert['id']) not in allocated_report_ids and alert.get('status') not in ['Resolved', 'Closed']:
+                rec = alert.get('recommended', {})
+                auto_alloc = {
+                    'ambulances': max(1, rec.get('ambulances', 1)),
+                    'rescue_teams': max(1, rec.get('rescue_teams', 1)),
+                    'food_packets': max(50, rec.get('food_packets', 100)),
+                    'helicopters': rec.get('helicopters', 0),
+                }
+                auto_units = build_tracked_units(
+                    auto_alloc,
+                    target_lat=alert['lat'],
+                    target_lng=alert['lng'],
+                    problem_title=f"{alert['type']} at {alert['location']}",
+                    assigned_by='Auto AI Dispatch'
+                )
+                alloc_doc = {
+                    'report_id': alert['id'],
+                    'problem_title': f"{alert['type']} at {alert['location']}",
+                    'location': alert['location'],
+                    'severity': alert['severity'],
+                    'target_lat': alert['lat'],
+                    'target_lng': alert['lng'],
+                    'allocated': auto_alloc,
+                    'insufficient': [],
+                    'units': auto_units,
+                    'assigned_by': 'Auto AI Dispatch',
+                    'notes': 'Automatically mobilized upon emergency alert detection.',
+                    'status': 'En Route'
+                }
+                try:
+                    db.allocations.insert_one(alloc_doc)
+                    raw_allocations.append(alloc_doc)
+                    allocated_report_ids.add(str(alert['id']))
+                except Exception:
+                    pass
+
+        # If still no allocations exist, auto-seed a realistic deployment for the top active report
         if not raw_allocations and pending_alerts:
             top = pending_alerts[0]
             seed_allocated = {
@@ -288,7 +325,6 @@ def index():
                 'food_packets': 100,
                 'helicopters': 1,
             }
-            # Deduct from inventory
             db.resources.update_one(
                 {'_id': 'inventory'},
                 {'$inc': {'ambulances': -1, 'rescue_teams': -1, 'food_packets': -100, 'helicopters': -1}}
@@ -298,7 +334,7 @@ def index():
                 target_lat=top['lat'],
                 target_lng=top['lng'],
                 problem_title=f"{top['type']} at {top['location']}",
-                assigned_by='drs_admin'
+                assigned_by='Auto AI Dispatch'
             )
             seed_doc = {
                 'report_id': top['id'],
@@ -310,8 +346,8 @@ def index():
                 'allocated': seed_allocated,
                 'insufficient': [],
                 'units': seed_units,
-                'assigned_by': 'drs_admin',
-                'notes': 'Initial emergency response mobilization issued by Incident Command.',
+                'assigned_by': 'Auto AI Dispatch',
+                'notes': 'Automatically mobilized upon emergency alert detection.',
                 'status': 'En Route'
             }
             db.allocations.insert_one(seed_doc)

@@ -50,85 +50,41 @@
     border: none !important;
   }
 
-  /* Clean Circular Vehicle Markers */
-  .clean-vehicle-badge {
+  /* Cute Small Animated Circular Vehicle Markers (28px) */
+  .cute-vehicle-badge {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
-    font-size: 1.15rem;
-    box-shadow: 0 3px 8px rgba(0,0,0,0.25);
-    border: 2px solid #ffffff;
+    font-size: 0.95rem;
+    box-shadow: 0 2px 7px rgba(0,0,0,0.22);
+    border: 1.5px solid #ffffff;
     cursor: pointer;
-    transition: transform 0.2s ease, filter 0.2s ease;
     user-select: none;
-    position: relative;
+    animation: cute-bob 0.9s ease-in-out infinite alternate;
+    transition: transform 0.2s ease, opacity 0.5s ease;
   }
-  .clean-vehicle-badge:hover {
-    transform: scale(1.22);
+  .cute-vehicle-badge:hover {
+    transform: scale(1.3) translateY(-2px);
     z-index: 9999 !important;
   }
-  .clean-badge-amb { background: #1d4ed8; }
-  .clean-badge-rsc { background: #15803d; }
-  .clean-badge-food { background: #d97706; }
-  .clean-badge-heli { background: #0284c7; }
-
-  /* Creative Vehicle 1: Ambulance Emergency Flashing Lightbar Siren Aura */
-  .siren-active {
-    animation: siren-dual-flash 0.8s infinite alternate !important;
-  }
-  @keyframes siren-dual-flash {
-    0% {
-      box-shadow: 0 0 0 5px #ef4444, 0 4px 14px rgba(239, 68, 68, 0.7);
-    }
-    100% {
-      box-shadow: 0 0 0 5px #3b82f6, 0 4px 14px rgba(59, 130, 246, 0.7);
-    }
+  @keyframes cute-bob {
+    0% { transform: translateY(0px) scale(1); }
+    100% { transform: translateY(-3px) scale(1.06); }
   }
 
-  /* Creative Vehicle 2: Helicopter Spinning Rotor Blades & Flight Altitude Shadow */
-  .clean-badge-heli::before {
-    content: '';
-    position: absolute;
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    border-top: 2.5px solid rgba(255, 255, 255, 0.9);
-    border-bottom: 2.5px solid rgba(255, 255, 255, 0.9);
-    border-left: 2px dashed transparent;
-    border-right: 2px dashed transparent;
-    animation: rotor-spin 0.2s linear infinite;
-    pointer-events: none;
-  }
-  @keyframes rotor-spin {
-    100% { transform: rotate(360deg); }
-  }
-  .heli-in-flight {
-    filter: drop-shadow(0 10px 7px rgba(0, 0, 0, 0.4));
-    transform: translateY(-2px);
-  }
+  .cute-badge-amb { background: linear-gradient(135deg, #60a5fa, #2563eb); }
+  .cute-badge-rsc { background: linear-gradient(135deg, #34d399, #059669); }
+  .cute-badge-food { background: linear-gradient(135deg, #fbbf24, #d97706); }
+  .cute-badge-heli { background: linear-gradient(135deg, #38bdf8, #0284c7); }
 
-  /* Creative Vehicle 3: Directional Flip (Facing left when returning) */
   .flip-heading {
-    transform: scaleX(-1);
+    transform: scaleX(-1) !important;
   }
 
-  .clean-badge-arrived {
-    box-shadow: 0 0 0 4px #22c55e, 0 3px 10px rgba(0,0,0,0.35) !important;
-    animation: arrived-pulse 1s infinite alternate;
-  }
-  @keyframes arrived-pulse {
-    0% { transform: scale(1); }
-    100% { transform: scale(1.14); }
-  }
-  .clean-badge-returned {
-    background: #475569 !important;
-    opacity: 0.9;
-  }
-
-  /* Fixed Station & Incident Pin Markers */
+  /* Danger Spot Pin Marker (Icon only with radar wave) */
   .custom-pin {
     display: flex;
     align-items: center;
@@ -136,64 +92,33 @@
     border-radius: 50%;
     color: #fff;
     box-shadow: 0 3px 10px rgba(0,0,0,0.3);
-    border: 2.5px solid #fff;
+    border: 2px solid #fff;
     cursor: pointer;
-    transition: transform 0.15s ease;
+    transition: transform 0.15s ease, opacity 0.6s ease;
     position: relative;
   }
   .custom-pin:hover {
-    transform: scale(1.15);
+    transform: scale(1.18);
   }
   .pin-problem {
     background: #dc3545;
-    width: 42px;
-    height: 42px;
-    font-size: 1.15rem;
+    width: 38px;
+    height: 38px;
+    font-size: 1.1rem;
   }
-
-  /* Creative Hazard Zone: Dynamic Radar Ripple Waves radiating from Danger Spot */
-  .pin-problem::before, .pin-problem::after {
+  .pin-problem::before {
     content: '';
     position: absolute;
     width: 100%;
     height: 100%;
     border-radius: 50%;
     border: 2px solid #dc3545;
-    pointer-events: none;
-  }
-  .pin-problem::before {
     animation: hazard-wave 2s cubic-bezier(0.2, 0.8, 0.4, 1) infinite;
-  }
-  .pin-problem::after {
-    animation: hazard-wave 2s cubic-bezier(0.2, 0.8, 0.4, 1) infinite 1s;
+    pointer-events: none;
   }
   @keyframes hazard-wave {
     0% { transform: scale(0.8); opacity: 0.9; }
-    100% { transform: scale(3.4); opacity: 0; }
-  }
-
-  /* Creative Central Station: High-Tech Sonar Ping Ring */
-  .pin-station {
-    background: #0f172a;
-    border: 2.5px solid #38bdf8;
-    width: 44px;
-    height: 44px;
-    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.4);
-    font-size: 1.25rem;
-  }
-  .pin-station::after {
-    content: '';
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    border: 2px solid #38bdf8;
-    animation: sonar-ping 2.6s ease-out infinite;
-    pointer-events: none;
-  }
-  @keyframes sonar-ping {
-    0% { transform: scale(0.8); opacity: 0.8; }
-    100% { transform: scale(2.8); opacity: 0; }
+    100% { transform: scale(3.2); opacity: 0; }
   }
 
   /* Glassmorphism Map HUD Controls */
@@ -202,7 +127,7 @@
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     border: 1px solid rgba(226, 232, 240, 0.8);
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
   }
 
   /* Unit Cards */
@@ -262,7 +187,7 @@
     <h4 class="fw-bold mb-0">
       <i class="bi bi-heart-pulse-fill me-2 text-danger"></i>Live Rescue &amp; Help Tracker
     </h4>
-    <small class="text-muted">Live emergency response command &bull; Real-time vehicle telemetry and delivery.</small>
+    <small class="text-muted">Auto-allocation enabled &bull; Real-time help delivery along the route.</small>
   </div>
   {% if current_user.role == 'admin' %}
   <button class="btn btn-warning fw-bold shadow-sm btn-sm" data-bs-toggle="modal" data-bs-target="#restockModal">
@@ -316,7 +241,7 @@
 </div>
 
 <!-- ========================================================================= -->
-<!-- UNIFIED COMMAND DASHBOARD: SINGLE COMPACT PANEL (LEFT) + LIVE MAP (RIGHT)  -->
+<!-- UNIFIED COMMAND DASHBOARD: SINGLE COMPACT PANEL (LEFT) + CUTE MAP (RIGHT)  -->
 <!-- ========================================================================= -->
 <div class="row g-3">
   <!-- LEFT COLUMN: EMERGENCY OPERATIONS PANEL -->
@@ -328,7 +253,7 @@
         <div class="d-flex justify-content-between align-items-center mb-1">
           <div class="d-flex align-items-center gap-2">
             <span class="live-dot"></span>
-            <span class="fw-bold text-dark small" id="mission-headline">Emergency Operations Active</span>
+            <span class="fw-bold text-dark small" id="mission-headline">Live Emergency Response Active</span>
           </div>
           <span class="badge bg-primary text-white rounded-pill px-2" id="mission-eta-badge" style="font-size:.68rem;">Ready</span>
         </div>
@@ -347,13 +272,18 @@
       <!-- Panel Scrollable Body -->
       <div class="panel-scroll-area p-3">
         
-        <!-- Incident Focus Selector -->
+        <!-- Incident Focus Selector & Auto-Allocation Badge -->
         <div class="mb-3">
-          <label class="form-label small fw-bold text-secondary mb-1">
-            <i class="bi bi-geo-alt-fill text-danger me-1"></i>Select Danger Spot:
-          </label>
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <label class="form-label small fw-bold text-secondary mb-0">
+              <i class="bi bi-geo-alt-fill text-danger me-1"></i>Select Danger Spot:
+            </label>
+            <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size:.62rem;">
+              <i class="bi bi-magic me-1"></i>Auto-Allocated
+            </span>
+          </div>
           <select class="form-select form-select-sm fw-semibold" id="incident-filter-select" onchange="filterByProblem(this.value)">
-            <option value="all">🌐 All Danger Spots (Overview)</option>
+            <option value="all">🌐 All Danger Spots (Active)</option>
             {% for dep in tracked_deployments %}
             <option value="{{ dep.id }}">🚨 {{ dep.problem_title }} ({{ dep.units | length }} Units)</option>
             {% endfor %}
@@ -365,26 +295,26 @@
         <div class="p-3 bg-light rounded-3 border mb-3">
           <div class="d-flex justify-content-between align-items-center mb-2">
             <span class="fw-bold small text-primary"><i class="bi bi-sliders me-1"></i>Admin Rescue Console</span>
-            <span class="badge bg-primary-subtle text-primary" style="font-size:.65rem;">1-Click Actions</span>
+            <span class="badge bg-primary-subtle text-primary" style="font-size:.65rem;">Actions</span>
           </div>
 
           <!-- 1-2-3 Action Bar -->
-          <div class="btn-group btn-group-sm w-100 mb-3" role="group">
-            <button type="button" class="btn btn-primary fw-bold" onclick="launchAllFromStation()" title="Deploy all vehicles from station">
+          <div class="btn-group btn-group-sm w-100 mb-2" role="group">
+            <button type="button" class="btn btn-primary fw-bold" onclick="launchAllFromStation()" title="Deploy all vehicles along route">
               <i class="bi bi-send-fill me-1"></i>1. Send Help
             </button>
-            <button type="button" class="btn btn-success fw-bold" onclick="fastForwardAllToScene()" title="Arrive at scene immediately">
+            <button type="button" class="btn btn-success fw-bold" onclick="fastForwardAllToScene()" title="Arrive at danger spot immediately">
               <i class="bi bi-geo-alt-fill me-1"></i>2. Arrive &amp; Help
             </button>
-            <button type="button" class="btn btn-warning text-dark fw-bold" onclick="fastForwardAllToBase()" title="Return all vehicles to station">
+            <button type="button" class="btn btn-warning text-dark fw-bold" onclick="fastForwardAllToBase()" title="Help finished & resolve alert">
               <i class="bi bi-house-door-fill me-1"></i>3. Return Home
             </button>
           </div>
 
-          <!-- Quick Mobilization Form -->
-          <div id="admin-assignment-section">
+          <!-- Manual Resource Dispatch Form -->
+          <div id="admin-assignment-section" class="mt-2 pt-2 border-top">
             <div class="d-flex justify-content-between align-items-center mb-2">
-              <span class="fw-bold small text-danger" style="font-size:.75rem;">
+              <span class="fw-bold small text-danger" style="font-size:.72rem;">
                 <i class="bi bi-send-check me-1"></i>Send Help to Danger Spots
               </span>
               <span class="badge bg-danger text-white" style="font-size:.65rem;">{{ pending_alerts | length }} Waiting</span>
@@ -405,7 +335,6 @@
                 {% endfor %}
               </select>
 
-              <!-- Inline Stepper Inputs -->
               <div class="row g-2 mb-2">
                 <div class="col-6">
                   <div class="input-group input-group-sm">
@@ -438,9 +367,9 @@
               </button>
             </form>
             {% else %}
-            <div class="alert alert-success p-2 small mb-0 d-flex align-items-center gap-2" style="font-size:.75rem;">
+            <div class="alert alert-success p-2 small mb-0 d-flex align-items-center gap-2" style="font-size:.73rem;">
               <i class="bi bi-check-circle-fill text-success"></i>
-              <span>All danger spots currently have help dispatched.</span>
+              <span>All active alerts have help automatically dispatched.</span>
             </div>
             {% endif %}
           </div>
@@ -479,7 +408,7 @@
     </div>
   </div>
 
-  <!-- RIGHT COLUMN: CREATIVE INTERACTIVE LIVE MAP -->
+  <!-- RIGHT COLUMN: CUTE, CLEAN ROUTE MAP (NO BASE / EMERGENCY CENTERS) -->
   <div class="col-lg-8 col-xl-8">
     <div class="card border-0 shadow-sm rounded-3 bg-white p-3 h-100 d-flex flex-column">
       <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
@@ -493,11 +422,11 @@
         <small class="text-muted" id="tracker-last-sync" style="font-size:.72rem;">GPS: Active</small>
       </div>
 
-      <!-- Leaflet Map Container with Floating HUD Controls -->
+      <!-- Leaflet Map Container -->
       <div class="position-relative flex-grow-1">
         <div id="tracking-map"></div>
 
-        <!-- Creative Control 1: Top-Right Tactical Map View Switcher -->
+        <!-- Top-Right Tactical Map View Switcher -->
         <div class="position-absolute top-0 end-0 m-3 map-glass-panel p-1 rounded-pill d-flex gap-1" style="z-index: 1000;">
           <button type="button" class="btn btn-xs btn-primary rounded-pill px-2 py-0 fw-bold map-theme-btn active"
                   id="btn-layer-streets" onclick="switchMapLayer('streets', this)" style="font-size:.68rem;">
@@ -513,12 +442,12 @@
           </button>
         </div>
 
-        <!-- Creative Control 2: Top-Left Floating Mission Telemetry HUD -->
+        <!-- Top-Left Floating Mission Telemetry HUD -->
         <div class="position-absolute top-0 start-0 m-3 map-glass-panel p-2 rounded-3"
              id="mission-telemetry-hud" style="z-index: 1000; min-width: 220px;">
           <div class="d-flex justify-content-between align-items-center mb-1">
             <span class="fw-bold text-dark" style="font-size:.7rem;">
-              <i class="bi bi-radar text-danger me-1"></i>TELEMETRY HUD
+              <i class="bi bi-activity text-primary me-1"></i>MISSION HUD
             </span>
             <button type="button" class="btn btn-xs btn-outline-primary py-0 px-2 fw-semibold"
                     id="chase-cam-btn" onclick="toggleChaseCam()" style="font-size:.62rem;">
@@ -526,7 +455,7 @@
             </button>
           </div>
           <div class="text-truncate fw-semibold text-danger" id="hud-target-name" style="font-size:.7rem;">
-            Central Emergency Operations
+            Monitoring Live Alert Delivery
           </div>
           <div class="d-flex justify-content-between text-muted mt-1 pt-1 border-top" style="font-size:.68rem;">
             <span>⚡ <strong id="hud-speed" class="text-dark">60</strong> km/h</span>
@@ -535,16 +464,15 @@
           </div>
         </div>
 
-        <!-- Floating Minimalist Legend Strip -->
+        <!-- Clean Floating Cute Guide Strip (NO EMERGENCY CENTER ICON) -->
         <div class="position-absolute bottom-0 start-50 translate-middle-x mb-3 py-1 px-3 map-glass-panel rounded-pill small"
              style="z-index: 1000; font-size:.72rem; white-space: nowrap;">
-          <span class="me-2 fw-bold text-dark">Radar Guide:</span>
-          <span class="me-2">🏢 Central Station</span>
+          <span class="me-2 fw-bold text-dark">Live Units:</span>
           <span class="me-2">🚨 Danger Spot</span>
-          <span class="me-2">🚑 Siren Amb</span>
+          <span class="me-2">🚑 Ambulance</span>
           <span class="me-2">👥 Rescue</span>
           <span class="me-2">🍲 Food</span>
-          <span>🚁 Rotor Heli</span>
+          <span>🚁 Heli</span>
         </div>
       </div>
     </div>
@@ -561,7 +489,7 @@
       </div>
       <form method="POST" action="{{ url_for('resources.restock') }}">
         <div class="modal-body">
-          <p class="text-muted small mb-3">Add newly arrived vehicles or food packages into our main station inventory:</p>
+          <p class="text-muted small mb-3">Add newly arrived vehicles or food packages into station inventory:</p>
           <div class="row g-3">
             <div class="col-6">
               <label class="form-label small fw-semibold">Add Ambulances 🚑</label>
@@ -597,23 +525,16 @@
 const deploymentsData = {{ tracked_json | safe }};
 const IS_ADMIN = {{ 'true' if current_user.role == 'admin' else 'false' }};
 
-// Central Emergency Station (HQ)
-const CENTRAL_STATION_COORDS = [28.5850, 77.1850];
-
 let map = null;
 let currentTileLayer = null;
 let activeTileTheme = 'streets';
 
-let stationMarker = null;
 let incidentMarkers = [];
 let unitMarkers = [];
 let routeLines = [];
 let activeProblemFilter = 'all';
-
-// Creative: Chase Cam state
 let isChaseCamActive = false;
 
-// Tile Layer Definitions (Streets, Tactical Dark Matter, Satellite)
 const TILE_PROVIDERS = {
   streets: {
     url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
@@ -625,7 +546,7 @@ const TILE_PROVIDERS = {
   },
   satellite: {
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    options: { maxZoom: 19, attribution: 'Tiles &copy; Esri &mdash; Earthstar Geographics' }
+    options: { maxZoom: 19, attribution: 'Tiles &copy; Esri' }
   }
 };
 
@@ -646,7 +567,6 @@ function switchMapLayer(theme, btn) {
     btn.classList.add('btn-primary', 'active');
   }
 
-  // If dark mode, enhance route contrast with glowing cyan
   updateRouteColors(theme === 'dark');
 }
 
@@ -666,7 +586,7 @@ function toggleChaseCam() {
     if (isChaseCamActive) {
       btn.className = 'btn btn-xs btn-danger py-0 px-2 fw-bold';
       btn.textContent = '🎯 Chase Cam: ON';
-      showToast('on_scene', 'Chase Cam Active', 'Camera locking onto lead emergency vehicle.');
+      showToast('on_scene', 'Chase Cam Active', 'Camera tracking moving rescue vehicle.');
     } else {
       btn.className = 'btn btn-xs btn-outline-primary py-0 px-2 fw-semibold';
       btn.textContent = '🎯 Chase Cam: OFF';
@@ -689,10 +609,10 @@ function logIncidentEvent(type, title, message) {
       tag = 'ARRIVED';
     } else if (type === 'returning') {
       badgeBg = 'bg-warning text-dark';
-      tag = 'RETURNING';
+      tag = 'RESOLVED';
     } else if (type === 'returned') {
       badgeBg = 'bg-secondary';
-      tag = 'AT STATION';
+      tag = 'CLEARED';
     }
 
     const logEntry = `
@@ -801,9 +721,8 @@ function initMap() {
     zoomControl: true,
     scrollWheelZoom: true,
     closePopupOnClick: true
-  }).setView(CENTRAL_STATION_COORDS, 12);
+  }).setView([28.6139, 77.2090], 12);
 
-  // Initialize with Streets by default
   const cfg = TILE_PROVIDERS.streets;
   currentTileLayer = L.tileLayer(cfg.url, cfg.options).addTo(map);
 
@@ -812,11 +731,7 @@ function initMap() {
 }
 
 function clearMapLayers() {
-  if (stationMarker) {
-    map.removeLayer(stationMarker);
-    stationMarker = null;
-  }
-  incidentMarkers.forEach(m => map.removeLayer(m));
+  incidentMarkers.forEach(m => map.removeLayer(m.marker));
   unitMarkers.forEach(m => map.removeLayer(m.marker));
   routeLines.forEach(rl => {
     if (rl.corridor) map.removeLayer(rl.corridor);
@@ -836,71 +751,96 @@ function getLaneOffset(depot, target, unitIndex, totalUnits) {
   const nx = -dy / len;
   const ny = dx / len;
   const laneFactor = unitIndex - (totalUnits - 1) / 2.0;
-  const spacing = 0.0035;
+  const spacing = 0.003;
   return {
     lat: nx * laneFactor * spacing,
     lng: ny * laneFactor * spacing
   };
 }
 
-function getStationBayOffset(unitIndex, totalUnits) {
-  const angle = (unitIndex / Math.max(1, totalUnits)) * 2 * Math.PI;
-  const radius = 0.0045;
-  return {
-    lat: +(radius * Math.cos(angle)).toFixed(6),
-    lng: +(radius * Math.sin(angle)).toFixed(6)
-  };
-}
-
-// Creative Vehicle HTML with sirens, rotating rotor blades, and directional tilt
-function getUnitPillHtml(unit) {
-  let badgeClass = 'clean-badge-amb';
+// Small, Cute Vehicle Badge HTML (28px)
+function getCuteUnitHtml(unit) {
+  let badgeClass = 'cute-badge-amb';
   let icon = '🚑';
 
   if (unit.type === 'rescue_teams') {
-    badgeClass = 'clean-badge-rsc';
+    badgeClass = 'cute-badge-rsc';
     icon = '👥';
   } else if (unit.type === 'food_packets') {
-    badgeClass = 'clean-badge-food';
+    badgeClass = 'cute-badge-food';
     icon = '🍲';
   } else if (unit.type === 'helicopters') {
-    badgeClass = 'clean-badge-heli';
+    badgeClass = 'cute-badge-heli';
     icon = '🚁';
   }
 
   let extraClass = '';
-  // Ambulance emergency flashing siren
-  if (unit.type === 'ambulances' && unit.phase === 'en_route') {
-    extraClass += ' siren-active';
-  }
-  // Helicopter flight altitude shadow
-  if (unit.type === 'helicopters' && (unit.phase === 'en_route' || unit.phase === 'returning')) {
-    extraClass += ' heli-in-flight';
-  }
-  // Directional flip when returning
   if (unit.phase === 'returning') {
     extraClass += ' flip-heading';
   }
-  // Arrival pulse
-  if (unit.phase === 'on_scene') {
-    extraClass += ' clean-badge-arrived';
-  } else if (unit.phase === 'returned') {
-    extraClass += ' clean-badge-returned';
-  }
 
-  return `<div class="clean-vehicle-badge ${badgeClass} ${extraClass}" id="pin-${unit.unit_id}">${icon}</div>`;
+  return `<div class="cute-vehicle-badge ${badgeClass} ${extraClass}" id="pin-${unit.unit_id}">${icon}</div>`;
 }
 
 function updateMarkerPill(item) {
   if (!item || !item.marker || !item.data) return;
   item.marker.setIcon(L.divIcon({
     className: 'custom-pill-marker-wrapper',
-    html: getUnitPillHtml(item.data),
-    iconSize: [36, 36],
-    iconAnchor: [18, 18]
+    html: getCuteUnitHtml(item.data),
+    iconSize: [28, 28],
+    iconAnchor: [14, 14]
   }));
 }
 
+// Creative Feature: Resolve and smoothly disappear alert, route, and units from map!
+function disappearResolvedIncident(allocationId) {
+  const incObj = incidentMarkers.find(m => m.allocationId === allocationId);
+  const rLines = routeLines.filter(rl => rl.id === allocationId);
+  const uItems = unitMarkers.filter(u => u.allocationId === allocationId);
+
+  // 1. Fade out smoothly
+  uItems.forEach(u => {
+    if (u.marker && u.marker._icon) {
+      u.marker._icon.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+      u.marker._icon.style.opacity = '0';
+      u.marker._icon.style.transform = 'scale(0.2)';
+    }
+  });
+  rLines.forEach(rl => {
+    if (rl.corridor) rl.corridor.setStyle({ opacity: 0 });
+    if (rl.center) rl.center.setStyle({ opacity: 0 });
+  });
+  if (incObj && incObj.marker && incObj.marker._icon) {
+    incObj.marker._icon.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+    incObj.marker._icon.style.opacity = '0';
+    incObj.marker._icon.style.transform = 'scale(0.2)';
+  }
+
+  // 2. Remove from Leaflet layers after fade
+  setTimeout(() => {
+    uItems.forEach(u => map.removeLayer(u.marker));
+    rLines.forEach(rl => {
+      if (rl.corridor) map.removeLayer(rl.corridor);
+      if (rl.center) map.removeLayer(rl.center);
+    });
+    if (incObj && incObj.marker) map.removeLayer(incObj.marker);
+
+    unitMarkers = unitMarkers.filter(u => u.allocationId !== allocationId);
+    routeLines = routeLines.filter(rl => rl.id !== allocationId);
+    incidentMarkers = incidentMarkers.filter(m => m.allocationId !== allocationId);
+
+    showToast('returned', '🎉 Alert Resolved & Cleared', 'Help delivered successfully! Area marked safe.');
+    updateJourneyTracker();
+
+    // If all clear, update HUD
+    if (incidentMarkers.length === 0) {
+      const hudTarget = document.getElementById('hud-target-name');
+      if (hudTarget) hudTarget.textContent = '🎉 All Areas Safe! No Active Emergencies';
+    }
+  }, 650);
+}
+
+// Render clean, cute map without any emergency center or origin markers
 function renderDeployments() {
   if (!map) return;
   clearMapLayers();
@@ -909,25 +849,6 @@ function renderDeployments() {
   const unitsContainer = document.getElementById('units-list-container');
   if (unitsContainer) unitsContainer.innerHTML = '';
   let visibleUnitsCount = 0;
-
-  // 1. EXACTLY ONE CENTRAL HELP STATION PIN with Sonar Ping Effect
-  bounds.push(CENTRAL_STATION_COORDS);
-  const stationIcon = L.divIcon({
-    className: 'custom-pill-marker-wrapper',
-    html: `<div class="custom-pin pin-station" title="Central Emergency Station">🏢</div>`,
-    iconSize: [44, 44],
-    iconAnchor: [22, 22]
-  });
-
-  stationMarker = L.marker(CENTRAL_STATION_COORDS, { icon: stationIcon, zIndexOffset: 1000 }).addTo(map);
-  stationMarker.bindPopup(`
-    <div style="font-family: sans-serif; min-width: 190px;">
-      <span class="badge bg-dark mb-1">🏢 CENTRAL DISPATCH HQ</span>
-      <h6 class="fw-bold mb-1 mt-1 text-primary">Central Emergency Station</h6>
-      <div class="small text-muted mb-1"><i class="bi bi-geo-alt me-1"></i>Main Staging Depot</div>
-      <div class="small text-dark">All response vehicles deploy from and return here.</div>
-    </div>
-  `, { autoClose: true, closeOnClick: true });
 
   let allUnitsList = [];
   let isFirst = true;
@@ -939,12 +860,18 @@ function renderDeployments() {
     const targetCoords = [dep.target_lat, dep.target_lng];
     bounds.push(targetCoords);
 
-    // 2. DANGER SPOT PIN with animated radar wave ripple rings
+    // Compute route origin path without placing any emergency center marker on it
+    const routeOriginCoords = (dep.units && dep.units.length > 0)
+      ? [dep.units[0].origin_lat, dep.units[0].origin_lng]
+      : [+(dep.target_lat - 0.035).toFixed(6), +(dep.target_lng - 0.026).toFixed(6)];
+    bounds.push(routeOriginCoords);
+
+    // 1. DANGER SPOT PIN (Only marking where help is needed!)
     const problemIcon = L.divIcon({
       className: 'custom-pill-marker-wrapper',
       html: `<div class="custom-pin pin-problem" title="${dep.problem_title}">🚨</div>`,
-      iconSize: [42, 42],
-      iconAnchor: [21, 21]
+      iconSize: [38, 38],
+      iconAnchor: [19, 19]
     });
 
     const incMarker = L.marker(targetCoords, { icon: problemIcon, zIndexOffset: 900 }).addTo(map);
@@ -953,64 +880,60 @@ function renderDeployments() {
         <span class="badge bg-danger mb-1">${dep.severity.toUpperCase()} DANGER SPOT</span>
         <h6 class="fw-bold mb-1 mt-1 text-danger">${dep.problem_title}</h6>
         <div class="small text-muted mb-1"><i class="bi bi-geo-alt me-1"></i>${dep.location}</div>
-        <div class="small text-dark"><strong>Active:</strong> ${dep.units ? dep.units.length : 0} vehicles assigned</div>
+        <div class="small text-dark mb-2"><strong>Active:</strong> ${dep.units ? dep.units.length : 0} units responding</div>
+        <button type="button" class="btn btn-xs btn-outline-success w-100 fw-bold" onclick="disappearResolvedIncident('${dep.id}')">
+          ✅ Mark Alert as Resolved
+        </button>
       </div>
     `, { autoClose: true, closeOnClick: true });
-    incidentMarkers.push(incMarker);
 
-    // 3. Single Active Prominent Route Corridor
+    incidentMarkers.push({ allocationId: dep.id, marker: incMarker });
+
+    // 2. Clean Route Line Connecting Directly to the Danger Spot
     const isProminent = (activeProblemFilter === dep.id) || (activeProblemFilter === 'all' && isFirst);
     isFirst = false;
 
     const isDark = (activeTileTheme === 'dark');
 
-    const routeCorridor = L.polyline([CENTRAL_STATION_COORDS, targetCoords], {
+    const routeCorridor = L.polyline([routeOriginCoords, targetCoords], {
       color: isProminent ? (isDark ? '#38bdf8' : '#93c5fd') : '#cbd5e1',
-      weight: isProminent ? 8 : 3,
-      opacity: isProminent ? (isDark ? 0.6 : 0.5) : 0.2,
+      weight: isProminent ? 6 : 2.5,
+      opacity: isProminent ? (isDark ? 0.5 : 0.4) : 0.15,
       lineCap: 'round',
       lineJoin: 'round'
     }).addTo(map);
 
-    const routeCenter = L.polyline([CENTRAL_STATION_COORDS, targetCoords], {
+    const routeCenter = L.polyline([routeOriginCoords, targetCoords], {
       color: isProminent ? (isDark ? '#00f0ff' : '#2563eb') : '#94a3b8',
-      weight: isProminent ? 3.5 : 1.5,
-      opacity: isProminent ? 0.95 : 0.4,
+      weight: isProminent ? 3 : 1.5,
+      opacity: isProminent ? 0.9 : 0.35,
+      dashArray: '5, 7',
       lineCap: 'round'
     }).addTo(map);
 
     routeLines.push({ corridor: routeCorridor, center: routeCenter, id: dep.id, isProminent: isProminent });
 
     (dep.units || []).forEach(u => {
-      allUnitsList.push({ unit: u, dep: dep, targetCoords: targetCoords });
+      allUnitsList.push({ unit: u, dep: dep, targetCoords: targetCoords, originCoords: routeOriginCoords });
     });
   });
 
-  // 4. Render Vehicles with Lane Spacing & Creative Badges
+  // 3. Render Cute Vehicles Moving on the Route
   const totalUnits = allUnitsList.length;
   allUnitsList.forEach((item, unitIdx) => {
     visibleUnitsCount++;
     const unit = item.unit;
     const dep = item.dep;
     const targetCoords = item.targetCoords;
+    const originCoords = item.originCoords;
 
-    const laneOffset = getLaneOffset(CENTRAL_STATION_COORDS, targetCoords, unitIdx, totalUnits);
-    const bayOffset = getStationBayOffset(unitIdx, totalUnits);
-
+    const laneOffset = getLaneOffset(originCoords, targetCoords, unitIdx, totalUnits);
     const t = (unit.progress !== undefined ? unit.progress : 50) / 100.0;
-    let curCoords;
 
-    if (unit.phase === 'returned' || unit.progress === 0) {
-      curCoords = [
-        +(CENTRAL_STATION_COORDS[0] + bayOffset.lat).toFixed(6),
-        +(CENTRAL_STATION_COORDS[1] + bayOffset.lng).toFixed(6)
-      ];
-    } else {
-      curCoords = [
-        +(CENTRAL_STATION_COORDS[0] + (targetCoords[0] - CENTRAL_STATION_COORDS[0]) * t + laneOffset.lat).toFixed(6),
-        +(CENTRAL_STATION_COORDS[1] + (targetCoords[1] - CENTRAL_STATION_COORDS[1]) * t + laneOffset.lng).toFixed(6)
-      ];
-    }
+    const curCoords = [
+      +(originCoords[0] + (targetCoords[0] - originCoords[0]) * t + laneOffset.lat).toFixed(6),
+      +(originCoords[1] + (targetCoords[1] - originCoords[1]) * t + laneOffset.lng).toFixed(6)
+    ];
 
     unit.current_lat = curCoords[0];
     unit.current_lng = curCoords[1];
@@ -1018,14 +941,14 @@ function renderDeployments() {
 
     const unitIcon = L.divIcon({
       className: 'custom-pill-marker-wrapper',
-      html: getUnitPillHtml(unit),
-      iconSize: [36, 36],
-      iconAnchor: [18, 18]
+      html: getCuteUnitHtml(unit),
+      iconSize: [28, 28],
+      iconAnchor: [14, 14]
     });
 
-    const uMarker = L.marker(curCoords, { icon: unitIcon, zIndexOffset: 700 }).addTo(map);
+    const uMarker = L.marker(curCoords, { icon: unitIcon, zIndexOffset: 800 }).addTo(map);
     uMarker.bindPopup(`
-      <div style="font-family: sans-serif; min-width: 190px;">
+      <div style="font-family: sans-serif; min-width: 180px;">
         <div class="d-flex align-items-center justify-content-between mb-1">
           <span class="badge bg-dark">${unit.unit_id}</span>
           <span class="badge bg-primary">${unit.status}</span>
@@ -1045,8 +968,7 @@ function renderDeployments() {
       marker: uMarker,
       data: unit,
       laneOffset: laneOffset,
-      bayOffset: bayOffset,
-      depotCoords: CENTRAL_STATION_COORDS,
+      depotCoords: originCoords,
       targetCoords: targetCoords,
       problemLocation: dep.location,
       problemTitle: dep.problem_title,
@@ -1087,9 +1009,9 @@ function renderDeployments() {
           </div>
 
           <div class="d-flex justify-content-between text-muted" style="font-size: 0.62rem;">
-            <span>🏢 Station</span>
+            <span>En Route</span>
             <span class="fw-bold text-primary" id="prog-pct-${unit.unit_id}">${Math.round(unit.progress)}%</span>
-            <span>🚨 Danger</span>
+            <span>🚨 Danger Spot</span>
           </div>
           <div class="progress mb-2" style="height: 5px;">
             <div class="progress-bar progress-bar-striped progress-bar-animated ${unit.phase==='on_scene'?'bg-success':(unit.phase==='returning'?'bg-warning':'bg-primary')}"
@@ -1109,9 +1031,9 @@ function renderDeployments() {
                 📍 Arrive
               </button>
               <button type="button" class="btn btn-xs btn-outline-warning text-dark py-0 px-2 fw-semibold" style="font-size:.65rem;"
-                      title="Return to station immediately"
+                      title="Return & clear"
                       onclick="quickReturnUnit('${unit.unit_id}')">
-                🏠 Return
+                🏠 Clear
               </button>
             </div>
             ` : ''}
@@ -1128,8 +1050,8 @@ function renderDeployments() {
   if (visibleUnitsCount === 0 && unitsContainer) {
     unitsContainer.innerHTML = `
       <div class="text-center text-muted py-3">
-        <i class="bi bi-truck fs-3 d-block opacity-25 mb-1"></i>
-        <span class="small">No active vehicles deployed for this view.</span>
+        <i class="bi bi-check-circle fs-3 text-success d-block opacity-50 mb-1"></i>
+        <span class="small text-success fw-semibold">All alerts resolved & cleared!</span>
       </div>
     `;
   }
@@ -1220,7 +1142,7 @@ function triggerOnScene(item) {
   logIncidentEvent(
     'on_scene',
     `${unit.name} Arrived`,
-    `Arrived at ${item.problemLocation || 'danger spot'}. Providing medical care & food.`
+    `Arrived at ${item.problemLocation || 'danger spot'}. Providing emergency care.`
   );
 
   syncUnitStatus(item, 'on_scene');
@@ -1245,8 +1167,8 @@ function triggerDemobilizing(item) {
 
   logIncidentEvent(
     'returning',
-    `${unit.name} Returning`,
-    `Help finished at ${item.problemLocation || 'danger spot'}. Returning to station.`
+    `${unit.name} Mission Done`,
+    `Help completed at ${item.problemLocation || 'danger spot'}.`
   );
 
   syncUnitStatus(item, 'returning');
@@ -1260,33 +1182,14 @@ function triggerStationedAtBase(item) {
   unit.distance_km = 0.0;
   unit.eta_mins = 0;
 
-  const bay = item.bayOffset || { lat: 0, lng: 0 };
-  unit.current_lat = +(CENTRAL_STATION_COORDS[0] + bay.lat).toFixed(6);
-  unit.current_lng = +(CENTRAL_STATION_COORDS[1] + bay.lng).toFixed(6);
-
-  item.marker.setLatLng([unit.current_lat, unit.current_lng]);
-  updateMarkerPill(item);
-
-  const badge = document.getElementById(`badge-status-${unit.unit_id}`);
-  if (badge) {
-    badge.className = 'badge bg-secondary';
-    badge.textContent = '✅ Ready at Station';
-  }
-  const card = document.getElementById(`card-unit-${unit.unit_id}`);
-  if (card) card.className = 'card mb-2 border shadow-sm p-2 unit-card unit-stationed';
-  const bar = document.getElementById(`prog-${unit.unit_id}`);
-  if (bar) {
-    bar.className = 'progress-bar bg-secondary';
-    bar.style.width = '0%';
-  }
-
-  logIncidentEvent(
-    'returned',
-    `${unit.name} at Station`,
-    `Safely arrived back at base. Ready to dispatch.`
-  );
-
   syncUnitStatus(item, 'returned');
+
+  // Once unit returns, check if this alert is resolved and disappear it!
+  const siblingUnits = unitMarkers.filter(u => u.allocationId === item.allocationId);
+  const allReturned = siblingUnits.every(u => u.data.phase === 'returned' || u.data.progress === 0);
+  if (allReturned) {
+    disappearResolvedIncident(item.allocationId);
+  }
 }
 
 function updateJourneyTracker() {
@@ -1321,10 +1224,10 @@ function updateJourneyTracker() {
     }
   } else if (returningCount > 0) {
     if (pReturning) pReturning.className = 'fw-bold text-warning text-dark';
-    if (headline) headline.textContent = '🏠 Returning Back to Station';
+    if (headline) headline.textContent = '🏠 Help Done — Clearing Alert';
     if (etaBadge) {
       etaBadge.className = 'badge bg-warning text-dark fw-bold';
-      etaBadge.textContent = '~5s to Base';
+      etaBadge.textContent = 'Clearing';
     }
   } else if (enrouteCount > 0) {
     if (pEnroute) pEnroute.className = 'fw-bold text-primary';
@@ -1335,7 +1238,7 @@ function updateJourneyTracker() {
     }
   } else {
     if (pStation) pStation.className = 'fw-bold text-dark';
-    if (headline) headline.textContent = '🏢 All Vehicles Ready at Station';
+    if (headline) headline.textContent = '🏢 Ready at Station';
     if (etaBadge) {
       etaBadge.className = 'badge bg-secondary text-white fw-bold';
       etaBadge.textContent = 'Ready';
@@ -1343,7 +1246,7 @@ function updateJourneyTracker() {
   }
 }
 
-// 1-Click Action 1: Launch all from Station
+// 1-Click Action 1: Launch all
 function launchAllFromStation() {
   unitMarkers.forEach(item => {
     item.data.phase = 'en_route';
@@ -1352,8 +1255,8 @@ function launchAllFromStation() {
     item.onSceneDuration = 0;
 
     const offset = item.laneOffset || { lat: 0, lng: 0 };
-    item.data.current_lat = +(CENTRAL_STATION_COORDS[0] + offset.lat).toFixed(6);
-    item.data.current_lng = +(CENTRAL_STATION_COORDS[1] + offset.lng).toFixed(6);
+    item.data.current_lat = +(item.depotCoords[0] + offset.lat).toFixed(6);
+    item.data.current_lng = +(item.depotCoords[1] + offset.lng).toFixed(6);
     item.marker.setLatLng([item.data.current_lat, item.data.current_lng]);
     updateMarkerPill(item);
 
@@ -1373,7 +1276,7 @@ function launchAllFromStation() {
     if (pct) pct.textContent = '0%';
   });
   updateJourneyTracker();
-  showToast('on_scene', '🚀 Units Launched', 'Vehicles rushing to danger spots (5s transit).');
+  showToast('on_scene', '🚀 Units Launched', 'Vehicles rushing along route (5s transit).');
 }
 
 function quickReachUnit(unitId) {
@@ -1391,7 +1294,6 @@ function quickReturnUnit(unitId) {
   item.data.progress = 0;
   triggerStationedAtBase(item);
   updateJourneyTracker();
-  showToast('returned', 'Vehicle Returned', `${item.data.name} returned to base.`);
 }
 
 // 1-Click Action 2: Arrive & Help
@@ -1404,32 +1306,31 @@ function fastForwardAllToScene() {
     count++;
   });
   updateJourneyTracker();
-  showToast('on_scene', '📍 Help Arrived', `${count || 'All'} vehicles arrived at the scene.`);
+  showToast('on_scene', '📍 Help Arrived', `${count || 'All'} units arrived at danger spot.`);
 }
 
-// 1-Click Action 3: Return Home
+// 1-Click Action 3: Return Home & Auto-Disappear Resolved Alert!
 function fastForwardAllToBase() {
-  let count = 0;
+  let uniqueAllocs = new Set();
   unitMarkers.forEach(item => {
     item.data.phase = 'returning';
     item.data.status = '🏠 Coming Back';
     item.data.progress = 100;
     updateMarkerPill(item);
-
-    const badge = document.getElementById(`badge-status-${item.id}`);
-    if (badge) {
-      badge.className = 'badge bg-warning text-dark';
-      badge.textContent = '🏠 Coming Back';
-    }
-    const card = document.getElementById(`card-unit-${item.id}`);
-    if (card) card.className = 'card mb-2 border shadow-sm p-2 unit-card unit-returning';
-    count++;
+    uniqueAllocs.add(item.allocationId);
   });
   updateJourneyTracker();
-  showToast('returned', '🏠 Returning Home', `${count || 'All'} vehicles heading to station.`);
+  showToast('returned', '🏠 Resolving Alerts', 'Help delivered. Alerts and vehicles resolving now.');
+
+  // Automatically fade out and disappear all completed alerts!
+  setTimeout(() => {
+    uniqueAllocs.forEach(allocId => {
+      disappearResolvedIncident(allocId);
+    });
+  }, 1200);
 }
 
-// 5-Second Fluid Simulation Loop with Live Telemetry HUD & Chase Cam
+// 5-Second Simulation Loop with Cute Vehicles
 function startSimulationLoop() {
   setInterval(() => {
     let activeLeadUnit = null;
@@ -1442,7 +1343,7 @@ function startSimulationLoop() {
         if (!activeLeadUnit) activeLeadUnit = unit;
       }
 
-      // Phase 1: En Route (5s)
+      // Phase 1: En Route to Danger Spot (5s)
       if (unit.phase === 'en_route') {
         if (unit.progress < 100) {
           unit.progress = Math.min(100, +(unit.progress + step).toFixed(1));
@@ -1452,8 +1353,8 @@ function startSimulationLoop() {
           } else {
             const t = unit.progress / 100.0;
             const offset = item.laneOffset || { lat: 0, lng: 0 };
-            unit.current_lat = +(CENTRAL_STATION_COORDS[0] + (item.targetCoords[0] - CENTRAL_STATION_COORDS[0]) * t + offset.lat).toFixed(6);
-            unit.current_lng = +(CENTRAL_STATION_COORDS[1] + (item.targetCoords[1] - CENTRAL_STATION_COORDS[1]) * t + offset.lng).toFixed(6);
+            unit.current_lat = +(item.depotCoords[0] + (item.targetCoords[0] - item.depotCoords[0]) * t + offset.lat).toFixed(6);
+            unit.current_lng = +(item.depotCoords[1] + (item.targetCoords[1] - item.depotCoords[1]) * t + offset.lng).toFixed(6);
             unit.distance_km = +(Math.max(0.1, (1.0 - t) * 6.0)).toFixed(1);
             unit.eta_mins = Math.max(1, Math.round((1.0 - t) * 5));
 
@@ -1466,14 +1367,14 @@ function startSimulationLoop() {
           }
         }
       }
-      // Phase 2: On Scene (Helping ~3s)
+      // Phase 2: On Scene Helping (~3s)
       else if (unit.phase === 'on_scene') {
         item.onSceneDuration = (item.onSceneDuration || 0) + 0.05;
         if (item.onSceneDuration >= 3.0) {
           triggerDemobilizing(item);
         }
       }
-      // Phase 3: Returning (5s)
+      // Phase 3: Returning / Cleared (5s)
       else if (unit.phase === 'returning') {
         if (unit.progress > 0) {
           unit.progress = Math.max(0, +(unit.progress - step).toFixed(1));
@@ -1483,8 +1384,8 @@ function startSimulationLoop() {
           } else {
             const t = unit.progress / 100.0;
             const offset = item.laneOffset || { lat: 0, lng: 0 };
-            unit.current_lat = +(CENTRAL_STATION_COORDS[0] + (item.targetCoords[0] - CENTRAL_STATION_COORDS[0]) * t + offset.lat).toFixed(6);
-            unit.current_lng = +(CENTRAL_STATION_COORDS[1] + (item.targetCoords[1] - CENTRAL_STATION_COORDS[1]) * t + offset.lng).toFixed(6);
+            unit.current_lat = +(item.depotCoords[0] + (item.targetCoords[0] - item.depotCoords[0]) * t + offset.lat).toFixed(6);
+            unit.current_lng = +(item.depotCoords[1] + (item.targetCoords[1] - item.depotCoords[1]) * t + offset.lng).toFixed(6);
             unit.distance_km = +(Math.max(0.1, t * 6.0)).toFixed(1);
             unit.eta_mins = Math.max(1, Math.round(t * 5));
 
@@ -1499,7 +1400,6 @@ function startSimulationLoop() {
       }
     });
 
-    // Update Telemetry HUD
     const hudTarget = document.getElementById('hud-target-name');
     const hudSpeed = document.getElementById('hud-speed');
     const hudDist = document.getElementById('hud-dist');
@@ -1511,14 +1411,13 @@ function startSimulationLoop() {
       if (hudDist) hudDist.textContent = `${activeLeadUnit.distance_km} km`;
       if (hudEta) hudEta.textContent = (activeLeadUnit.phase === 'returning' ? 'Return' : `~${activeLeadUnit.eta_mins}m`);
 
-      // Creative Feature: Chase Cam smooth map tracking
       if (isChaseCamActive && map) {
         map.panTo([activeLeadUnit.current_lat, activeLeadUnit.current_lng], { animate: false });
       }
-    } else {
-      if (hudTarget) hudTarget.textContent = 'All Units at Base';
-      if (hudDist) hudDist.textContent = 'Base';
-      if (hudEta) hudEta.textContent = 'Ready';
+    } else if (incidentMarkers.length === 0) {
+      if (hudTarget) hudTarget.textContent = '🎉 All Areas Safe! No Active Emergencies';
+      if (hudDist) hudDist.textContent = 'Safe';
+      if (hudEta) hudEta.textContent = 'All Clear';
     }
 
     updateJourneyTracker();
