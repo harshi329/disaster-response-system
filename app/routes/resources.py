@@ -863,7 +863,7 @@ def restock():
             {'$inc': updates},
             upsert=True
         )
-        flash('Supplies and vehicles added to station successfully!', 'success')
+        flash('Supplies and vehicles added to stock successfully!', 'success')
     except Exception as e:
         flash(f'Could not restock: {e}', 'danger')
     return redirect(url_for('resources.index'))

@@ -1,13 +1,13 @@
 {% extends 'base.html' %}
-{% block title %}Admin — Station Supplies &amp; Vehicles{% endblock %}
+{% block title %}Admin — Resource Stock &amp; Inventory{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
   <div>
     <h4 class="fw-bold mb-0">
-      <i class="bi bi-boxes text-warning me-2"></i>🏢 Station Supplies &amp; Vehicles (Admin)
+      <i class="bi bi-boxes text-warning me-2"></i>📦 Resource Stock &amp; Inventory (Admin)
     </h4>
-    <small class="text-muted">Set how many ambulances, rescue teams, food packs, and helicopters are ready at the station.</small>
+    <small class="text-muted">Set how many ambulances, rescue teams, food packs, and helicopters are available in stock.</small>
   </div>
   <div class="d-flex gap-2">
     <a href="{{ url_for('resources.index') }}" class="btn btn-outline-primary btn-sm">
@@ -24,7 +24,7 @@
     <div class="card border-0 shadow-sm rounded-3">
       <div class="card-header bg-warning text-dark py-3">
         <h6 class="fw-bold mb-0">
-          <i class="bi bi-pencil-square me-2"></i>Edit Ready Station Supplies
+          <i class="bi bi-pencil-square me-2"></i>Edit Available Resource Stock
         </h6>
       </div>
       <div class="card-body p-4">
@@ -53,7 +53,7 @@
           {% endfor %}
 
           <button type="submit" class="btn btn-warning w-100 fw-bold py-2 shadow-sm fs-6 mt-2">
-            <i class="bi bi-check2-circle me-2"></i>Save Supplies to Station
+            <i class="bi bi-check2-circle me-2"></i>Save Resource Stock
           </button>
         </form>
       </div>
