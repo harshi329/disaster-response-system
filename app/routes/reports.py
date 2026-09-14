@@ -85,15 +85,8 @@ def new_report():
         except Exception:
             pass
 
-        # Only admin can allocate resources
-        if current_user.role == 'admin':
-            allocation = allocate_resources(analysis['severity'], report_id)
-        else:
-            allocation = {
-                'allocated': {},
-                'insufficient': [],
-                'status': 'Pending Admin Review (Only Admins can allocate resources)',
-            }
+        # Automatic resource allocation for all disaster reports
+        allocation = allocate_resources(analysis['severity'], report_id)
 
         route = optimize_route(location, analysis['type'])
         alert = generate_alert(location, analysis['type'], analysis['severity'], report_id)
