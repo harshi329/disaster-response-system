@@ -251,8 +251,27 @@
         </span>
       </div>
 
-      <!-- 1. PLACED FIRST: Auto-Allocation Dispatch & Send Help Section -->
+      <!-- 1. Quick Admin Rescue 1-Click Action Toolbar -->
       {% if current_user.is_authenticated and current_user.role == 'admin' %}
+      <div class="p-2 px-3 bg-light border-bottom">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <span class="fw-semibold small text-primary" style="font-size:.7rem;"><i class="bi bi-sliders me-1"></i>Admin Rescue Console</span>
+          <span class="badge bg-primary-subtle text-primary" style="font-size:.62rem;">1-Click</span>
+        </div>
+        <div class="btn-group btn-group-sm w-100" role="group">
+          <button type="button" class="btn btn-primary py-1 fw-bold" onclick="launchAllFromStation()" style="font-size:.72rem;">
+            <i class="bi bi-send-fill me-1"></i>1. Send Help
+          </button>
+          <button type="button" class="btn btn-success py-1 fw-bold" onclick="fastForwardAllToScene()" style="font-size:.72rem;">
+            <i class="bi bi-geo-alt-fill me-1"></i>2. Arrive &amp; Help
+          </button>
+          <button type="button" class="btn btn-warning text-dark py-1 fw-bold" onclick="fastForwardAllToBase()" style="font-size:.72rem;">
+            <i class="bi bi-house-door-fill me-1"></i>3. Return Home
+          </button>
+        </div>
+      </div>
+
+      <!-- 2. Send Help to Danger Spots (Below Admin Console) -->
       <div class="p-2 px-3 bg-light border-bottom">
         <div class="d-flex justify-content-between align-items-center mb-1" style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#manualDispatchCollapse">
           <span class="fw-bold small text-danger" style="font-size:.75rem;">
@@ -317,25 +336,6 @@
             <span>⚡ High Importance alerts automatically have help dispatched.</span>
           </div>
           {% endif %}
-        </div>
-      </div>
-
-      <!-- Quick Admin Rescue 1-Click Action Toolbar -->
-      <div class="p-2 px-3 bg-light border-bottom">
-        <div class="d-flex justify-content-between align-items-center mb-1">
-          <span class="fw-semibold small text-primary" style="font-size:.7rem;"><i class="bi bi-sliders me-1"></i>Admin Rescue Console</span>
-          <span class="badge bg-primary-subtle text-primary" style="font-size:.62rem;">1-Click</span>
-        </div>
-        <div class="btn-group btn-group-sm w-100" role="group">
-          <button type="button" class="btn btn-primary py-1 fw-bold" onclick="launchAllFromStation()" style="font-size:.72rem;">
-            <i class="bi bi-send-fill me-1"></i>1. Send Help
-          </button>
-          <button type="button" class="btn btn-success py-1 fw-bold" onclick="fastForwardAllToScene()" style="font-size:.72rem;">
-            <i class="bi bi-geo-alt-fill me-1"></i>2. Arrive &amp; Help
-          </button>
-          <button type="button" class="btn btn-warning text-dark py-1 fw-bold" onclick="fastForwardAllToBase()" style="font-size:.72rem;">
-            <i class="bi bi-house-door-fill me-1"></i>3. Return Home
-          </button>
         </div>
       </div>
       {% endif %}
