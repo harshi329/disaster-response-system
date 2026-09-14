@@ -44,64 +44,40 @@
     border: none !important;
   }
 
-  /* Uber / Swiggy Style Delivery Vehicle Pill Markers */
-  .delivery-vehicle-pill {
-    display: inline-flex;
+  /* Minimalist Clean Circular Vehicle Markers */
+  .clean-vehicle-badge {
+    display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 4px 10px;
-    border-radius: 9999px;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    font-size: 11.5px;
-    font-weight: 700;
-    white-space: nowrap;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    border: 2px solid #ffffff;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    font-size: 1.25rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+    border: 2.5px solid #ffffff;
     cursor: pointer;
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    transition: transform 0.15s ease;
     user-select: none;
   }
-  .delivery-vehicle-pill:hover {
-    transform: scale(1.08);
-    box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+  .clean-vehicle-badge:hover {
+    transform: scale(1.18);
     z-index: 99999 !important;
   }
-  .pill-ambulance {
-    background: #1d4ed8;
-    color: #ffffff;
+  .clean-badge-amb { background: #1d4ed8; }
+  .clean-badge-rsc { background: #15803d; }
+  .clean-badge-food { background: #d97706; }
+  .clean-badge-heli { background: #0284c7; }
+  .clean-badge-arrived {
+    box-shadow: 0 0 0 5px #22c55e, 0 4px 12px rgba(0,0,0,0.4) !important;
+    animation: arrived-pulse 1s infinite alternate;
   }
-  .pill-rescue {
-    background: #15803d;
-    color: #ffffff;
+  @keyframes arrived-pulse {
+    0% { transform: scale(1); }
+    100% { transform: scale(1.12); }
   }
-  .pill-food {
-    background: #d97706;
-    color: #ffffff;
-  }
-  .pill-helicopter {
-    background: #0284c7;
-    color: #ffffff;
-  }
-  .pill-arrived {
-    box-shadow: 0 0 0 3px #22c55e, 0 4px 14px rgba(0,0,0,0.35) !important;
-  }
-  .pill-returned {
+  .clean-badge-returned {
     background: #475569 !important;
-    opacity: 0.9;
-  }
-  .pill-icon {
-    font-size: 13px;
-    line-height: 1;
-  }
-  .pill-name {
-    letter-spacing: -0.2px;
-  }
-  .pill-dir {
-    background: rgba(255, 255, 255, 0.28);
-    border-radius: 9999px;
-    padding: 1px 6px;
-    font-size: 9.5px;
-    font-weight: 800;
+    opacity: 0.85;
   }
 
   /* Fixed Station & Incident Pin Markers */
@@ -349,56 +325,27 @@
   </div>
 
   <div class="card-body pt-2">
-    <!-- 4-Stage Visual Journey Tracker (Uber / Delivery Style - Easy for anyone to understand) -->
-    <div class="row g-2 mb-3">
-      <!-- Step 1: Ready at Station -->
-      <div class="col-6 col-md-3">
-        <div class="journey-step d-flex align-items-center gap-2 h-100" id="step-card-station">
-          <div class="step-icon-circle bg-dark text-white">🏢</div>
-          <div>
-            <div class="text-uppercase fw-bold text-muted" style="font-size: 0.65rem;" id="step-tag-station">Step 1</div>
-            <div class="fw-bold text-dark small">1. Ready at Station</div>
-            <div class="text-muted" style="font-size: 0.68rem;">Vehicles at home base</div>
-          </div>
+    <!-- Sleek Minimalist Live Mission Ribbon (Kid & Citizen Friendly) -->
+    <div class="card border-0 bg-light p-2 mb-3 rounded-3 shadow-sm" id="live-status-card">
+      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2">
+          <span class="live-dot"></span>
+          <span class="fw-bold text-dark fs-6" id="mission-headline">🚗 Emergency Vehicles Rushing to Danger Spot</span>
+          <span class="badge bg-primary text-white rounded-pill px-2 py-1" id="mission-eta-badge">⏱️ ~5s to Arrive</span>
         </div>
-      </div>
-
-      <!-- Step 2: On The Way -->
-      <div class="col-6 col-md-3">
-        <div class="journey-step d-flex align-items-center gap-2 h-100 active" id="step-card-enroute">
-          <div class="step-icon-circle bg-primary text-white">🚗</div>
-          <div>
-            <div class="text-uppercase fw-bold text-primary" style="font-size: 0.65rem;" id="step-tag-enroute">Step 2 &bull; Active</div>
-            <div class="fw-bold text-dark small">2. On The Way</div>
-            <div class="text-muted" style="font-size: 0.68rem;">Rushing to danger spot</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Step 3: Arrived & Helping -->
-      <div class="col-6 col-md-3">
-        <div class="journey-step d-flex align-items-center gap-2 h-100" id="step-card-onscene">
-          <div class="step-icon-circle bg-success text-white">📍</div>
-          <div>
-            <div class="text-uppercase fw-bold text-muted" style="font-size: 0.65rem;" id="step-tag-onscene">Step 3</div>
-            <div class="fw-bold text-dark small">3. Arrived &amp; Helping</div>
-            <div class="text-muted" style="font-size: 0.68rem;">Treating &amp; feeding people</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Step 4: Returning Home -->
-      <div class="col-6 col-md-3">
-        <div class="journey-step d-flex align-items-center gap-2 h-100" id="step-card-returning">
-          <div class="step-icon-circle bg-warning text-dark">🏠</div>
-          <div>
-            <div class="text-uppercase fw-bold text-muted" style="font-size: 0.65rem;" id="step-tag-returning">Step 4</div>
-            <div class="fw-bold text-dark small">4. Returning Home</div>
-            <div class="text-muted" style="font-size: 0.68rem;">Heading back to station</div>
-          </div>
+        <!-- Minimal 4-stage indicator pills -->
+        <div class="d-flex align-items-center gap-1 small fw-semibold flex-wrap">
+          <span class="badge bg-white text-secondary border px-2 py-1" id="pill-step-station">🏢 Ready at Station</span>
+          <span class="text-muted d-none d-sm-inline">➔</span>
+          <span class="badge bg-primary text-white px-2 py-1 shadow-sm" id="pill-step-enroute">🚗 On The Way</span>
+          <span class="text-muted d-none d-sm-inline">➔</span>
+          <span class="badge bg-white text-secondary border px-2 py-1" id="pill-step-onscene">📍 Arrived &amp; Helping</span>
+          <span class="text-muted d-none d-sm-inline">➔</span>
+          <span class="badge bg-white text-secondary border px-2 py-1" id="pill-step-returning">🏠 Returning Home</span>
         </div>
       </div>
     </div>
+
     <!-- Filter by Incident Problem -->
     <div class="d-flex align-items-center gap-2 flex-wrap mb-3 p-2 bg-light rounded-3 border">
       <span class="small fw-bold text-secondary ps-1"><i class="bi bi-geo-alt-fill text-danger me-1"></i>Where Help is Needed:</span>
@@ -415,24 +362,20 @@
       {% endfor %}
     </div>
 
-    <!-- Full-Width Delivery Map (Uber / Swiggy Style) -->
+    <!-- Full-Width Delivery Map (Minimalist View) -->
     <div class="position-relative mb-4">
       <div id="tracking-map"></div>
 
-      <!-- Child & Citizen Friendly Map Legend -->
-      <div class="position-absolute bottom-0 start-0 m-3 p-2 bg-white bg-opacity-95 rounded-3 shadow-sm border small"
-           style="z-index: 1000; font-size:.78rem;">
-        <div class="fw-bold mb-1 text-dark d-flex align-items-center gap-1">
-          <i class="bi bi-info-circle-fill text-primary"></i> Map Guide
-        </div>
-        <div class="d-flex flex-wrap gap-2 align-items-center">
-          <span class="d-flex align-items-center gap-1"><span class="badge bg-dark p-1">🏢</span> Help Station (Base)</span>
-          <span class="d-flex align-items-center gap-1"><span class="badge bg-danger p-1">🚨</span> Danger Spot</span>
-          <span class="d-flex align-items-center gap-1"><span class="badge bg-primary p-1">🚑</span> Ambulance</span>
-          <span class="d-flex align-items-center gap-1"><span class="badge bg-success p-1">👥</span> Rescue Team</span>
-          <span class="d-flex align-items-center gap-1"><span class="badge bg-warning text-dark p-1">🍲</span> Food &amp; Water</span>
-          <span class="d-flex align-items-center gap-1"><span class="badge bg-info text-dark p-1">🚁</span> Helicopter</span>
-        </div>
+      <!-- Minimalist Map Legend Strip -->
+      <div class="position-absolute bottom-0 start-50 translate-middle-x mb-3 py-1 px-3 bg-white bg-opacity-95 rounded-pill shadow-sm border small"
+           style="z-index: 1000; font-size:.75rem; white-space: nowrap;">
+        <span class="me-2 fw-bold text-dark">Map Guide:</span>
+        <span class="me-2">🏢 Station</span>
+        <span class="me-2">🚨 Danger Spot</span>
+        <span class="me-2">🚑 Ambulance</span>
+        <span class="me-2">👥 Rescue</span>
+        <span class="me-2">🍲 Food</span>
+        <span>🚁 Heli</span>
       </div>
     </div>
 
@@ -910,58 +853,38 @@ function getLaneOffset(depot, target, unitIndex, totalUnits) {
 
 // Generate Uber/Swiggy style pill HTML for vehicle markers
 function getUnitPillHtml(unit) {
-  let pillClass = 'pill-ambulance';
+  let badgeClass = 'clean-badge-amb';
   let icon = '🚑';
-  let shortName = (unit.name || 'Vehicle')
-    .replace('Ambulance #AMB-', 'Amb #')
-    .replace('Rescue Team #RSC-', 'Rescue #')
-    .replace('Food Truck #FOOD-', 'Food #')
-    .replace('Helicopter #HELI-', 'Heli #')
-    .replace('Ambulance #', 'Amb #')
-    .replace('Rescue Team #', 'Rescue #')
-    .replace('Food Truck #', 'Food #')
-    .replace('Helicopter #', 'Heli #');
 
   if (unit.type === 'rescue_teams') {
-    pillClass = 'pill-rescue';
+    badgeClass = 'clean-badge-rsc';
     icon = '👥';
   } else if (unit.type === 'food_packets') {
-    pillClass = 'pill-food';
+    badgeClass = 'clean-badge-food';
     icon = '🍲';
   } else if (unit.type === 'helicopters') {
-    pillClass = 'pill-helicopter';
+    badgeClass = 'clean-badge-heli';
     icon = '🚁';
   }
 
-  let dirText = '➔';
   let extraClass = '';
   if (unit.phase === 'on_scene') {
-    dirText = '📍 Helping';
-    extraClass = 'pill-arrived';
-  } else if (unit.phase === 'returning') {
-    dirText = '⬅️ Return';
+    extraClass = 'clean-badge-arrived';
   } else if (unit.phase === 'returned') {
-    dirText = '🏢 Ready';
-    extraClass = 'pill-returned';
+    extraClass = 'clean-badge-returned';
   }
 
-  return `
-    <div class="delivery-vehicle-pill ${pillClass} ${extraClass}" id="pill-${unit.unit_id}">
-      <span class="pill-icon">${icon}</span>
-      <span class="pill-name">${shortName}</span>
-      <span class="pill-dir">${dirText}</span>
-    </div>
-  `;
+  return `<div class="clean-vehicle-badge ${badgeClass} ${extraClass}" id="pin-${unit.unit_id}">${icon}</div>`;
 }
 
-// Update vehicle marker icon with latest pill HTML
+// Update vehicle marker icon with latest badge HTML
 function updateMarkerPill(item) {
   if (!item || !item.marker || !item.data) return;
   item.marker.setIcon(L.divIcon({
     className: 'custom-pill-marker-wrapper',
     html: getUnitPillHtml(item.data),
-    iconSize: [130, 32],
-    iconAnchor: [65, 16]
+    iconSize: [38, 38],
+    iconAnchor: [19, 19]
   }));
 }
 
@@ -992,7 +915,7 @@ function renderDeployments() {
     // 1. HELP STATION (HOME BASE) PIN
     const stationIcon = L.divIcon({
       className: 'custom-pill-marker-wrapper',
-      html: `<div class="custom-pin pin-station" title="Help Station (Home Base)"><i class="bi bi-building-fill"></i></div>`,
+      html: `<div class="custom-pin pin-station" title="Help Station (Home Base)">🏢</div>`,
       iconSize: [46, 46],
       iconAnchor: [23, 23]
     });
@@ -1007,7 +930,6 @@ function renderDeployments() {
       </div>
     `);
     stMarker.bindTooltip('🏢 Help Station (Base)', {
-      permanent: true,
       direction: 'top',
       offset: [0, -24],
       className: 'station-tooltip'
@@ -1017,7 +939,7 @@ function renderDeployments() {
     // 2. INCIDENT SITE (DANGER SPOT) PIN
     const problemIcon = L.divIcon({
       className: 'custom-pill-marker-wrapper',
-      html: `<div class="custom-pin pin-problem" title="${dep.problem_title}"><i class="bi bi-exclamation-triangle-fill"></i></div>`,
+      html: `<div class="custom-pin pin-problem" title="${dep.problem_title}">🚨</div>`,
       iconSize: [44, 44],
       iconAnchor: [22, 22]
     });
@@ -1032,7 +954,6 @@ function renderDeployments() {
       </div>
     `);
     incMarker.bindTooltip(`🚨 Danger Spot: ${dep.problem_title}`, {
-      permanent: true,
       direction: 'top',
       offset: [0, -24],
       className: 'incident-tooltip'
@@ -1042,7 +963,7 @@ function renderDeployments() {
     // 3. 1 Bold Clean Route Corridor Connecting Station & Danger Spot (Uber / Swiggy Style)
     const routeCorridor = L.polyline([depotCoords, targetCoords], {
       color: '#93c5fd',
-      weight: 12,
+      weight: 10,
       opacity: 0.45,
       lineCap: 'round',
       lineJoin: 'round'
@@ -1053,7 +974,6 @@ function renderDeployments() {
       color: '#2563eb',
       weight: 4,
       opacity: 0.9,
-      dashArray: '8, 8',
       lineCap: 'round'
     }).addTo(map);
     routeLines.push(routeCenterLine);
@@ -1077,11 +997,15 @@ function renderDeployments() {
       const unitIcon = L.divIcon({
         className: 'custom-pill-marker-wrapper',
         html: getUnitPillHtml(unit),
-        iconSize: [130, 32],
-        iconAnchor: [65, 16]
+        iconSize: [38, 38],
+        iconAnchor: [19, 19]
       });
 
       const uMarker = L.marker(curCoords, { icon: unitIcon, zIndexOffset: 500 }).addTo(map);
+      uMarker.bindTooltip(`${unit.name} (${unit.status})`, {
+        direction: 'top',
+        offset: [0, -20]
+      });
       uMarker.bindPopup(`
         <div style="font-family: sans-serif; min-width: 210px;">
           <div class="d-flex align-items-center justify-content-between mb-1">
@@ -1407,32 +1331,14 @@ function triggerStationedAtBase(item) {
   syncUnitStatus(item, 'returned');
 }
 
-// Dynamic 4-Step Story Journey Tracker Updater (Uber/Delivery style)
+// Dynamic Live Mission Ribbon Updater (Minimalist & Instant)
 function updateJourneyTracker() {
-  const steps = {
-    station: document.getElementById('step-card-station'),
-    enroute: document.getElementById('step-card-enroute'),
-    onscene: document.getElementById('step-card-onscene'),
-    returning: document.getElementById('step-card-returning')
-  };
-  const tags = {
-    station: document.getElementById('step-tag-station'),
-    enroute: document.getElementById('step-tag-enroute'),
-    onscene: document.getElementById('step-tag-onscene'),
-    returning: document.getElementById('step-tag-returning')
-  };
-  if (!steps.station) return;
-
-  // Reset all step card styles
-  steps.station.className = 'journey-step d-flex align-items-center gap-2 h-100';
-  steps.enroute.className = 'journey-step d-flex align-items-center gap-2 h-100';
-  steps.onscene.className = 'journey-step d-flex align-items-center gap-2 h-100';
-  steps.returning.className = 'journey-step d-flex align-items-center gap-2 h-100';
-
-  if (tags.station) tags.station.textContent = 'Step 1';
-  if (tags.enroute) tags.enroute.textContent = 'Step 2';
-  if (tags.onscene) tags.onscene.textContent = 'Step 3';
-  if (tags.returning) tags.returning.textContent = 'Step 4';
+  const headline = document.getElementById('mission-headline');
+  const etaBadge = document.getElementById('mission-eta-badge');
+  const pStation = document.getElementById('pill-step-station');
+  const pEnroute = document.getElementById('pill-step-enroute');
+  const pOnscene = document.getElementById('pill-step-onscene');
+  const pReturning = document.getElementById('pill-step-returning');
 
   let enrouteCount = 0;
   let onsceneCount = 0;
@@ -1445,34 +1351,53 @@ function updateJourneyTracker() {
     else if (p === 'en_route') enrouteCount++;
   });
 
-  // Priority highlight: On scene > Returning > En route > Station
+  // Reset pill styles
+  [pStation, pEnroute, pOnscene, pReturning].forEach(p => {
+    if (p) p.className = 'badge bg-white text-secondary border px-2 py-1';
+  });
+
   if (onsceneCount > 0) {
-    steps.onscene.classList.add('active-scene');
-    if (tags.onscene) tags.onscene.innerHTML = 'Step 3 &bull; <strong class="text-success">Helping Now!</strong>';
+    if (pOnscene) pOnscene.className = 'badge bg-success text-white px-2 py-1 shadow-sm';
+    if (headline) headline.textContent = '📍 Vehicles Arrived at Danger Spot — Helping People Now!';
+    if (etaBadge) {
+      etaBadge.className = 'badge bg-success text-white fw-bold';
+      etaBadge.textContent = '✅ Helping People (~3s)';
+    }
   } else if (returningCount > 0) {
-    steps.returning.classList.add('active-return');
-    if (tags.returning) tags.returning.innerHTML = 'Step 4 &bull; <strong class="text-warning text-dark">Heading Home</strong>';
+    if (pReturning) pReturning.className = 'badge bg-warning text-dark px-2 py-1 shadow-sm';
+    if (headline) headline.textContent = '🏠 Help Complete — Vehicles Returning Home to Station!';
+    if (etaBadge) {
+      etaBadge.className = 'badge bg-warning text-dark fw-bold';
+      etaBadge.textContent = '⏱️ ~5s to Station';
+    }
   } else if (enrouteCount > 0) {
-    steps.enroute.classList.add('active');
-    if (tags.enroute) tags.enroute.innerHTML = 'Step 2 &bull; <strong class="text-primary">Rushing to Help</strong>';
+    if (pEnroute) pEnroute.className = 'badge bg-primary text-white px-2 py-1 shadow-sm';
+    if (headline) headline.textContent = '🚗 Emergency Vehicles on the Way to Danger Spot!';
+    if (etaBadge) {
+      etaBadge.className = 'badge bg-primary text-white fw-bold';
+      etaBadge.textContent = '⏱️ ~5s to Arrive';
+    }
   } else {
-    steps.station.classList.add('active-station');
-    if (tags.station) tags.station.innerHTML = 'Step 1 &bull; <strong class="text-secondary">Ready at Base</strong>';
+    if (pStation) pStation.className = 'badge bg-dark text-white px-2 py-1 shadow-sm';
+    if (headline) headline.textContent = '🏢 All Vehicles Ready at Station for Next Emergency';
+    if (etaBadge) {
+      etaBadge.className = 'badge bg-secondary text-white fw-bold';
+      etaBadge.textContent = 'Ready';
+    }
   }
 }
 
-// Direct Step 1: Launch all from Station (Admin Only)
+// 1-Click Action 1: Launch all from Station (Completes in 5 seconds)
 function launchAllFromStation() {
   unitMarkers.forEach(item => {
     item.data.phase = 'en_route';
     item.data.status = '🚗 On the Way';
-    item.data.progress = 10;
+    item.data.progress = 0;
     item.onSceneDuration = 0;
 
-    const t = 0.1;
     const offset = item.laneOffset || { lat: 0, lng: 0 };
-    item.data.current_lat = +(item.depotCoords[0] + (item.targetCoords[0] - item.depotCoords[0]) * t + offset.lat).toFixed(6);
-    item.data.current_lng = +(item.depotCoords[1] + (item.targetCoords[1] - item.depotCoords[1]) * t + offset.lng).toFixed(6);
+    item.data.current_lat = +(item.depotCoords[0] + offset.lat).toFixed(6);
+    item.data.current_lng = +(item.depotCoords[1] + offset.lng).toFixed(6);
     item.marker.setLatLng([item.data.current_lat, item.data.current_lng]);
     updateMarkerPill(item);
 
@@ -1486,13 +1411,13 @@ function launchAllFromStation() {
     const bar = document.getElementById(`prog-${item.id}`);
     if (bar) {
       bar.className = 'progress-bar progress-bar-striped progress-bar-animated bg-primary';
-      bar.style.width = '10%';
+      bar.style.width = '0%';
     }
     const pct = document.getElementById(`prog-pct-${item.id}`);
-    if (pct) pct.textContent = '10%';
+    if (pct) pct.textContent = '0%';
   });
   updateJourneyTracker();
-  showToast('on_scene', '🚀 Help Dispatched', 'Vehicles launched from station and rushing to help.');
+  showToast('on_scene', '🚀 Vehicles Launched', 'Vehicles rushing to danger spot (5s arrival).');
 }
 
 // Quick Reach / Return for Individual Units (Admin Only)
@@ -1514,40 +1439,53 @@ function quickReturnUnit(unitId) {
   showToast('returned', 'Vehicle Returned', `${item.data.name} is safely back at station.`);
 }
 
+// 1-Click Action 2: Arrive & Help Immediately
 function fastForwardAllToScene() {
   let count = 0;
   unitMarkers.forEach(item => {
     item.data.progress = 100;
+    item.onSceneDuration = 0;
     triggerOnScene(item);
     count++;
   });
   updateJourneyTracker();
-  showToast('on_scene', '⚡ Reached People', `${count || 'All'} vehicles arrived and are helping.`);
+  showToast('on_scene', '📍 Help Arrived', `${count || 'All'} vehicles reached danger spot.`);
 }
 
+// 1-Click Action 3: Return Home in 5 Seconds
 function fastForwardAllToBase() {
   let count = 0;
   unitMarkers.forEach(item => {
-    item.data.progress = 0;
-    triggerStationedAtBase(item);
+    item.data.phase = 'returning';
+    item.data.status = '🏠 Coming Back';
+    item.data.progress = 100;
+    updateMarkerPill(item);
+
+    const badge = document.getElementById(`badge-status-${item.id}`);
+    if (badge) {
+      badge.className = 'badge bg-warning text-dark';
+      badge.textContent = '🏠 Coming Back';
+    }
+    const card = document.getElementById(`card-unit-${item.id}`);
+    if (card) card.className = 'card mb-2 border shadow-sm p-2 unit-card unit-returning';
     count++;
   });
   updateJourneyTracker();
-  showToast('returned', '⚡ Returned to Station', `${count || 'All'} vehicles are back at station.`);
+  showToast('returned', '🏠 Returning Home', `${count || 'All'} vehicles heading back to station (5s).`);
 }
 
-// Steady, Realistic Rescue Simulation (Natural speed so everyone can follow along calmly)
+// Fast & Smooth Rescue Simulation (5-Second Fluid Cycle for Demos)
 function startSimulationLoop() {
   setInterval(() => {
     unitMarkers.forEach(item => {
       const unit = item.data;
-      // Gentle, steady speed: ~1% progress per second at normal speed
-      const step = 0.25;
+      // 5-second journey: 50ms interval with 1.0% step = exactly 5.0 seconds for 0% to 100%!
+      const step = 1.0;
 
-      // Phase 1: En Route to Incident Site
+      // Phase 1: En Route to Incident Site (5 seconds)
       if (unit.phase === 'en_route') {
         if (unit.progress < 100) {
-          unit.progress = Math.min(100, +(unit.progress + step).toFixed(2));
+          unit.progress = Math.min(100, +(unit.progress + step).toFixed(1));
 
           if (unit.progress >= 100) {
             triggerOnScene(item);
@@ -1557,7 +1495,7 @@ function startSimulationLoop() {
             unit.current_lat = +(item.depotCoords[0] + (item.targetCoords[0] - item.depotCoords[0]) * t + offset.lat).toFixed(6);
             unit.current_lng = +(item.depotCoords[1] + (item.targetCoords[1] - item.depotCoords[1]) * t + offset.lng).toFixed(6);
             unit.distance_km = +(Math.max(0.1, (1.0 - t) * 6.0)).toFixed(1);
-            unit.eta_mins = Math.max(1, Math.round(unit.distance_km / 0.9));
+            unit.eta_mins = Math.max(1, Math.round((1.0 - t) * 5));
 
             item.marker.setLatLng([unit.current_lat, unit.current_lng]);
 
@@ -1568,24 +1506,25 @@ function startSimulationLoop() {
 
             const etaText = document.getElementById(`eta-text-${unit.unit_id}`);
             if (etaText) {
-              etaText.innerHTML = `<i class="bi bi-clock me-1"></i>~${unit.eta_mins}m away (${unit.distance_km}km)`;
+              const secLeft = Math.ceil((100 - unit.progress) * 0.05);
+              etaText.innerHTML = `<i class="bi bi-clock me-1"></i>Reaching in ~${secLeft}s (${unit.distance_km}km)`;
             }
           }
         }
       }
-      // Phase 2: Active On Scene (Helping injured, giving food meals for ~12-15 seconds)
+      // Phase 2: Active On Scene (Helping injured & giving food for ~3 seconds)
       else if (unit.phase === 'on_scene') {
-        item.onSceneDuration = (item.onSceneDuration || 0) + 0.25;
+        item.onSceneDuration = (item.onSceneDuration || 0) + 0.05;
 
-        // After operations on scene, demobilize and return back to base
-        if (item.onSceneDuration >= 12.0) {
+        // After 3 seconds helping, demobilize and return back to base
+        if (item.onSceneDuration >= 3.0) {
           triggerDemobilizing(item);
         }
       }
-      // Phase 3: Demobilizing — Returning Safely to Base
+      // Phase 3: Demobilizing — Returning Safely to Base (5 seconds)
       else if (unit.phase === 'returning') {
         if (unit.progress > 0) {
-          unit.progress = Math.max(0, +(unit.progress - step).toFixed(2));
+          unit.progress = Math.max(0, +(unit.progress - step).toFixed(1));
 
           if (unit.progress <= 0) {
             triggerStationedAtBase(item);
@@ -1595,7 +1534,7 @@ function startSimulationLoop() {
             unit.current_lat = +(item.depotCoords[0] + (item.targetCoords[0] - item.depotCoords[0]) * t + offset.lat).toFixed(6);
             unit.current_lng = +(item.depotCoords[1] + (item.targetCoords[1] - item.depotCoords[1]) * t + offset.lng).toFixed(6);
             unit.distance_km = +(Math.max(0.1, t * 6.0)).toFixed(1);
-            unit.eta_mins = Math.max(1, Math.round(unit.distance_km / 0.9));
+            unit.eta_mins = Math.max(1, Math.round(t * 5));
 
             item.marker.setLatLng([unit.current_lat, unit.current_lng]);
 
@@ -1606,7 +1545,8 @@ function startSimulationLoop() {
 
             const etaText = document.getElementById(`eta-text-${unit.unit_id}`);
             if (etaText) {
-              etaText.innerHTML = `<i class="bi bi-arrow-left me-1"></i>Coming back (${unit.distance_km}km to station)`;
+              const secLeft = Math.ceil(unit.progress * 0.05);
+              etaText.innerHTML = `<i class="bi bi-arrow-left me-1"></i>Returning to station in ~${secLeft}s`;
             }
           }
         }
@@ -1620,7 +1560,7 @@ function startSimulationLoop() {
       const now = new Date();
       syncLabel.textContent = `GPS: Active (${now.toLocaleTimeString()})`;
     }
-  }, 250);
+  }, 50);
 }
 
 // Admin Assignment UI Helpers
