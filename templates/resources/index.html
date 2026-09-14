@@ -278,12 +278,8 @@
       </p>
     </div>
     <div class="d-flex align-items-center gap-2 flex-wrap">
-      <!-- 1-Click Fast Demonstration (Runs entire rescue in 5 seconds!) -->
-      <button type="button" class="btn btn-primary fw-bold py-1 px-3 shadow-sm" onclick="playFullDemo()" title="Watch the complete arriving and returning cycle in 5 seconds">
-        <i class="bi bi-play-circle-fill me-1"></i>▶️ Play 5-Second Rescue Demo
-      </button>
-
-      <!-- 3 Direct Step Buttons for Live Presentation -->
+      {% if current_user.role == 'admin' %}
+      <!-- Admin Manual Rescue Controls -->
       <div class="btn-group btn-group-sm" role="group">
         <button type="button" class="btn btn-outline-primary fw-semibold" onclick="launchAllFromStation()" title="Reset to station and drive to danger spot">
           <i class="bi bi-send-fill me-1"></i>🚀 1. Send Help
@@ -296,15 +292,16 @@
         </button>
       </div>
 
-      <!-- Continuous Simulation Speed Selector -->
+      <!-- Admin Simulation Speed Selector -->
       <div class="btn-group btn-group-sm" role="group">
         <button type="button" class="btn btn-outline-secondary active fw-semibold" id="speed-1x-btn" onclick="setSimSpeed(1)">
           1x Speed
         </button>
-        <button type="button" class="btn btn-outline-danger fw-semibold" id="speed-4x-btn" onclick="setSimSpeed(4)">
-          ⚡ 4x Fast
+        <button type="button" class="btn btn-outline-danger fw-semibold" id="speed-4x-btn" onclick="setSimSpeed(2)">
+          ⚡ 2x Speed
         </button>
       </div>
+      {% endif %}
       <small class="text-muted d-none d-xxl-block" id="tracker-last-sync">GPS: Active</small>
     </div>
   </div>
@@ -359,14 +356,6 @@
           </div>
         </div>
       </div>
-    </div>
-
-    <!-- Live Demonstration Announcement Banner -->
-    <div id="live-demo-banner" class="alert alert-primary py-2 px-3 mb-3 d-none fw-semibold small d-flex align-items-center justify-content-between rounded-3 shadow-sm border">
-      <div id="demo-banner-text">
-        <i class="bi bi-play-circle-fill me-2"></i>5-Second Live Demo Running...
-      </div>
-      <span class="badge bg-primary" id="demo-banner-badge">Demo Active</span>
     </div>
     <!-- Filter by Incident Problem -->
     <div class="d-flex align-items-center gap-2 flex-wrap mb-3 p-2 bg-light rounded-3 border">
@@ -690,6 +679,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 const deploymentsData = {{ tracked_json | safe }};
+const IS_ADMIN = {{ 'true' if current_user.role == 'admin' else 'false' }};
 
 let map = null;
 let incidentMarkers = [];
@@ -831,11 +821,13 @@ function updateInventoryUI(inv, deployed) {
   }
 }
 
-// Speed toggle (1x / 4x)
+// Speed toggle (1x / 2x)
 function setSimSpeed(mult) {
   simSpeedMultiplier = mult;
-  document.getElementById('speed-1x-btn').classList.toggle('active', mult === 1);
-  document.getElementById('speed-4x-btn').classList.toggle('active', mult === 4);
+  const btn1 = document.getElementById('speed-1x-btn');
+  const btn2 = document.getElementById('speed-4x-btn');
+  if (btn1) btn1.classList.toggle('active', mult === 1);
+  if (btn2) btn2.classList.toggle('active', mult === 2);
 }
 
 // Initialize Leaflet Map
@@ -1062,6 +1054,7 @@ function renderDeployments() {
                       onclick="focusUnit('${unit.unit_id}')">
                 <i class="bi bi-geo-alt me-1"></i>Show on Map
               </button>
+              ${IS_ADMIN ? `
               <div class="d-flex gap-1 align-items-center">
                 <button type="button" class="btn btn-xs btn-outline-success py-0 px-2 fw-semibold" style="font-size:.68rem;"
                         title="Make this vehicle arrive immediately"
@@ -1074,6 +1067,7 @@ function renderDeployments() {
                   🏠 Return
                 </button>
               </div>
+              ` : ''}
             </div>
           </div>
         `;
@@ -1348,160 +1342,8 @@ function updateJourneyTracker() {
   }
 }
 
-// 1-Click Fast Demonstration (5-Second Full Rescue Lifecycle)
-let demoInterval = null;
-let isDemoRunning = false;
-
-function playFullDemo() {
-  if (isDemoRunning && demoInterval) {
-    clearInterval(demoInterval);
-    demoInterval = null;
-  }
-  isDemoRunning = true;
-
-  const banner = document.getElementById('live-demo-banner');
-  const bannerText = document.getElementById('demo-banner-text');
-  const bannerBadge = document.getElementById('demo-banner-badge');
-  if (banner) {
-    banner.classList.remove('d-none');
-    banner.className = 'alert alert-primary py-2 px-3 mb-3 fw-semibold small d-flex align-items-center justify-content-between rounded-3 shadow-sm border';
-  }
-  if (bannerText) {
-    bannerText.innerHTML = '<i class="bi bi-send-fill text-primary me-2"></i><strong>Step 2: On The Way!</strong> 🚗 Vehicles leaving station &amp; rushing to danger spot...';
-  }
-  if (bannerBadge) {
-    bannerBadge.className = 'badge bg-primary';
-    bannerBadge.textContent = '2. Rushing (0-2s)';
-  }
-
-  // Reset all vehicles to Station with phase en_route
-  unitMarkers.forEach(item => {
-    item.data.phase = 'en_route';
-    item.data.status = '🚗 On the Way';
-    item.data.progress = 5;
-    item.onSceneDuration = 0;
-    const badge = document.getElementById(`badge-status-${item.data.unit_id}`);
-    if (badge) {
-      badge.className = 'badge bg-primary';
-      badge.textContent = '🚗 On the Way';
-    }
-    const card = document.getElementById(`card-unit-${item.data.unit_id}`);
-    if (card) {
-      card.className = 'card mb-2 border shadow-sm p-2 unit-card';
-    }
-  });
-  updateJourneyTracker();
-
-  let elapsed = 0;
-  demoInterval = setInterval(() => {
-    elapsed += 100;
-
-    // 0 to 2000ms: Smoothly travel from station to danger spot
-    if (elapsed <= 2000) {
-      const pct = Math.min(100, 5 + (elapsed / 2000) * 95);
-      unitMarkers.forEach(item => {
-        item.data.progress = pct;
-        const t = pct / 100.0;
-        item.data.current_lat = +(item.depotCoords[0] + (item.targetCoords[0] - item.depotCoords[0]) * t).toFixed(6);
-        item.data.current_lng = +(item.depotCoords[1] + (item.targetCoords[1] - item.depotCoords[1]) * t).toFixed(6);
-        item.data.distance_km = +(Math.max(0.1, (1.0 - t) * 6.0)).toFixed(1);
-        item.data.eta_mins = Math.max(1, Math.round(item.data.distance_km / 0.9));
-
-        item.marker.setLatLng([item.data.current_lat, item.data.current_lng]);
-
-        const bar = document.getElementById(`prog-${item.id}`);
-        if (bar) {
-          bar.className = 'progress-bar progress-bar-striped progress-bar-animated bg-primary';
-          bar.style.width = `${pct}%`;
-        }
-        const pctText = document.getElementById(`prog-pct-${item.id}`);
-        if (pctText) pctText.textContent = `${Math.round(pct)}%`;
-        const etaText = document.getElementById(`eta-text-${item.id}`);
-        if (etaText) etaText.innerHTML = `<i class="bi bi-clock me-1"></i>~${item.data.eta_mins}m away (${item.data.distance_km}km)`;
-      });
-      updateJourneyTracker();
-    }
-    // 2000ms to 3500ms: Arrived on scene & helping people!
-    else if (elapsed <= 3500) {
-      if (elapsed === 2100) {
-        unitMarkers.forEach(item => triggerOnScene(item));
-        updateJourneyTracker();
-        if (banner) banner.className = 'alert alert-success py-2 px-3 mb-3 fw-semibold small d-flex align-items-center justify-content-between rounded-3 shadow-sm border';
-        if (bannerText) {
-          bannerText.innerHTML = '<i class="bi bi-check-circle-fill text-success me-2"></i><strong>Step 3: Arrived!</strong> 📍 Vehicles treating injured &amp; feeding families...';
-        }
-        if (bannerBadge) {
-          bannerBadge.className = 'badge bg-success';
-          bannerBadge.textContent = '3. Helping (2-3.5s)';
-        }
-      }
-    }
-    // 3500ms to 5000ms: Returning back to station!
-    else if (elapsed <= 5000) {
-      if (elapsed === 3600) {
-        unitMarkers.forEach(item => triggerDemobilizing(item));
-        updateJourneyTracker();
-        if (banner) banner.className = 'alert alert-warning py-2 px-3 mb-3 fw-semibold small d-flex align-items-center justify-content-between rounded-3 shadow-sm border';
-        if (bannerText) {
-          bannerText.innerHTML = '<i class="bi bi-arrow-left-circle-fill text-warning me-2"></i><strong>Step 4: Returning Home!</strong> 🏠 Mission complete, vehicles driving back to base...';
-        }
-        if (bannerBadge) {
-          bannerBadge.className = 'badge bg-warning text-dark';
-          bannerBadge.textContent = '4. Returning (3.5-5s)';
-        }
-      }
-      const returnPct = Math.max(0, 100 - ((elapsed - 3500) / 1500) * 100);
-      unitMarkers.forEach(item => {
-        item.data.progress = returnPct;
-        const t = returnPct / 100.0;
-        item.data.current_lat = +(item.depotCoords[0] + (item.targetCoords[0] - item.depotCoords[0]) * t).toFixed(6);
-        item.data.current_lng = +(item.depotCoords[1] + (item.targetCoords[1] - item.depotCoords[1]) * t).toFixed(6);
-        item.data.distance_km = +(Math.max(0.1, t * 6.0)).toFixed(1);
-        item.data.eta_mins = Math.max(1, Math.round(item.data.distance_km / 0.9));
-
-        item.marker.setLatLng([item.data.current_lat, item.data.current_lng]);
-
-        const bar = document.getElementById(`prog-${item.id}`);
-        if (bar) {
-          bar.className = 'progress-bar progress-bar-striped progress-bar-animated bg-warning';
-          bar.style.width = `${returnPct}%`;
-        }
-        const pctText = document.getElementById(`prog-pct-${item.id}`);
-        if (pctText) pctText.textContent = `${Math.round(returnPct)}%`;
-        const etaText = document.getElementById(`eta-text-${item.id}`);
-        if (etaText) etaText.innerHTML = `<i class="bi bi-arrow-left me-1"></i>Coming back (${item.data.distance_km}km to station)`;
-      });
-      updateJourneyTracker();
-    }
-    // 5000ms+: Completed! Safe back at base
-    else {
-      clearInterval(demoInterval);
-      demoInterval = null;
-      isDemoRunning = false;
-      unitMarkers.forEach(item => triggerStationedAtBase(item));
-      updateJourneyTracker();
-
-      if (banner) banner.className = 'alert alert-info py-2 px-3 mb-3 fw-semibold small d-flex align-items-center justify-content-between rounded-3 shadow-sm border';
-      if (bannerText) {
-        bannerText.innerHTML = '<i class="bi bi-shield-check text-primary fs-5 me-2"></i><strong>Rescue Demonstration Complete!</strong> ✅ All vehicles safely back at station. Ready to help again!';
-      }
-      if (bannerBadge) {
-        bannerBadge.className = 'badge bg-dark';
-        bannerBadge.innerHTML = '<a href="javascript:void(0)" onclick="playFullDemo()" class="text-white text-decoration-none">▶️ Play Again</a>';
-      }
-
-      showToast('returned', 'Demo Complete', 'All vehicles safely returned to station and restocked.');
-    }
-  }, 100);
-}
-
-// Direct Step 1: Launch all from Station
+// Direct Step 1: Launch all from Station (Admin Only)
 function launchAllFromStation() {
-  if (isDemoRunning && demoInterval) {
-    clearInterval(demoInterval);
-    demoInterval = null;
-    isDemoRunning = false;
-  }
   unitMarkers.forEach(item => {
     item.data.phase = 'en_route';
     item.data.status = '🚗 On the Way';
@@ -1532,7 +1374,7 @@ function launchAllFromStation() {
   showToast('on_scene', '🚀 Help Dispatched', 'Vehicles launched from station and rushing to help.');
 }
 
-// Quick Reach / Return for Individual Units
+// Quick Reach / Return for Individual Units (Admin Only)
 function quickReachUnit(unitId) {
   const item = unitMarkers.find(u => u.id === unitId);
   if (!item) return;
@@ -1552,11 +1394,6 @@ function quickReturnUnit(unitId) {
 }
 
 function fastForwardAllToScene() {
-  if (isDemoRunning && demoInterval) {
-    clearInterval(demoInterval);
-    demoInterval = null;
-    isDemoRunning = false;
-  }
   let count = 0;
   unitMarkers.forEach(item => {
     item.data.progress = 100;
@@ -1568,11 +1405,6 @@ function fastForwardAllToScene() {
 }
 
 function fastForwardAllToBase() {
-  if (isDemoRunning && demoInterval) {
-    clearInterval(demoInterval);
-    demoInterval = null;
-    isDemoRunning = false;
-  }
   let count = 0;
   unitMarkers.forEach(item => {
     item.data.progress = 0;
@@ -1583,19 +1415,18 @@ function fastForwardAllToBase() {
   showToast('returned', '⚡ Returned to Station', `${count || 'All'} vehicles are back at station.`);
 }
 
-// Continuous Smooth Simulation Loop (Tick runs at 100ms for fluid movement!)
+// Steady, Realistic Rescue Simulation (Natural speed so everyone can follow along calmly)
 function startSimulationLoop() {
   setInterval(() => {
-    if (isDemoRunning) return; // Allow 5-sec demo full control when active
-
     unitMarkers.forEach(item => {
       const unit = item.data;
-      const step = 0.7 * simSpeedMultiplier;
+      // Gentle, steady speed: ~1% progress per second at normal speed
+      const step = 0.25 * simSpeedMultiplier;
 
       // Phase 1: En Route to Incident Site
       if (unit.phase === 'en_route') {
         if (unit.progress < 100) {
-          unit.progress = Math.min(100, unit.progress + step);
+          unit.progress = Math.min(100, +(unit.progress + step).toFixed(2));
 
           if (unit.progress >= 100) {
             triggerOnScene(item);
@@ -1620,19 +1451,19 @@ function startSimulationLoop() {
           }
         }
       }
-      // Phase 2: Active On Scene (Operations in progress)
+      // Phase 2: Active On Scene (Helping injured, giving food meals for ~12-15 seconds)
       else if (unit.phase === 'on_scene') {
-        item.onSceneDuration = (item.onSceneDuration || 0) + (0.1 * simSpeedMultiplier);
+        item.onSceneDuration = (item.onSceneDuration || 0) + (0.25 * simSpeedMultiplier);
 
-        // After on-scene operations (~3.5 seconds), demobilize!
-        if (item.onSceneDuration >= 3.5) {
+        // After operations on scene, demobilize and return back to base
+        if (item.onSceneDuration >= 12.0) {
           triggerDemobilizing(item);
         }
       }
-      // Phase 3: Demobilizing — Returning to Base
+      // Phase 3: Demobilizing — Returning Safely to Base
       else if (unit.phase === 'returning') {
         if (unit.progress > 0) {
-          unit.progress = Math.max(0, unit.progress - (step * 1.2));
+          unit.progress = Math.max(0, +(unit.progress - step).toFixed(2));
 
           if (unit.progress <= 0) {
             triggerStationedAtBase(item);
@@ -1666,7 +1497,7 @@ function startSimulationLoop() {
       const now = new Date();
       syncLabel.textContent = `GPS: Active (${now.toLocaleTimeString()})`;
     }
-  }, 100);
+  }, 250);
 }
 
 // Admin Assignment UI Helpers
