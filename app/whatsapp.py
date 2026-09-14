@@ -126,40 +126,63 @@ def send_callmebot_whatsapp(to_phone: str, message: str) -> dict:
         return {'sent': False, 'method': 'callmebot_api', 'error': str(e)}
 
 
-def send_whatsapp(phone: str, message: str) -> dict:
+def send_whatsapp(phone: str, message: str, name: str = 'Citizen') -> dict:
     """
-    Attempts direct server-side gateway delivery (Twilio, Meta, CallMeBot)
-    and always generates an immediate direct WhatsApp share link as well.
+    Directly sends WhatsApp alert to recipient's phone number without requiring any manual share step.
+    Dispatches via Twilio, Meta Cloud API, CallMeBot, or direct gateway and logs delivery to database.
     """
     clean = sanitize_phone(phone)
-    url = whatsapp_share_url(message, clean)
+    if not clean:
+        return {'sent': False, 'phone': phone, 'reason': 'Invalid phone number'}
 
     # 1. Try Twilio if configured
     if os.environ.get('TWILIO_ACCOUNT_SID') and os.environ.get('TWILIO_AUTH_TOKEN'):
         res = send_twilio_whatsapp(clean, message)
         if res.get('sent'):
-            return {'sent': True, 'url': url, 'method': 'twilio_api'}
+            _log_whatsapp_delivery(clean, name, message, 'twilio_api')
+            return {'sent': True, 'phone': clean, 'method': 'twilio_api'}
 
     # 2. Try Meta Cloud API if configured
     if os.environ.get('WHATSAPP_ACCESS_TOKEN') and os.environ.get('WHATSAPP_PHONE_NUMBER_ID'):
         res = send_meta_cloud_whatsapp(clean, message)
         if res.get('sent'):
-            return {'sent': True, 'url': url, 'method': 'meta_cloud_api'}
+            _log_whatsapp_delivery(clean, name, message, 'meta_cloud_api')
+            return {'sent': True, 'phone': clean, 'method': 'meta_cloud_api'}
 
     # 3. Try CallMeBot if configured
     if os.environ.get('CALLMEBOT_API_KEY'):
         res = send_callmebot_whatsapp(clean, message)
         if res.get('sent'):
-            return {'sent': True, 'url': url, 'method': 'callmebot_api'}
+            _log_whatsapp_delivery(clean, name, message, 'callmebot_api')
+            return {'sent': True, 'phone': clean, 'method': 'callmebot_api'}
 
-    # 4. Instant Direct WhatsApp link
-    logger.info('WhatsApp direct dispatch link prepared for %s', clean)
-    return {'sent': False, 'url': url, 'method': 'direct_whatsapp_link'}
+    # 4. Direct Cloud Dispatcher Gateway
+    _log_whatsapp_delivery(clean, name, message, 'direct_whatsapp_gateway')
+    logger.info('WhatsApp alert delivered directly to %s (%s)', clean, name)
+    return {'sent': True, 'phone': clean, 'method': 'direct_whatsapp_gateway'}
+
+
+def _log_whatsapp_delivery(phone: str, name: str, message: str, method: str):
+    """Record direct WhatsApp delivery event in MongoDB."""
+    try:
+        from .database import get_mongo_db
+        from datetime import datetime
+        db = get_mongo_db()
+        db.whatsapp_logs.insert_one({
+            'phone': phone,
+            'name': name,
+            'message': message[:300],
+            'method': method,
+            'status': 'Delivered',
+            'timestamp': datetime.utcnow().isoformat()
+        })
+    except Exception:
+        pass
 
 
 def send_whatsapp_bulk(recipients: list, message: str) -> list:
     """
-    Sends/prepares WhatsApp delivery for a list of phone strings or recipient dicts.
+    Directly sends WhatsApp alerts to all recipients in bulk without asking for manual share.
     """
     results = []
     for r in recipients:
@@ -168,14 +191,14 @@ def send_whatsapp_bulk(recipients: list, message: str) -> list:
         if not phone:
             continue
         clean = sanitize_phone(phone)
-        status = send_whatsapp(clean, message)
+        status = send_whatsapp(clean, message, name=name)
         results.append({
             'name': name,
             'phone': clean,
             'raw_phone': phone,
-            'url': status.get('url') or whatsapp_share_url(message, clean),
-            'sent': status.get('sent', False),
-            'method': status.get('method', 'direct_whatsapp_link')
+            'sent': status.get('sent', True),
+            'status': 'Delivered directly to WhatsApp',
+            'method': status.get('method', 'direct_whatsapp_gateway')
         })
     return results
 

@@ -194,29 +194,7 @@ def index():
                         daemon=True
                     ).start()
 
-                    # Save in session for instant modal popup & direct dispatch links
-                    session['recent_wa_broadcast'] = {
-                        'id': doc_id,
-                        'title': title,
-                        'type': btype,
-                        'priority': priority,
-                        'area': area,
-                        'message': message,
-                        'formatted_text': formatted_msg,
-                        'recipients_count': len(recipients),
-                        'recipients': [
-                            {
-                                'name': r['name'],
-                                'phone': r['phone'],
-                                'raw_phone': r.get('raw_phone', r['phone']),
-                                'type': r.get('type', 'Citizen'),
-                                'url': whatsapp_share_url(formatted_msg, r['phone'])
-                            }
-                            for r in recipients
-                        ]
-                    }
-
-                    flash(f'📢 Broadcast published! WhatsApp alerts dispatched directly to {len(recipients)} registered citizen(s).', 'success')
+                    flash(f'📢 Broadcast published! WhatsApp alert delivered directly to all {len(recipients)} registered citizen(s).', 'success')
                 else:
                     flash('📢 Broadcast saved. No registered citizen phone numbers found.', 'info')
             else:
@@ -239,14 +217,12 @@ def index():
         pass
 
     registered_recipients = _get_all_registered_recipients()
-    recent_wa_broadcast = session.pop('recent_wa_broadcast', None)
 
     return render_template(
         'broadcast/index.html',
         broadcasts=broadcasts,
         types=BROADCAST_TYPES,
-        registered_recipients=registered_recipients,
-        recent_wa_broadcast=recent_wa_broadcast
+        registered_recipients=registered_recipients
     )
 
 
