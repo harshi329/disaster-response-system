@@ -82,14 +82,90 @@
     width: 34px;
     height: 34px;
   }
+  .pin-station {
+    background: #0f172a;
+    border: 3px solid #38bdf8;
+    width: 42px;
+    height: 42px;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.45);
+    font-size: 1.25rem;
+  }
+  .station-tooltip {
+    background: #0f172a !important;
+    color: #fff !important;
+    border: 1px solid #38bdf8 !important;
+    border-radius: 6px !important;
+    font-weight: 700 !important;
+    font-size: 0.75rem !important;
+    padding: 3px 8px !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+  }
+  .station-tooltip::before {
+    border-top-color: #0f172a !important;
+  }
+  .incident-tooltip {
+    background: #dc3545 !important;
+    color: #fff !important;
+    border: 1px solid #fff !important;
+    border-radius: 6px !important;
+    font-weight: 700 !important;
+    font-size: 0.75rem !important;
+    padding: 3px 8px !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+  }
+  .incident-tooltip::before {
+    border-top-color: #dc3545 !important;
+  }
+
+  /* 4-Step Story Journey Tracker */
+  .journey-step {
+    border: 2px solid #e2e8f0;
+    border-radius: 0.75rem;
+    padding: 0.65rem 0.85rem;
+    transition: all 0.25s ease;
+    background: #ffffff;
+  }
+  .journey-step.active {
+    border-color: #0d6efd !important;
+    background: #eff6ff !important;
+    box-shadow: 0 4px 14px rgba(13, 110, 253, 0.22);
+    transform: translateY(-2px);
+  }
+  .journey-step.active-scene {
+    border-color: #198754 !important;
+    background: #f0fdf4 !important;
+    box-shadow: 0 4px 14px rgba(25, 135, 84, 0.25);
+    transform: translateY(-2px);
+  }
+  .journey-step.active-return {
+    border-color: #fd7e14 !important;
+    background: #fff8f0 !important;
+    box-shadow: 0 4px 14px rgba(253, 126, 20, 0.25);
+    transform: translateY(-2px);
+  }
+  .journey-step.active-station {
+    border-color: #475569 !important;
+    background: #f8fafc !important;
+    box-shadow: 0 4px 14px rgba(71, 85, 105, 0.2);
+    transform: translateY(-2px);
+  }
+  .step-icon-circle {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    font-weight: bold;
+  }
   .pin-helicopter {
     background: #0dcaf0;
     color: #055160;
     width: 36px;
     height: 36px;
   }
-
-  /* Floating Toast Container */
   #toast-notification-area {
     position: fixed;
     top: 20px;
@@ -202,27 +278,96 @@
       </p>
     </div>
     <div class="d-flex align-items-center gap-2 flex-wrap">
-      <!-- Simulation Speed Selector -->
+      <!-- 1-Click Fast Demonstration (Runs entire rescue in 5 seconds!) -->
+      <button type="button" class="btn btn-primary fw-bold py-1 px-3 shadow-sm" onclick="playFullDemo()" title="Watch the complete arriving and returning cycle in 5 seconds">
+        <i class="bi bi-play-circle-fill me-1"></i>▶️ Play 5-Second Rescue Demo
+      </button>
+
+      <!-- 3 Direct Step Buttons for Live Presentation -->
       <div class="btn-group btn-group-sm" role="group">
-        <button type="button" class="btn btn-outline-secondary active fw-semibold" id="speed-1x-btn" onclick="setSimSpeed(1)">
-          <i class="bi bi-play-fill"></i> Normal (1x)
+        <button type="button" class="btn btn-outline-primary fw-semibold" onclick="launchAllFromStation()" title="Reset to station and drive to danger spot">
+          <i class="bi bi-send-fill me-1"></i>🚀 1. Send Help
         </button>
-        <button type="button" class="btn btn-outline-danger fw-semibold" id="speed-4x-btn" onclick="setSimSpeed(4)">
-          <i class="bi bi-lightning-charge-fill"></i> Fast (4x)
+        <button type="button" class="btn btn-outline-success fw-semibold" onclick="fastForwardAllToScene()" title="Arrive at danger spot and help people immediately">
+          <i class="bi bi-geo-alt-fill me-1"></i>📍 2. Arrive &amp; Help
+        </button>
+        <button type="button" class="btn btn-outline-warning text-dark fw-semibold" onclick="fastForwardAllToBase()" title="Return all vehicles back to station safely">
+          <i class="bi bi-house-door-fill me-1"></i>🏠 3. Return Home
         </button>
       </div>
-      <!-- Instant Fast Demo Buttons -->
-      <button type="button" class="btn btn-sm btn-success fw-bold py-1 px-2" onclick="fastForwardAllToScene()" title="Make all vehicles reach the people immediately">
-        <i class="bi bi-geo-alt-fill me-1"></i>⚡ Reach People Now
-      </button>
-      <button type="button" class="btn btn-sm btn-warning text-dark fw-bold py-1 px-2" onclick="fastForwardAllToBase()" title="Bring all vehicles safely back to station">
-        <i class="bi bi-house-door-fill me-1"></i>⚡ Return to Station
-      </button>
-      <small class="text-muted d-none d-xl-block" id="tracker-last-sync">GPS: Active</small>
+
+      <!-- Continuous Simulation Speed Selector -->
+      <div class="btn-group btn-group-sm" role="group">
+        <button type="button" class="btn btn-outline-secondary active fw-semibold" id="speed-1x-btn" onclick="setSimSpeed(1)">
+          1x Speed
+        </button>
+        <button type="button" class="btn btn-outline-danger fw-semibold" id="speed-4x-btn" onclick="setSimSpeed(4)">
+          ⚡ 4x Fast
+        </button>
+      </div>
+      <small class="text-muted d-none d-xxl-block" id="tracker-last-sync">GPS: Active</small>
     </div>
   </div>
 
-  <div class="card-body pt-1">
+  <div class="card-body pt-2">
+    <!-- 4-Stage Visual Journey Tracker (Uber / Delivery Style - Easy for anyone to understand) -->
+    <div class="row g-2 mb-3">
+      <!-- Step 1: Ready at Station -->
+      <div class="col-6 col-md-3">
+        <div class="journey-step d-flex align-items-center gap-2 h-100" id="step-card-station">
+          <div class="step-icon-circle bg-dark text-white">🏢</div>
+          <div>
+            <div class="text-uppercase fw-bold text-muted" style="font-size: 0.65rem;" id="step-tag-station">Step 1</div>
+            <div class="fw-bold text-dark small">1. Ready at Station</div>
+            <div class="text-muted" style="font-size: 0.68rem;">Vehicles at home base</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: On The Way -->
+      <div class="col-6 col-md-3">
+        <div class="journey-step d-flex align-items-center gap-2 h-100 active" id="step-card-enroute">
+          <div class="step-icon-circle bg-primary text-white">🚗</div>
+          <div>
+            <div class="text-uppercase fw-bold text-primary" style="font-size: 0.65rem;" id="step-tag-enroute">Step 2 &bull; Active</div>
+            <div class="fw-bold text-dark small">2. On The Way</div>
+            <div class="text-muted" style="font-size: 0.68rem;">Rushing to danger spot</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Arrived & Helping -->
+      <div class="col-6 col-md-3">
+        <div class="journey-step d-flex align-items-center gap-2 h-100" id="step-card-onscene">
+          <div class="step-icon-circle bg-success text-white">📍</div>
+          <div>
+            <div class="text-uppercase fw-bold text-muted" style="font-size: 0.65rem;" id="step-tag-onscene">Step 3</div>
+            <div class="fw-bold text-dark small">3. Arrived &amp; Helping</div>
+            <div class="text-muted" style="font-size: 0.68rem;">Treating &amp; feeding people</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 4: Returning Home -->
+      <div class="col-6 col-md-3">
+        <div class="journey-step d-flex align-items-center gap-2 h-100" id="step-card-returning">
+          <div class="step-icon-circle bg-warning text-dark">🏠</div>
+          <div>
+            <div class="text-uppercase fw-bold text-muted" style="font-size: 0.65rem;" id="step-tag-returning">Step 4</div>
+            <div class="fw-bold text-dark small">4. Returning Home</div>
+            <div class="text-muted" style="font-size: 0.68rem;">Heading back to station</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live Demonstration Announcement Banner -->
+    <div id="live-demo-banner" class="alert alert-primary py-2 px-3 mb-3 d-none fw-semibold small d-flex align-items-center justify-content-between rounded-3 shadow-sm border">
+      <div id="demo-banner-text">
+        <i class="bi bi-play-circle-fill me-2"></i>5-Second Live Demo Running...
+      </div>
+      <span class="badge bg-primary" id="demo-banner-badge">Demo Active</span>
+    </div>
     <!-- Filter by Incident Problem -->
     <div class="d-flex align-items-center gap-2 flex-wrap mb-3 p-2 bg-light rounded-3 border">
       <span class="small fw-bold text-secondary ps-1"><i class="bi bi-geo-alt-fill text-danger me-1"></i>Where Help is Needed:</span>
@@ -721,7 +866,7 @@ function clearMapLayers() {
   routeLines = [];
 }
 
-// Render incidents, units, and trajectories
+// Render incidents, units, and trajectories with prominent Station and Danger Spot markers
 function renderDeployments() {
   if (!map) return;
   clearMapLayers();
@@ -739,7 +884,38 @@ function renderDeployments() {
     const targetCoords = [dep.target_lat, dep.target_lng];
     bounds.push(targetCoords);
 
-    // Incident Site Marker
+    // Compute Help Station (Home Base) Coordinates
+    const depotCoords = (dep.units && dep.units.length > 0)
+      ? [dep.units[0].origin_lat, dep.units[0].origin_lng]
+      : [+(dep.target_lat - 0.035).toFixed(6), +(dep.target_lng - 0.026).toFixed(6)];
+    bounds.push(depotCoords);
+
+    // 1. HELP STATION (HOME BASE) PIN
+    const stationIcon = L.divIcon({
+      className: 'custom-pin-wrapper',
+      html: `<div class="custom-pin pin-station" title="Help Station (Home Base)"><i class="bi bi-building-fill"></i></div>`,
+      iconSize: [42, 42],
+      iconAnchor: [21, 21]
+    });
+
+    const stMarker = L.marker(depotCoords, { icon: stationIcon }).addTo(map);
+    stMarker.bindPopup(`
+      <div style="font-family: sans-serif; min-width: 200px;">
+        <span class="badge bg-dark mb-1">🏢 HOME BASE</span>
+        <h6 class="fw-bold mb-1 mt-1 text-primary">Help Station (Base)</h6>
+        <div class="small text-muted mb-1"><i class="bi bi-geo-alt me-1"></i>Central Emergency Station</div>
+        <div class="small text-dark">All rescue teams, ambulances, and food supplies start here and return here.</div>
+      </div>
+    `);
+    stMarker.bindTooltip('🏢 Help Station (Base)', {
+      permanent: true,
+      direction: 'top',
+      offset: [0, -22],
+      className: 'station-tooltip'
+    });
+    incidentMarkers.push(stMarker);
+
+    // 2. INCIDENT SITE (DANGER SPOT) PIN
     const problemIcon = L.divIcon({
       className: 'custom-pin-wrapper',
       html: `<div class="custom-pin pin-problem" title="${dep.problem_title}"><i class="bi bi-exclamation-triangle-fill"></i></div>`,
@@ -749,33 +925,46 @@ function renderDeployments() {
 
     const incMarker = L.marker(targetCoords, { icon: problemIcon }).addTo(map);
     incMarker.bindPopup(`
-      <div style="font-family: sans-serif; min-width: 190px;">
+      <div style="font-family: sans-serif; min-width: 200px;">
         <span class="badge bg-danger mb-1">${dep.severity.toUpperCase()} DANGER</span>
         <h6 class="fw-bold mb-1 mt-1 text-danger">${dep.problem_title}</h6>
         <div class="small text-muted mb-1"><i class="bi bi-geo-alt me-1"></i>${dep.location}</div>
         <div class="small text-dark"><strong>Help sent by:</strong> ${dep.assigned_by}</div>
       </div>
     `);
+    incMarker.bindTooltip(`🚨 Danger Spot: ${dep.problem_title}`, {
+      permanent: true,
+      direction: 'top',
+      offset: [0, -20],
+      className: 'incident-tooltip'
+    });
     incidentMarkers.push(incMarker);
 
-    // Help Vehicles
+    // 3. Clear Road Trajectory Connecting Station & Danger Spot
+    const mainRoadPolyline = L.polyline([depotCoords, targetCoords], {
+      color: '#64748b',
+      weight: 4,
+      opacity: 0.5,
+      dashArray: '6, 8'
+    }).addTo(map);
+    routeLines.push(mainRoadPolyline);
+
+    // 4. Help Vehicles
     (dep.units || []).forEach(unit => {
       visibleUnitsCount++;
       const curCoords = [unit.current_lat, unit.current_lng];
       bounds.push(curCoords);
 
-      // Trajectory Line
-      const routePolyline = L.polyline([
-        [unit.origin_lat, unit.origin_lng],
-        curCoords,
-        targetCoords
+      // Unit trajectory overlay
+      const unitPolyline = L.polyline([
+        depotCoords,
+        curCoords
       ], {
         color: unit.color || '#0d6efd',
         weight: 3,
-        opacity: 0.65,
-        dashArray: '5, 8'
+        opacity: 0.75
       }).addTo(map);
-      routeLines.push(routePolyline);
+      routeLines.push(unitPolyline);
 
       let pinClass = 'pin-ambulance';
       if (unit.type === 'rescue_teams') pinClass = 'pin-rescue';
@@ -811,8 +1000,8 @@ function renderDeployments() {
         allocationId: dep.id,
         marker: uMarker,
         data: unit,
-        routeLine: routePolyline,
-        depotCoords: [unit.origin_lat, unit.origin_lng],
+        routeLine: unitPolyline,
+        depotCoords: depotCoords,
         targetCoords: targetCoords,
         problemLocation: dep.location,
         problemTitle: dep.problem_title,
@@ -844,38 +1033,45 @@ function renderDeployments() {
           <div class="card mb-2 border shadow-sm p-2 unit-card ${cardClass}" id="card-unit-${unit.unit_id}">
             <div class="d-flex justify-content-between align-items-start mb-1">
               <span class="fw-bold small text-dark d-flex align-items-center gap-1">
-                <i class="bi ${unit.icon}" style="color:${unit.color};"></i>
+                <i class="bi ${unit.icon}" style="color:${unit.color}; font-size:1.05rem;"></i>
                 <span>${unit.name}</span>
               </span>
               <span class="badge ${badgeClass}" id="badge-status-${unit.unit_id}" style="font-size:.68rem;">${displayStatus}</span>
             </div>
             <div class="text-muted mb-1" style="font-size:.72rem;">
-              <i class="bi bi-geo-alt me-1"></i>${unit.problem_title}
+              <i class="bi bi-geo-alt me-1 text-danger"></i>${unit.problem_title}
             </div>
             <div class="d-flex justify-content-between align-items-center text-muted" style="font-size:.7rem;">
               <span><i class="bi bi-person-badge me-1"></i>${unit.lead_name.split(':')[0]}</span>
               <span class="text-danger fw-semibold" id="eta-text-${unit.unit_id}"><i class="bi bi-clock me-1"></i>~${unit.eta_mins}m away (${unit.distance_km}km)</span>
             </div>
-            <!-- Progress Bar -->
-            <div class="progress mt-1 mb-2" style="height: 6px;">
+
+            <!-- Progress Bar with clear Station to Danger endpoints -->
+            <div class="d-flex justify-content-between text-muted mt-1" style="font-size: 0.65rem;">
+              <span>🏢 Station (Base)</span>
+              <span class="fw-bold text-primary" id="prog-pct-${unit.unit_id}">${Math.round(unit.progress)}%</span>
+              <span>🚨 Danger Spot</span>
+            </div>
+            <div class="progress mb-2" style="height: 6px;">
               <div class="progress-bar progress-bar-striped progress-bar-animated ${unit.phase==='on_scene'?'bg-success':(unit.phase==='returning'?'bg-warning':'bg-primary')}"
                    style="width: ${unit.progress}%" id="prog-${unit.unit_id}"></div>
             </div>
+
             <div class="d-flex justify-content-between align-items-center gap-1">
               <button type="button" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size:.72rem;"
                       onclick="focusUnit('${unit.unit_id}')">
                 <i class="bi bi-geo-alt me-1"></i>Show on Map
               </button>
               <div class="d-flex gap-1 align-items-center">
-                <button type="button" class="btn btn-xs btn-outline-success py-0 px-1 fw-semibold" style="font-size:.68rem;"
+                <button type="button" class="btn btn-xs btn-outline-success py-0 px-2 fw-semibold" style="font-size:.68rem;"
                         title="Make this vehicle arrive immediately"
                         onclick="quickReachUnit('${unit.unit_id}')">
-                  ⚡ Arrive
+                  📍 Arrive
                 </button>
-                <button type="button" class="btn btn-xs btn-outline-warning text-dark py-0 px-1 fw-semibold" style="font-size:.68rem;"
+                <button type="button" class="btn btn-xs btn-outline-warning text-dark py-0 px-2 fw-semibold" style="font-size:.68rem;"
                         title="Bring this vehicle back to station immediately"
                         onclick="quickReturnUnit('${unit.unit_id}')">
-                  ⚡ Return
+                  🏠 Return
                 </button>
               </div>
             </div>
@@ -899,8 +1095,10 @@ function renderDeployments() {
   }
 
   if (bounds.length > 0) {
-    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
+    map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
   }
+
+  updateJourneyTracker();
 }
 
 // Focus on a particular unit on the map
@@ -1096,12 +1294,251 @@ function triggerStationedAtBase(item) {
   syncUnitStatus(item, 'returned');
 }
 
-// Fast Demo Helper Functions for Easy Demonstration (Shows single concise toast on click)
+// Dynamic 4-Step Story Journey Tracker Updater (Uber/Delivery style)
+function updateJourneyTracker() {
+  const steps = {
+    station: document.getElementById('step-card-station'),
+    enroute: document.getElementById('step-card-enroute'),
+    onscene: document.getElementById('step-card-onscene'),
+    returning: document.getElementById('step-card-returning')
+  };
+  const tags = {
+    station: document.getElementById('step-tag-station'),
+    enroute: document.getElementById('step-tag-enroute'),
+    onscene: document.getElementById('step-tag-onscene'),
+    returning: document.getElementById('step-tag-returning')
+  };
+  if (!steps.station) return;
+
+  // Reset all step card styles
+  steps.station.className = 'journey-step d-flex align-items-center gap-2 h-100';
+  steps.enroute.className = 'journey-step d-flex align-items-center gap-2 h-100';
+  steps.onscene.className = 'journey-step d-flex align-items-center gap-2 h-100';
+  steps.returning.className = 'journey-step d-flex align-items-center gap-2 h-100';
+
+  if (tags.station) tags.station.textContent = 'Step 1';
+  if (tags.enroute) tags.enroute.textContent = 'Step 2';
+  if (tags.onscene) tags.onscene.textContent = 'Step 3';
+  if (tags.returning) tags.returning.textContent = 'Step 4';
+
+  let enrouteCount = 0;
+  let onsceneCount = 0;
+  let returningCount = 0;
+
+  unitMarkers.forEach(item => {
+    const p = item.data.phase;
+    if (p === 'on_scene') onsceneCount++;
+    else if (p === 'returning') returningCount++;
+    else if (p === 'en_route') enrouteCount++;
+  });
+
+  // Priority highlight: On scene > Returning > En route > Station
+  if (onsceneCount > 0) {
+    steps.onscene.classList.add('active-scene');
+    if (tags.onscene) tags.onscene.innerHTML = 'Step 3 &bull; <strong class="text-success">Helping Now!</strong>';
+  } else if (returningCount > 0) {
+    steps.returning.classList.add('active-return');
+    if (tags.returning) tags.returning.innerHTML = 'Step 4 &bull; <strong class="text-warning text-dark">Heading Home</strong>';
+  } else if (enrouteCount > 0) {
+    steps.enroute.classList.add('active');
+    if (tags.enroute) tags.enroute.innerHTML = 'Step 2 &bull; <strong class="text-primary">Rushing to Help</strong>';
+  } else {
+    steps.station.classList.add('active-station');
+    if (tags.station) tags.station.innerHTML = 'Step 1 &bull; <strong class="text-secondary">Ready at Base</strong>';
+  }
+}
+
+// 1-Click Fast Demonstration (5-Second Full Rescue Lifecycle)
+let demoInterval = null;
+let isDemoRunning = false;
+
+function playFullDemo() {
+  if (isDemoRunning && demoInterval) {
+    clearInterval(demoInterval);
+    demoInterval = null;
+  }
+  isDemoRunning = true;
+
+  const banner = document.getElementById('live-demo-banner');
+  const bannerText = document.getElementById('demo-banner-text');
+  const bannerBadge = document.getElementById('demo-banner-badge');
+  if (banner) {
+    banner.classList.remove('d-none');
+    banner.className = 'alert alert-primary py-2 px-3 mb-3 fw-semibold small d-flex align-items-center justify-content-between rounded-3 shadow-sm border';
+  }
+  if (bannerText) {
+    bannerText.innerHTML = '<i class="bi bi-send-fill text-primary me-2"></i><strong>Step 2: On The Way!</strong> 🚗 Vehicles leaving station &amp; rushing to danger spot...';
+  }
+  if (bannerBadge) {
+    bannerBadge.className = 'badge bg-primary';
+    bannerBadge.textContent = '2. Rushing (0-2s)';
+  }
+
+  // Reset all vehicles to Station with phase en_route
+  unitMarkers.forEach(item => {
+    item.data.phase = 'en_route';
+    item.data.status = '🚗 On the Way';
+    item.data.progress = 5;
+    item.onSceneDuration = 0;
+    const badge = document.getElementById(`badge-status-${item.data.unit_id}`);
+    if (badge) {
+      badge.className = 'badge bg-primary';
+      badge.textContent = '🚗 On the Way';
+    }
+    const card = document.getElementById(`card-unit-${item.data.unit_id}`);
+    if (card) {
+      card.className = 'card mb-2 border shadow-sm p-2 unit-card';
+    }
+  });
+  updateJourneyTracker();
+
+  let elapsed = 0;
+  demoInterval = setInterval(() => {
+    elapsed += 100;
+
+    // 0 to 2000ms: Smoothly travel from station to danger spot
+    if (elapsed <= 2000) {
+      const pct = Math.min(100, 5 + (elapsed / 2000) * 95);
+      unitMarkers.forEach(item => {
+        item.data.progress = pct;
+        const t = pct / 100.0;
+        item.data.current_lat = +(item.depotCoords[0] + (item.targetCoords[0] - item.depotCoords[0]) * t).toFixed(6);
+        item.data.current_lng = +(item.depotCoords[1] + (item.targetCoords[1] - item.depotCoords[1]) * t).toFixed(6);
+        item.data.distance_km = +(Math.max(0.1, (1.0 - t) * 6.0)).toFixed(1);
+        item.data.eta_mins = Math.max(1, Math.round(item.data.distance_km / 0.9));
+
+        item.marker.setLatLng([item.data.current_lat, item.data.current_lng]);
+
+        const bar = document.getElementById(`prog-${item.id}`);
+        if (bar) {
+          bar.className = 'progress-bar progress-bar-striped progress-bar-animated bg-primary';
+          bar.style.width = `${pct}%`;
+        }
+        const pctText = document.getElementById(`prog-pct-${item.id}`);
+        if (pctText) pctText.textContent = `${Math.round(pct)}%`;
+        const etaText = document.getElementById(`eta-text-${item.id}`);
+        if (etaText) etaText.innerHTML = `<i class="bi bi-clock me-1"></i>~${item.data.eta_mins}m away (${item.data.distance_km}km)`;
+      });
+      updateJourneyTracker();
+    }
+    // 2000ms to 3500ms: Arrived on scene & helping people!
+    else if (elapsed <= 3500) {
+      if (elapsed === 2100) {
+        unitMarkers.forEach(item => triggerOnScene(item));
+        updateJourneyTracker();
+        if (banner) banner.className = 'alert alert-success py-2 px-3 mb-3 fw-semibold small d-flex align-items-center justify-content-between rounded-3 shadow-sm border';
+        if (bannerText) {
+          bannerText.innerHTML = '<i class="bi bi-check-circle-fill text-success me-2"></i><strong>Step 3: Arrived!</strong> 📍 Vehicles treating injured &amp; feeding families...';
+        }
+        if (bannerBadge) {
+          bannerBadge.className = 'badge bg-success';
+          bannerBadge.textContent = '3. Helping (2-3.5s)';
+        }
+      }
+    }
+    // 3500ms to 5000ms: Returning back to station!
+    else if (elapsed <= 5000) {
+      if (elapsed === 3600) {
+        unitMarkers.forEach(item => triggerDemobilizing(item));
+        updateJourneyTracker();
+        if (banner) banner.className = 'alert alert-warning py-2 px-3 mb-3 fw-semibold small d-flex align-items-center justify-content-between rounded-3 shadow-sm border';
+        if (bannerText) {
+          bannerText.innerHTML = '<i class="bi bi-arrow-left-circle-fill text-warning me-2"></i><strong>Step 4: Returning Home!</strong> 🏠 Mission complete, vehicles driving back to base...';
+        }
+        if (bannerBadge) {
+          bannerBadge.className = 'badge bg-warning text-dark';
+          bannerBadge.textContent = '4. Returning (3.5-5s)';
+        }
+      }
+      const returnPct = Math.max(0, 100 - ((elapsed - 3500) / 1500) * 100);
+      unitMarkers.forEach(item => {
+        item.data.progress = returnPct;
+        const t = returnPct / 100.0;
+        item.data.current_lat = +(item.depotCoords[0] + (item.targetCoords[0] - item.depotCoords[0]) * t).toFixed(6);
+        item.data.current_lng = +(item.depotCoords[1] + (item.targetCoords[1] - item.depotCoords[1]) * t).toFixed(6);
+        item.data.distance_km = +(Math.max(0.1, t * 6.0)).toFixed(1);
+        item.data.eta_mins = Math.max(1, Math.round(item.data.distance_km / 0.9));
+
+        item.marker.setLatLng([item.data.current_lat, item.data.current_lng]);
+
+        const bar = document.getElementById(`prog-${item.id}`);
+        if (bar) {
+          bar.className = 'progress-bar progress-bar-striped progress-bar-animated bg-warning';
+          bar.style.width = `${returnPct}%`;
+        }
+        const pctText = document.getElementById(`prog-pct-${item.id}`);
+        if (pctText) pctText.textContent = `${Math.round(returnPct)}%`;
+        const etaText = document.getElementById(`eta-text-${item.id}`);
+        if (etaText) etaText.innerHTML = `<i class="bi bi-arrow-left me-1"></i>Coming back (${item.data.distance_km}km to station)`;
+      });
+      updateJourneyTracker();
+    }
+    // 5000ms+: Completed! Safe back at base
+    else {
+      clearInterval(demoInterval);
+      demoInterval = null;
+      isDemoRunning = false;
+      unitMarkers.forEach(item => triggerStationedAtBase(item));
+      updateJourneyTracker();
+
+      if (banner) banner.className = 'alert alert-info py-2 px-3 mb-3 fw-semibold small d-flex align-items-center justify-content-between rounded-3 shadow-sm border';
+      if (bannerText) {
+        bannerText.innerHTML = '<i class="bi bi-shield-check text-primary fs-5 me-2"></i><strong>Rescue Demonstration Complete!</strong> ✅ All vehicles safely back at station. Ready to help again!';
+      }
+      if (bannerBadge) {
+        bannerBadge.className = 'badge bg-dark';
+        bannerBadge.innerHTML = '<a href="javascript:void(0)" onclick="playFullDemo()" class="text-white text-decoration-none">▶️ Play Again</a>';
+      }
+
+      showToast('returned', 'Demo Complete', 'All vehicles safely returned to station and restocked.');
+    }
+  }, 100);
+}
+
+// Direct Step 1: Launch all from Station
+function launchAllFromStation() {
+  if (isDemoRunning && demoInterval) {
+    clearInterval(demoInterval);
+    demoInterval = null;
+    isDemoRunning = false;
+  }
+  unitMarkers.forEach(item => {
+    item.data.phase = 'en_route';
+    item.data.status = '🚗 On the Way';
+    item.data.progress = 10;
+    item.onSceneDuration = 0;
+
+    const t = 0.1;
+    item.data.current_lat = +(item.depotCoords[0] + (item.targetCoords[0] - item.depotCoords[0]) * t).toFixed(6);
+    item.data.current_lng = +(item.depotCoords[1] + (item.targetCoords[1] - item.depotCoords[1]) * t).toFixed(6);
+    item.marker.setLatLng([item.data.current_lat, item.data.current_lng]);
+
+    const badge = document.getElementById(`badge-status-${item.id}`);
+    if (badge) {
+      badge.className = 'badge bg-primary';
+      badge.textContent = '🚗 On the Way';
+    }
+    const card = document.getElementById(`card-unit-${item.id}`);
+    if (card) card.className = 'card mb-2 border shadow-sm p-2 unit-card';
+    const bar = document.getElementById(`prog-${item.id}`);
+    if (bar) {
+      bar.className = 'progress-bar progress-bar-striped progress-bar-animated bg-primary';
+      bar.style.width = '10%';
+    }
+    const pct = document.getElementById(`prog-pct-${item.id}`);
+    if (pct) pct.textContent = '10%';
+  });
+  updateJourneyTracker();
+  showToast('on_scene', '🚀 Help Dispatched', 'Vehicles launched from station and rushing to help.');
+}
+
+// Quick Reach / Return for Individual Units
 function quickReachUnit(unitId) {
   const item = unitMarkers.find(u => u.id === unitId);
   if (!item) return;
   item.data.progress = 100;
   triggerOnScene(item);
+  updateJourneyTracker();
   showToast('on_scene', 'Vehicle Arrived', `${item.data.name} reached the scene and is helping.`);
 }
 
@@ -1110,44 +1547,55 @@ function quickReturnUnit(unitId) {
   if (!item) return;
   item.data.progress = 0;
   triggerStationedAtBase(item);
+  updateJourneyTracker();
   showToast('returned', 'Vehicle Returned', `${item.data.name} is safely back at station.`);
 }
 
 function fastForwardAllToScene() {
+  if (isDemoRunning && demoInterval) {
+    clearInterval(demoInterval);
+    demoInterval = null;
+    isDemoRunning = false;
+  }
   let count = 0;
   unitMarkers.forEach(item => {
-    if (item.data.phase === 'en_route') {
-      item.data.progress = 100;
-      triggerOnScene(item);
-      count++;
-    }
+    item.data.progress = 100;
+    triggerOnScene(item);
+    count++;
   });
+  updateJourneyTracker();
   showToast('on_scene', '⚡ Reached People', `${count || 'All'} vehicles arrived and are helping.`);
 }
 
 function fastForwardAllToBase() {
+  if (isDemoRunning && demoInterval) {
+    clearInterval(demoInterval);
+    demoInterval = null;
+    isDemoRunning = false;
+  }
   let count = 0;
   unitMarkers.forEach(item => {
-    if (item.data.phase === 'on_scene' || item.data.phase === 'returning') {
-      item.data.progress = 0;
-      triggerStationedAtBase(item);
-      count++;
-    }
+    item.data.progress = 0;
+    triggerStationedAtBase(item);
+    count++;
   });
+  updateJourneyTracker();
   showToast('returned', '⚡ Returned to Station', `${count || 'All'} vehicles are back at station.`);
 }
 
-// Fully Automated Fast GPS Simulation Lifecycle (Reaches & returns rapidly for easy demo!)
+// Continuous Smooth Simulation Loop (Tick runs at 100ms for fluid movement!)
 function startSimulationLoop() {
   setInterval(() => {
+    if (isDemoRunning) return; // Allow 5-sec demo full control when active
+
     unitMarkers.forEach(item => {
       const unit = item.data;
-      const step = 7.0 * simSpeedMultiplier;
+      const step = 0.7 * simSpeedMultiplier;
 
       // Phase 1: En Route to Incident Site
       if (unit.phase === 'en_route') {
         if (unit.progress < 100) {
-          unit.progress += step;
+          unit.progress = Math.min(100, unit.progress + step);
 
           if (unit.progress >= 100) {
             triggerOnScene(item);
@@ -1162,6 +1610,8 @@ function startSimulationLoop() {
 
             const bar = document.getElementById(`prog-${unit.unit_id}`);
             if (bar) bar.style.width = `${unit.progress}%`;
+            const pctText = document.getElementById(`prog-pct-${unit.unit_id}`);
+            if (pctText) pctText.textContent = `${Math.round(unit.progress)}%`;
 
             const etaText = document.getElementById(`eta-text-${unit.unit_id}`);
             if (etaText) {
@@ -1172,17 +1622,17 @@ function startSimulationLoop() {
       }
       // Phase 2: Active On Scene (Operations in progress)
       else if (unit.phase === 'on_scene') {
-        item.onSceneDuration = (item.onSceneDuration || 0) + (1 * simSpeedMultiplier);
+        item.onSceneDuration = (item.onSceneDuration || 0) + (0.1 * simSpeedMultiplier);
 
-        // After on-scene operations (~4 simulation ticks = ~3.5 seconds), demobilize!
-        if (item.onSceneDuration >= 4) {
+        // After on-scene operations (~3.5 seconds), demobilize!
+        if (item.onSceneDuration >= 3.5) {
           triggerDemobilizing(item);
         }
       }
       // Phase 3: Demobilizing — Returning to Base
       else if (unit.phase === 'returning') {
         if (unit.progress > 0) {
-          unit.progress -= (step * 1.25);
+          unit.progress = Math.max(0, unit.progress - (step * 1.2));
 
           if (unit.progress <= 0) {
             triggerStationedAtBase(item);
@@ -1197,6 +1647,8 @@ function startSimulationLoop() {
 
             const bar = document.getElementById(`prog-${unit.unit_id}`);
             if (bar) bar.style.width = `${unit.progress}%`;
+            const pctText = document.getElementById(`prog-pct-${unit.unit_id}`);
+            if (pctText) pctText.textContent = `${Math.round(unit.progress)}%`;
 
             const etaText = document.getElementById(`eta-text-${unit.unit_id}`);
             if (etaText) {
@@ -1207,12 +1659,14 @@ function startSimulationLoop() {
       }
     });
 
+    updateJourneyTracker();
+
     const syncLabel = document.getElementById('tracker-last-sync');
     if (syncLabel) {
       const now = new Date();
       syncLabel.textContent = `GPS: Active (${now.toLocaleTimeString()})`;
     }
-  }, 850);
+  }, 100);
 }
 
 // Admin Assignment UI Helpers
