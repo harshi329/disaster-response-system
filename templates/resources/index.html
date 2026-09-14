@@ -538,7 +538,7 @@ let isChaseCamActive = false;
 const TILE_PROVIDERS = {
   streets: {
     url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    options: { maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' }
+    options: { maxZoom: 19, subdomains: ['a', 'b', 'c'], attribution: '&copy; OpenStreetMap contributors' }
   },
   dark: {
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
